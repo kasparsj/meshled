@@ -338,11 +338,16 @@ void onDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
 }
 
 // Callback function for when data is received
+#if defined(ESP_IDF_VERSION) && (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0))
 void onDataReceived(const esp_now_recv_info_t *esp_now_info, const uint8_t *data, int data_len) {
+  const uint8_t *src_addr = esp_now_info->src_addr;
+#else
+void onDataReceived(const uint8_t *src_addr, const uint8_t *data, int data_len) {
+#endif
   char macStr[18];
   snprintf(macStr, sizeof(macStr), "%02X:%02X:%02X:%02X:%02X:%02X",
-           esp_now_info->src_addr[0], esp_now_info->src_addr[1], esp_now_info->src_addr[2],
-           esp_now_info->src_addr[3], esp_now_info->src_addr[4], esp_now_info->src_addr[5]);
+           src_addr[0], src_addr[1], src_addr[2],
+           src_addr[3], src_addr[4], src_addr[5]);
 
   LP_LOGF("ESP-NOW data received from %s, length: %d\n", macStr, data_len);
 
@@ -366,8 +371,8 @@ void onDataReceived(const esp_now_recv_info_t *esp_now_info, const uint8_t *data
       reply.deviceName[sizeof(reply.deviceName) - 1] = '\0';
       
       // Add sender as peer and reply
-      if (addPeer(esp_now_info->src_addr, WiFi.channel())) {
-        esp_now_send(esp_now_info->src_addr, (uint8_t*)&reply, sizeof(reply));
+      if (addPeer(src_addr, WiFi.channel())) {
+        esp_now_send(src_addr, (uint8_t*)&reply, sizeof(reply));
         LP_LOGF("Sent discovery reply to %s\n", macStr);
       }
       break;
@@ -382,19 +387,19 @@ void onDataReceived(const esp_now_recv_info_t *esp_now_info, const uint8_t *data
         // Add peer to known peers list if not already there
         bool peerExists = false;
         for (int i = 0; i < peerCount; i++) {
-          if (memcmp(knownPeers[i].peer_addr, esp_now_info->src_addr, 6) == 0) {
+          if (memcmp(knownPeers[i].peer_addr, src_addr, 6) == 0) {
             peerExists = true;
             break;
           }
         }
         
         if (!peerExists && peerCount < MAX_PEERS) {
-          memcpy(knownPeers[peerCount].peer_addr, esp_now_info->src_addr, 6);
+          memcpy(knownPeers[peerCount].peer_addr, src_addr, 6);
           knownPeers[peerCount].channel = reply->channel;
           knownPeers[peerCount].encrypt = false;
           
           // Also add as ESP-NOW peer for communication
-          addPeer(esp_now_info->src_addr, reply->channel);
+          addPeer(src_addr, reply->channel);
           
           peerCount++;
           LP_LOGF("Added peer %s to known peers list\n", macStr);

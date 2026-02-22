@@ -86,7 +86,7 @@ std::vector<IPAddress> discoverMDNSDevices(String service, String proto) {
   
   for (int i = 0; i < n; i++) {
     String hostname = MDNS.hostname(i);
-    IPAddress ip = MDNS.address(i);
+    IPAddress ip = MDNS.IP(i);
     LP_LOGF("Found device: %s at %s\n", hostname.c_str(), ip.toString().c_str());
 
     deviceIPs.push_back(ip);

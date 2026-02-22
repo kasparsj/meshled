@@ -234,7 +234,7 @@ Improvements:
 Risk notes:
 
 - QBS/openFrameworks setups are still environment-sensitive for users with non-default OF layout.
-- Full firmware build compatibility is still sensitive to ESP32 framework API differences (see follow-up log below).
+- Firmware builds depend on external library versions; keep dependency pins and compatibility wrappers documented.
 
 Rollback strategy:
 
@@ -255,7 +255,7 @@ Status:
 Recommended next baseline items:
 
 1. Add CI coverage for docs linting and basic markdown link checks (optional).
-2. Resolve remaining full firmware compile blockers around mDNS/ESP-NOW API compatibility.
+2. Optionally address remaining firmware warnings (incomplete-type delete + missing return in `LightList::addLightFromMsg`) in a dedicated behavior-safe patch.
 
 ---
 
@@ -285,16 +285,21 @@ Completed follow-ups:
 2. Firmware dependency declarations:
    - Added `bblanchon/ArduinoJson @ ^6.21.5`
    - Added `dvarrel/ESPping @ ^1.0.5`
+3. Firmware framework compatibility updates:
+   - `MDNSLib.h`: switched `MDNS.address(i)` to `MDNS.IP(i)`.
+   - `ESPNowLib.h`: added IDF4/IDF5-compatible receive callback signature handling.
+4. Vendor link fix for firmware:
+   - Added `firmware/esp/ofxColorTheoryCompat.cpp` to compile required `ofxColorTheory` implementation units for linking.
 
 Current full-build status (`pio run -e esp32dev`):
 
 - `ArduinoJson.h` missing-header issue: fixed.
 - `ESPping.h` missing-header issue: fixed.
-- Remaining blockers (pre-existing behavior now surfaced after dependency fixes):
-  - `MDNSLib.h`: uses `MDNS.address(i)` which is not available in current framework API.
-  - `ESPNowLib.h`: receive callback signature uses `esp_now_recv_info_t`, but framework expects legacy callback type (`esp_now_recv_cb_t` with MAC pointer signature).
+- mDNS API compatibility issue: fixed.
+- ESP-NOW callback API compatibility issue: fixed.
+- `ofxColorTheory` undefined symbol linker issue: fixed.
 
 Implication:
 
 - Firmware smoke (`compiledb`) remains green.
-- Full firmware compile is still not fully green and needs a dedicated compatibility patch across mDNS/ESP-NOW code paths.
+- Full firmware compile is green on `esp32dev` (warnings remain).
