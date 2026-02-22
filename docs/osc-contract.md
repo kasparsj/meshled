@@ -166,14 +166,14 @@ Pair-based endpoints (`/emit`, `/note_on`, `/notes_set`) use numeric parameter I
 | `EMIT_OFFSET` | `21` |
 | `COLOR_CHANGE_GROUPS` | `22` |
 
-Source of truth: `src/EmitParams.h`.
+Source of truth: `packages/core/src/EmitParams.h`.
 
 ## Shared enums and flags
 
 ## Easing
 
 - Valid `EASE` range: `0..33`
-- Matches `src/Config.h` (`EASE_NONE` to `EASE_ELASTIC_INOUT`)
+- Matches `packages/core/src/Config.h` (`EASE_NONE` to `EASE_ELASTIC_INOUT`)
 
 ## Behaviour flags (bitmask)
 
@@ -190,7 +190,7 @@ Source of truth: `src/EmitParams.h`.
 - `1024` `MIRROR_ROTATE`
 - `2048` `SMOOTH_CHANGES`
 
-Source: `src/Config.h`.
+Source: `packages/core/src/Config.h`.
 
 ## Compatibility and caveats
 

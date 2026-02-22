@@ -10,7 +10,7 @@ If this repo is used as a submodule, ensure nested submodules are initialized:
 git submodule update --init --recursive
 ```
 
-`ofxColorTheory` is required at `./ofxColorTheory`.
+`ofxColorTheory` is required at `./vendor/ofxColorTheory`.
 
 Optional helper:
 
@@ -59,7 +59,7 @@ Local dev server:
 npm run dev
 ```
 
-## Simulator (`simulator`)
+## Simulator (`packages/simulator`)
 
 Prerequisites:
 
@@ -72,7 +72,7 @@ Default expectation from simulator directory:
 Dry-run make:
 
 ```bash
-cd simulator
+cd packages/simulator
 make -n
 ```
 
@@ -95,3 +95,10 @@ Jobs:
 Note:
 
 - Simulator CI is intentionally scoped because runner images do not include openFrameworks by default.
+
+## Root helper scripts
+
+```bash
+./scripts/build-control-panel.sh
+./scripts/build-firmware.sh esp32dev compiledb
+```

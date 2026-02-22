@@ -31,10 +31,10 @@ Alternative board:
 pio run -e esp32-s3-devkitc-1
 ```
 
-### 4) Simulator / core smoke (`simulator`)
+### 4) Simulator / core smoke (`packages/simulator`)
 
 ```bash
-cd simulator
+cd packages/simulator
 make -n
 ```
 
@@ -42,6 +42,13 @@ If openFrameworks is not in the default location:
 
 ```bash
 OF_ROOT=/path/to/openframeworks make -n
+```
+
+### 5) Optional root helper scripts
+
+```bash
+./scripts/build-control-panel.sh
+./scripts/build-firmware.sh esp32dev compiledb
 ```
 
 ## Repository Structure
@@ -52,9 +59,12 @@ OF_ROOT=/path/to/openframeworks make -n
 │   └── control-panel/     # React + Vite control UI
 ├── firmware/
 │   └── esp/               # ESP32/ESP32-S3 firmware (PlatformIO + Arduino)
-├── simulator/             # openFrameworks desktop simulator
-├── src/                   # shared C++ core model/engine
-├── ofxColorTheory/        # color-theory dependency (git submodule)
+├── packages/
+│   ├── core/
+│   │   └── src/           # shared C++ core model/engine
+│   └── simulator/         # openFrameworks desktop simulator
+├── vendor/
+│   └── ofxColorTheory/    # color-theory dependency (git submodule)
 ├── docs/                  # build/API/contract docs
 └── .github/workflows/ci.yml
 ```

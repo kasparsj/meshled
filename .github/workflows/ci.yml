@@ -56,6 +56,11 @@ jobs:
       - name: Install PlatformIO
         run: pip install platformio
 
+      - name: Validate shared core wiring
+        run: |
+          test -L src
+          test "$(readlink src)" = "../../packages/core/src"
+
       - name: Generate esp32dev compilation database
         run: pio run -e esp32dev -t compiledb
 
@@ -64,7 +69,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: simulator
+        working-directory: packages/simulator
     steps:
       - name: Checkout
         uses: actions/checkout@v4

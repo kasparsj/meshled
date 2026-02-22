@@ -393,7 +393,7 @@
 			children = (
 				2B1751182DD67E760013F6A9 /* src */,
 			);
-			path = ../ofxColorTheory;
+			path = ../../vendor/ofxColorTheory;
 			sourceTree = "<group>";
 		};
 		2B29719428BDEDC200B98A88 /* src */ = {
@@ -445,7 +445,7 @@
 				2B2971A228BDEDC200B98A88 /* Weight.h */,
 			);
 			name = src;
-			path = ../src;
+			path = ../core/src;
 			sourceTree = "<group>";
 		};
 		2BEE34D62DB9631200668DEF /* objects */ = {

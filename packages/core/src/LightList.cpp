@@ -5,15 +5,15 @@
 #include <stdio.h>
 #include <vector>
 
-#include "../ofxColorTheory/src/Rules/Analogous.h"
-#include "../ofxColorTheory/src/Rules/Complementary.h"
-#include "../ofxColorTheory/src/Rules/Compound.h"
-#include "../ofxColorTheory/src/Rules/FlippedCompound.h"
-#include "../ofxColorTheory/src/Rules/Monochrome.h"
-#include "../ofxColorTheory/src/Rules/SplitComplementary.h"
-#include "../ofxColorTheory/src/Rules/Tetrad.h"
-#include "../ofxColorTheory/src/Rules/Triad.h"
-#include "../ofxColorTheory/src/ColorWheelSchemes.h"
+#include "../../../vendor/ofxColorTheory/src/Rules/Analogous.h"
+#include "../../../vendor/ofxColorTheory/src/Rules/Complementary.h"
+#include "../../../vendor/ofxColorTheory/src/Rules/Compound.h"
+#include "../../../vendor/ofxColorTheory/src/Rules/FlippedCompound.h"
+#include "../../../vendor/ofxColorTheory/src/Rules/Monochrome.h"
+#include "../../../vendor/ofxColorTheory/src/Rules/SplitComplementary.h"
+#include "../../../vendor/ofxColorTheory/src/Rules/Tetrad.h"
+#include "../../../vendor/ofxColorTheory/src/Rules/Triad.h"
+#include "../../../vendor/ofxColorTheory/src/ColorWheelSchemes.h"
 
 namespace ofxColorTheory {
 
