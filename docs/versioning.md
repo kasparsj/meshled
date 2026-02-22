@@ -30,7 +30,8 @@ Compatibility is evaluated for:
    - see `docs/firmware-api.md`
    - see `docs/ui-firmware-compat.md`
 2. OSC input contract consumed by SuperCollider/Tidal workflows:
-   - see artwork repo `docs/osc-contract.md`
+   - canonical firmware contract: `docs/osc-contract.md`
+   - artwork integration mapping: artwork repo `docs/osc-contract.md`
 3. Build/dependency expectations:
    - see `docs/build.md`
 
@@ -54,4 +55,3 @@ git push origin vX.Y.Z
 The first installation-oriented runtime tag is:
 
 - `v0.1.0`
-
