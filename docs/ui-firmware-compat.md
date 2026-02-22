@@ -28,7 +28,7 @@ Define which firmware endpoints are required by the React control panel and what
 
 ## Known Gaps and Risks
 
-1. `Settings` tab now tolerates missing fields via fallbacks (`N/A` and WLED keys such as `freeheap`, `fs.u`, `fs.t`), but firmware still does not expose dedicated keys for:
+1. `useDeviceInfo` now normalizes sparse payloads (including WLED-style `freeheap`, `fs.u`, `fs.t`) for all consumers, but firmware still does not expose dedicated keys for:
    - `activeLights`, `freeMemory`, `fps`, `storageUsed`, `storageTotal`
    - A normalized firmware payload would simplify UI logic.
 2. `POST /update_wifi` reboots immediately; UI can see fetch/network errors even when operation succeeded.

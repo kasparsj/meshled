@@ -1,6 +1,7 @@
 // hooks/useDeviceInfo.js
 import { useEffect, useState } from "react";
 import { useDevice } from "../contexts/DeviceContext";
+import { normalizeDeviceInfo } from "../utils/deviceInfo";
 
 const useDeviceInfo = () => {
     const [deviceInfo, setDeviceInfo] = useState(null);
@@ -23,7 +24,7 @@ const useDeviceInfo = () => {
                 const res = await deviceFetch('/device_info');
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 const data = await res.json();
-                setDeviceInfo(data);
+                setDeviceInfo(normalizeDeviceInfo(data));
             } catch (err) {
                 setError('Failed to load device info.');
                 console.error(err);

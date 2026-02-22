@@ -105,10 +105,9 @@ const SettingsTab = () => {
 
     const powerWatts = toNumberOrNull(deviceInfo?.leds?.pwr);
     const activeLights = deviceInfo?.activeLights ?? deviceInfo?.leds?.count ?? 'N/A';
-    const freeHeapBytes = toNumberOrNull(deviceInfo?.freeheap);
-    const freeMemoryKB = deviceInfo?.freeMemory ?? (freeHeapBytes !== null ? Math.round(freeHeapBytes / 1024) : null);
-    const storageUsedKB = toNumberOrNull(deviceInfo?.storageUsed) ?? toNumberOrNull(deviceInfo?.fs?.u);
-    const storageTotalKB = toNumberOrNull(deviceInfo?.storageTotal) ?? toNumberOrNull(deviceInfo?.fs?.t);
+    const freeMemoryKB = toNumberOrNull(deviceInfo?.freeMemory);
+    const storageUsedKB = toNumberOrNull(deviceInfo?.storageUsed);
+    const storageTotalKB = toNumberOrNull(deviceInfo?.storageTotal);
     const storagePercent = (storageUsedKB !== null && storageTotalKB && storageTotalKB > 0)
         ? Math.max(0, Math.min(100, (storageUsedKB / storageTotalKB) * 100))
         : 0;

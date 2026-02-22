@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 
 const Pixel = ({ 

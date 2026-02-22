@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import usePalettes from "../hooks/usePalettes";
 
 const PalettesTab = () => {
-    const { palettes, loading, error, savePalette, deletePalette } = usePalettes();
+    const { palettes, loading, error, deletePalette } = usePalettes();
     const [editingPalette, setEditingPalette] = useState(null);
 
     // Handle ESC key to close modal
