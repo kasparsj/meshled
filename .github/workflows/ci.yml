@@ -1,0 +1,88 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  web:
+    name: Web (React)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: react-app
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: react-app/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+
+  firmware:
+    name: Firmware (PlatformIO smoke)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: homo_deus
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install PlatformIO
+        run: pip install platformio
+
+      - name: Generate esp32dev compilation database
+        run: pio run -e esp32dev -t compiledb
+
+  simulator:
+    name: Simulator (Scoped smoke)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: simulator
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate simulator project layout
+        run: |
+          test -f Makefile
+          test -f config.make
+          grep -q '^OF_ROOT ?= ../../../../openframeworks$' config.make
+          if grep -Eq '^OF_ROOT ?= /' config.make; then
+            echo "config.make must not hardcode absolute OF_ROOT paths"
+            exit 1
+          fi
+
+      - name: Optional make dry-run with OF_ROOT
+        run: |
+          if [ -n "${OF_ROOT:-}" ] && [ -d "${OF_ROOT}" ]; then
+            make -n OF_ROOT="${OF_ROOT}"
+          else
+            echo "No openFrameworks checkout configured in CI; scoped simulator checks only."
+          fi
