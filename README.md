@@ -65,6 +65,8 @@ OF_ROOT=/path/to/openframeworks make -n
 │   └── simulator/         # openFrameworks desktop simulator
 ├── vendor/
 │   └── ofxColorTheory/    # color-theory dependency (git submodule)
+├── tools/
+│   └── esp-stacktrace-decoder/
 ├── docs/                  # build/API/contract docs
 └── .github/workflows/ci.yml
 ```
@@ -76,3 +78,11 @@ OF_ROOT=/path/to/openframeworks make -n
 - OSC contract: `docs/osc-contract.md`
 - UI/firmware compatibility: `docs/ui-firmware-compat.md`
 - Reorg plan and phase tracking: `docs/CODEX_REORG_REPORT.md`
+
+## Project Policies
+
+- License: `LICENSE`
+- Contribution guide: `CONTRIBUTING.md`
+- Code of conduct: `CODE_OF_CONDUCT.md`
+- Security policy: `SECURITY.md`
+- Changelog: `CHANGELOG.md`

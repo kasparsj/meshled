@@ -6,7 +6,7 @@
 ################################################################################
 # OF ROOT
 #   The location of your root openFrameworks installation
-#       (default) OF_ROOT = ../../of_v0.11.0 
+#       (default) OF_ROOT = ../../openframeworks
 ################################################################################
 # Set this to your local openFrameworks checkout if needed.
 # You can also override with an environment variable:

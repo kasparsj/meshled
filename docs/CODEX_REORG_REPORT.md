@@ -10,7 +10,6 @@ Author: Codex
 ```text
 .
 ├── .github/                  # CI workflow
-├── EspStackTraceDecoder/     # local ESP stacktrace decode helper
 ├── apps/
 │   └── control-panel/        # React control panel (Vite)
 ├── docs/                     # build/API/contract docs
@@ -20,7 +19,9 @@ Author: Codex
 │   ├── core/
 │   │   └── src/              # shared C++ core model/engine
 │   └── simulator/            # openFrameworks desktop simulator
-├── scripts/                  # repo automation/build helpers
+├── scripts/                  # bootstrap/build helpers
+├── tools/
+│   └── esp-stacktrace-decoder/ # optional debug helper
 └── vendor/
     └── ofxColorTheory/       # git submodule dependency
 ```
@@ -35,7 +36,8 @@ Author: Codex
 | `apps/control-panel/` | Browser control panel | React + Vite |
 | `vendor/ofxColorTheory/` | Palette/color theory dependency | Git submodule (not vendored copy) |
 | `docs/` | Build/API/compat/version docs | Includes migration report |
-| `scripts/` | Bootstrap/build helper scripts | Root-level workflows |
+| `scripts/` | Root helper scripts | bootstrap + build workflows |
+| `tools/esp-stacktrace-decoder/` | Optional crash dump decode helper | Now configurable and path-portable |
 
 ### Build/run entrypoints detected
 
@@ -71,18 +73,16 @@ Author: Codex
 
 - `firmware/esp/src` is a symlink to `../../packages/core/src`.
 - Core palette/rule includes are path-coupled to `vendor/ofxColorTheory`.
-- Simulator project metadata is path-sensitive to core/vendor locations.
+- Simulator project metadata remains path-sensitive to openFrameworks location.
 
 ### Suspicious clutter / debt
 
-- `.idea/` committed IDE metadata.
-- `EspStackTraceDecoder/esp32decoder.sh` has absolute local machine paths.
-- `packages/simulator/simulator.qbs` includes machine-specific absolute openFrameworks paths.
-- `firmware/esp/platformio.ini` contains stale warning comment (`; NOT WORKING!!`).
+- `packages/simulator/simulator.qbs` still assumes default `../../../../openframeworks` layout.
+- Firmware config emits a PlatformIO warning for `build_src_dir` (left unchanged to avoid risky behavior changes in this phase).
 
 ## B) Proposed Target Structure
 
-Target structure (now implemented for core areas):
+Target structure implemented:
 
 ```text
 .
@@ -98,7 +98,10 @@ Target structure (now implemented for core areas):
 │   └── ofxColorTheory/
 ├── docs/
 ├── scripts/
-└── README.md
+├── tools/
+│   └── esp-stacktrace-decoder/
+├── README.md
+└── LICENSE
 ```
 
 ### Naming conventions
@@ -108,6 +111,7 @@ Target structure (now implemented for core areas):
 - Shared native code under `packages/core/`.
 - openFrameworks host tooling under `packages/simulator/`.
 - Third-party git dependency under `vendor/` as submodule.
+- Utilities under `tools/`.
 
 ## C) Build & Run Plan
 
@@ -162,6 +166,12 @@ If needed:
 OF_ROOT=/path/to/openframeworks make -n
 ```
 
+### Optional crash decode helper
+
+```bash
+./tools/esp-stacktrace-decoder/esp32decoder.sh <addr2line> <firmware.elf> <dump.txt>
+```
+
 ## D) Phased Migration Plan
 
 ## Phase 1: minimal reshuffle + docs (Complete)
@@ -170,87 +180,82 @@ Exact moves/renames:
 
 1. `react-app` -> `apps/control-panel`
 2. `homo_deus` -> `firmware/esp`
-3. firmware symlink update:
-   - `firmware/esp/src` -> `../../src` (Phase 1 state)
-4. Added root `README.md`
-5. Updated docs/CI paths for moved app/firmware directories
+3. Added root `README.md`
+4. Updated docs/CI paths for moved app/firmware directories
 
-User-facing improvements:
+Improvements:
 
-- Clearer top-level ownership for app vs firmware.
-- Root quickstart and consistent module entrypoints.
+- Clear top-level ownership for app and firmware.
+- Root quickstart onboarding.
 
-Risk notes:
-
-- Firmware include coupling via `src` symlink.
-- External scripts using old paths might break.
-
-Rollback:
-
-- Revert Phase 1 commit as a single unit.
-
-## Phase 2: tooling + scripts + CI + deeper structure (Complete)
+## Phase 2: tooling + scripts + structure (Complete)
 
 Exact moves/renames:
 
 1. `src` -> `packages/core/src`
 2. `simulator` -> `packages/simulator`
 3. `ofxColorTheory` submodule path -> `vendor/ofxColorTheory`
-4. firmware symlink update:
-   - `firmware/esp/src` -> `../../packages/core/src`
-5. Updated simulator project path references:
-   - core group `../core/src`
-   - vendor group `../../vendor/ofxColorTheory`
-6. Updated core include references to vendor path.
-7. Added root scripts:
-   - `scripts/build-control-panel.sh`
-   - `scripts/build-firmware.sh`
-8. Expanded CI checks:
-   - firmware symlink validation
-   - simulator job path moved to `packages/simulator`
+4. `firmware/esp/src` symlink -> `../../packages/core/src`
+5. Updated core include paths + simulator path refs
+6. Added root build scripts
+7. Updated CI for new layout
 
-User-facing improvements:
+Improvements:
 
-- Package boundaries now explicit (`packages/core`, `packages/simulator`).
-- Vendor dependency location standardized.
-- Repeatable root build scripts for app/firmware checks.
+- Explicit package boundaries.
+- Cleaner, scriptable workflows.
+
+## Phase 3: deeper cleanup (Complete)
+
+Exact changes:
+
+1. Removed IDE clutter from repo and added root `.gitignore` for local/editor/build artifacts.
+2. Moved stacktrace decoder utility to tools namespace:
+   - `EspStackTraceDecoder` -> `tools/esp-stacktrace-decoder`
+3. Replaced hardcoded machine paths in decoder script with argument-driven, portable usage.
+4. Normalized simulator path defaults to `openframeworks` naming in:
+   - `packages/simulator/Makefile`
+   - `packages/simulator/config.make`
+   - `packages/simulator/simulator.qbs`
+5. Added OSS readiness files:
+   - `LICENSE`
+   - `CONTRIBUTING.md`
+   - `CODE_OF_CONDUCT.md`
+   - `SECURITY.md`
+   - `CHANGELOG.md`
+6. Updated project metadata/docs (`README.md`, `docs/build.md`).
+
+Improvements:
+
+- Fewer machine-specific assumptions.
+- Clearer contributor and governance baseline.
+- Cleaner repository defaults for new contributors.
 
 Risk notes:
 
-- Simulator still depends on local openFrameworks and path-sensitive project metadata.
-- QBS file remains machine-path dependent and should be cleaned in Phase 3.
+- QBS/openFrameworks setups are still environment-sensitive for users with non-default OF layout.
+- PlatformIO warning about `build_src_dir` remains and should be addressed in a dedicated firmware config hardening pass.
 
-Rollback:
+Rollback strategy:
 
-- Revert Phase 2 commit as a single unit.
-- If needed, selectively revert path-coupled project file edits first.
-
-## Phase 3: optional deeper cleanup (Pending)
-
-Planned changes:
-
-1. Normalize/remove machine-specific paths (`simulator.qbs`, stacktrace helper script).
-2. Decide on `.idea/` handling (remove or document).
-3. Add OSS policy files (`LICENSE`, `CONTRIBUTING`, `CODE_OF_CONDUCT`, `SECURITY`, `CHANGELOG`).
-4. Optional API hygiene roadmap (legacy mutating `GET` endpoints with compatibility aliases).
+- Revert Phase 3 commit as one unit; no runtime protocol changes were made.
 
 ## E) Open Source Readiness Checklist
 
-Current status:
+Status:
 
-- `README.md`: Present.
-- `LICENSE`: Missing.
-- `CONTRIBUTING.md`: Missing.
-- `CODE_OF_CONDUCT.md`: Missing.
-- `SECURITY.md`: Missing.
-- `CHANGELOG.md`: Missing.
-- CI: Present and updated for new monorepo layout.
+- `LICENSE`: Added.
+- `README.md`: Added and updated.
+- `CONTRIBUTING.md`: Added.
+- `CODE_OF_CONDUCT.md`: Added.
+- `SECURITY.md`: Added.
+- `CHANGELOG.md`: Added.
+- CI: Updated and layout-aligned.
 
-Minimal suggested next baseline:
+Recommended next baseline items:
 
-1. Add `LICENSE`.
-2. Add contributor/security governance docs.
-3. Keep CI scope practical (web lint/build, firmware compile smoke, simulator scoped checks).
+1. Add CI coverage for docs linting and basic markdown link checks (optional).
+2. Evaluate firmware PlatformIO config warnings in a dedicated follow-up.
 
 ---
 
@@ -259,10 +264,11 @@ Minimal suggested next baseline:
 - Phase 0 (Audit + Plan): Complete.
 - Phase 1 (Minimal reshuffle + docs): Complete.
 - Phase 2 (Tooling + scripts + structure): Complete.
-- Phase 3 (Optional deeper cleanup): Pending.
+- Phase 3 (Deeper cleanup): Complete.
 
 ## Validation Log
 
-- `npm run lint && npm run build` passes in `apps/control-panel` (warnings only).
-- `pio run -e esp32dev -t compiledb` passes in `firmware/esp`.
-- Simulator scoped checks run from `packages/simulator`; full build remains environment-dependent on local openFrameworks setup.
+- `./scripts/build-control-panel.sh` passes (existing lint warnings only).
+- `./scripts/build-firmware.sh esp32dev compiledb` passes.
+- Simulator scoped checks pass from `packages/simulator`.
+- Full simulator build remains dependent on local openFrameworks checkout path.

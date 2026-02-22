@@ -1,0 +1,16 @@
+# OS / editor
+.DS_Store
+.idea/
+*.swp
+
+# Node artifacts
+apps/control-panel/node_modules/
+apps/control-panel/dist/
+
+# Firmware artifacts
+firmware/esp/.pio/
+firmware/esp/compile_commands.json
+
+# openFrameworks local build outputs
+packages/simulator/bin/
+packages/simulator/obj/

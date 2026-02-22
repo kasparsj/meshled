@@ -211,7 +211,7 @@ void handleDescriptionXML() {
   client.println("<modelDescription>WS2812 LED Controller</modelDescription>");
   client.println("<modelName>HomoDeus</modelName>");
   client.println("<modelNumber>1.0</modelNumber>");
-  client.println("<modelURL>https://github.com/kasparsj/homo_deus</modelURL>");
+  client.println("<modelURL>https://github.com/kasparsj/lightgraph</modelURL>");
   client.print("<serialNumber>"); 
   client.print(bridgeID); 
   client.println("</serialNumber>");

@@ -18,6 +18,12 @@ Optional helper:
 ./scripts/bootstrap.sh
 ```
 
+Optional crash-decoder helper:
+
+```bash
+./tools/esp-stacktrace-decoder/esp32decoder.sh <addr2line> <firmware.elf> <dump.txt>
+```
+
 ## Firmware (`firmware/esp`)
 
 Prerequisites:
