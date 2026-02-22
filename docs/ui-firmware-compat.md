@@ -28,9 +28,9 @@ Define which firmware endpoints are required by the React control panel and what
 
 ## Known Gaps and Risks
 
-1. `Settings` tab renders fields not provided by current firmware payload:
+1. `Settings` tab now tolerates missing fields via fallbacks (`N/A` and WLED keys such as `freeheap`, `fs.u`, `fs.t`), but firmware still does not expose dedicated keys for:
    - `activeLights`, `freeMemory`, `fps`, `storageUsed`, `storageTotal`
-   - Firmware currently exposes related info under WLED-style keys (`freeheap`, `fs`, etc.).
+   - A normalized firmware payload would simplify UI logic.
 2. `POST /update_wifi` reboots immediately; UI can see fetch/network errors even when operation succeeded.
 3. `GET /toggle_visible` returns `302` redirect rather than JSON or plain `200`.
 4. Multiple mutating routes are `GET`; this is functional but not ideal for API hygiene/caching semantics.
@@ -58,4 +58,3 @@ For endpoints used by React UI:
    - `docs/firmware-api.md`
    - this file
    - React UI call sites in same change set
-

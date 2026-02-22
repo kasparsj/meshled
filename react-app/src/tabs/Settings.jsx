@@ -41,6 +41,17 @@ const SettingsTab = () => {
     const [saveMessage, setSaveMessage] = useState('');
     const [showWifiModal, setShowWifiModal] = useState(false);
 
+    const toNumberOrNull = (value) => {
+        const num = Number(value);
+        return Number.isFinite(num) ? num : null;
+    };
+
+    const formatNumber = (value, digits = 0, suffix = '') => {
+        const num = toNumberOrNull(value);
+        if (num === null) return 'N/A';
+        return `${num.toFixed(digits)}${suffix}`;
+    };
+
     // Load current settings from device
     useEffect(() => {
         const loadSettings = async () => {
@@ -92,6 +103,16 @@ const SettingsTab = () => {
         }));
     };
 
+    const powerWatts = toNumberOrNull(deviceInfo?.leds?.pwr);
+    const activeLights = deviceInfo?.activeLights ?? deviceInfo?.leds?.count ?? 'N/A';
+    const freeHeapBytes = toNumberOrNull(deviceInfo?.freeheap);
+    const freeMemoryKB = deviceInfo?.freeMemory ?? (freeHeapBytes !== null ? Math.round(freeHeapBytes / 1024) : null);
+    const storageUsedKB = toNumberOrNull(deviceInfo?.storageUsed) ?? toNumberOrNull(deviceInfo?.fs?.u);
+    const storageTotalKB = toNumberOrNull(deviceInfo?.storageTotal) ?? toNumberOrNull(deviceInfo?.fs?.t);
+    const storagePercent = (storageUsedKB !== null && storageTotalKB && storageTotalKB > 0)
+        ? Math.max(0, Math.min(100, (storageUsedKB / storageTotalKB) * 100))
+        : 0;
+
     return (
         <div className="space-y-6">
             <h2 className="text-2xl font-bold">Settings</h2>
@@ -105,17 +126,17 @@ const SettingsTab = () => {
                         <h3 className="text-lg font-semibold mb-4">Device Info</h3>
                         <div className="space-y-2">
                             <p><span className="text-zinc-300">WiFi SSID:</span> <span
-                                className="text-sky-400">{deviceInfo.wifi.ssid}</span></p>
+                                className="text-sky-400">{deviceInfo?.wifi?.ssid ?? 'N/A'}</span></p>
                             <p><span className="text-zinc-300">IP Address:</span> <span
-                                className="text-sky-400">{deviceInfo.ip}</span></p>
+                                className="text-sky-400">{deviceInfo?.ip ?? 'N/A'}</span></p>
                             <p><span className="text-zinc-300">Total Consumption:</span> <span
-                                className="text-sky-400">{deviceInfo.leds.pwr.toFixed(2)} watts</span></p>
+                                className="text-sky-400">{powerWatts !== null ? `${powerWatts.toFixed(2)} watts` : 'N/A'}</span></p>
                             <p><span className="text-zinc-300">Active Lights:</span> <span
-                                className="text-sky-400">{deviceInfo.activeLights}</span></p>
+                                className="text-sky-400">{activeLights}</span></p>
                             <p><span className="text-zinc-300">Free Memory:</span> <span
-                                className="text-sky-400">{deviceInfo.freeMemory} KB</span></p>
+                                className="text-sky-400">{formatNumber(freeMemoryKB, 0, ' KB')}</span></p>
                             <p><span className="text-zinc-300">FPS:</span> <span
-                                className="text-sky-400">{deviceInfo.fps}</span></p>
+                                className="text-sky-400">{deviceInfo?.fps ?? 'N/A'}</span></p>
                         </div>
                     </div>
 
@@ -123,13 +144,13 @@ const SettingsTab = () => {
                         <h3 className="text-lg font-semibold mb-4">Storage</h3>
                         <div className="space-y-2">
                             <p><span className="text-zinc-300">Used:</span> <span
-                                className="text-sky-400">{deviceInfo.storageUsed} KB</span></p>
+                                className="text-sky-400">{formatNumber(storageUsedKB, 0, ' KB')}</span></p>
                             <p><span className="text-zinc-300">Total:</span> <span
-                                className="text-sky-400">{deviceInfo.storageTotal} KB</span></p>
+                                className="text-sky-400">{formatNumber(storageTotalKB, 0, ' KB')}</span></p>
                             <div className="w-full bg-zinc-600 rounded-full h-2 mt-2">
                                 <div
                                     className="bg-sky-600 h-2 rounded-full"
-                                    style={{width: `${(deviceInfo.storageUsed / deviceInfo.storageTotal) * 100}%`}}
+                                    style={{width: `${storagePercent}%`}}
                                 />
                             </div>
                         </div>
