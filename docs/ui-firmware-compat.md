@@ -1,8 +1,8 @@
 # UI/Firmware Compatibility Matrix
 
 Date: 2026-02-22  
-UI target: `react-app` (package version `0.0.0`)  
-Firmware target: `homo_deus` on `lightgraph/main`
+UI target: `apps/control-panel` (package version `0.0.0`)  
+Firmware target: `firmware/esp` on `lightgraph/main`
 
 ## Purpose
 
@@ -12,19 +12,19 @@ Define which firmware endpoints are required by the React control panel and what
 
 | Feature | UI location | Endpoint(s) | Required contract | Current status |
 |---|---|---|---|---|
-| Device info | `src/hooks/useDeviceInfo.js` | `GET /device_info` | JSON object with at least `wifi.ssid`, `ip`, `leds.pwr` | Compatible |
-| Load layers | `src/hooks/useLayers.js` | `GET /get_layers` | JSON array of layer objects (`id`, `visible`, `brightness`, `speed`, `palette`, etc.) | Compatible |
-| Toggle layer visible | `src/hooks/useLayers.js` | `GET /toggle_visible` | Accept query `layer`, `visible`; any 2xx/3xx success | Compatible (302 redirect behavior) |
-| Brightness/speed/offset | `src/hooks/useLayers.js` | `GET /update_layer_brightness`, `GET /update_speed`, `GET /update_layer_offset` | Accept query params and persist change | Compatible |
-| Layer easing/behavior/reset | `src/hooks/useLayers.js` | `GET /update_ease`, `GET /update_behaviour_flags`, `GET /reset_layer` | Accept query params; return success status | Compatible |
-| Add/remove layer | `src/hooks/useLayers.js` | `POST /add_layer`, `POST /remove_layer` | Mutate layer set; return success status | Compatible |
-| Layer palette editing | `src/hooks/useLayers.js` | `POST /update_palette`, `GET /get_palette_colors` | `update_palette` accepts form args + JSON strings for colors/positions | Compatible |
-| User palette library | `src/hooks/usePalettes.js` | `GET /get_palettes`, `POST /save_palette`, `GET /delete_palette`, `POST /sync_palettes` | JSON contract for palette objects | Compatible |
-| Settings read/write | `src/hooks/useSettings.js` | `GET /get_settings`, `POST /update_settings` | `get_settings` JSON keys expected by settings UI; `update_settings` accepts form args | Compatible |
-| WiFi + reboot actions | `src/hooks/useSettings.js` | `POST /update_wifi`, `GET /restart` | Commands trigger restart; response may be interrupted by reboot | Partially compatible (client should tolerate disconnect) |
-| LED stream for model view | `src/hooks/useColors.js` | `GET /get_colors` | JSON with `colors[]`, `step`, `totalPixels` | Compatible |
-| Model topology | `src/hooks/useModelData.js` | `GET /get_model` | JSON with intersections/connections/models/gaps arrays | Compatible |
-| Intersection editing | `src/contexts/IntersectionContext.jsx` | `POST /add_intersection`, `POST /remove_intersection` | JSON request/response, clear error payloads | Compatible |
+| Device info | `apps/control-panel/src/hooks/useDeviceInfo.js` | `GET /device_info` | JSON object with at least `wifi.ssid`, `ip`, `leds.pwr` | Compatible |
+| Load layers | `apps/control-panel/src/hooks/useLayers.js` | `GET /get_layers` | JSON array of layer objects (`id`, `visible`, `brightness`, `speed`, `palette`, etc.) | Compatible |
+| Toggle layer visible | `apps/control-panel/src/hooks/useLayers.js` | `GET /toggle_visible` | Accept query `layer`, `visible`; any 2xx/3xx success | Compatible (302 redirect behavior) |
+| Brightness/speed/offset | `apps/control-panel/src/hooks/useLayers.js` | `GET /update_layer_brightness`, `GET /update_speed`, `GET /update_layer_offset` | Accept query params and persist change | Compatible |
+| Layer easing/behavior/reset | `apps/control-panel/src/hooks/useLayers.js` | `GET /update_ease`, `GET /update_behaviour_flags`, `GET /reset_layer` | Accept query params; return success status | Compatible |
+| Add/remove layer | `apps/control-panel/src/hooks/useLayers.js` | `POST /add_layer`, `POST /remove_layer` | Mutate layer set; return success status | Compatible |
+| Layer palette editing | `apps/control-panel/src/hooks/useLayers.js` | `POST /update_palette`, `GET /get_palette_colors` | `update_palette` accepts form args + JSON strings for colors/positions | Compatible |
+| User palette library | `apps/control-panel/src/hooks/usePalettes.js` | `GET /get_palettes`, `POST /save_palette`, `GET /delete_palette`, `POST /sync_palettes` | JSON contract for palette objects | Compatible |
+| Settings read/write | `apps/control-panel/src/hooks/useSettings.js` | `GET /get_settings`, `POST /update_settings` | `get_settings` JSON keys expected by settings UI; `update_settings` accepts form args | Compatible |
+| WiFi + reboot actions | `apps/control-panel/src/hooks/useSettings.js` | `POST /update_wifi`, `GET /restart` | Commands trigger restart; response may be interrupted by reboot | Partially compatible (client should tolerate disconnect) |
+| LED stream for model view | `apps/control-panel/src/hooks/useColors.js` | `GET /get_colors` | JSON with `colors[]`, `step`, `totalPixels` | Compatible |
+| Model topology | `apps/control-panel/src/hooks/useModelData.js` | `GET /get_model` | JSON with intersections/connections/models/gaps arrays | Compatible |
+| Intersection editing | `apps/control-panel/src/contexts/IntersectionContext.jsx` | `POST /add_intersection`, `POST /remove_intersection` | JSON request/response, clear error payloads | Compatible |
 
 ## Known Gaps and Risks
 

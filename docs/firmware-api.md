@@ -1,11 +1,11 @@
 # Lightgraph Firmware HTTP API (Draft v0)
 
 Date: 2026-02-22  
-Applies to: `homo_deus` firmware in `lightgraph` (`main`)
+Applies to: `firmware/esp` firmware in `lightgraph` (`main`)
 
 ## Scope
 
-This document defines the HTTP contract currently used by the `react-app` control panel and model editor.
+This document defines the HTTP contract currently used by the `apps/control-panel` UI and model editor.
 
 Base URL:
 
@@ -264,4 +264,3 @@ Error body format is not uniform:
 - `/update_wifi` may reboot before the client reads a response body.
 - `/get_layers` includes only editable layers.
 - `/update_palette` is registered as `HTTP_ANY`, but the React UI uses `POST` form args.
-

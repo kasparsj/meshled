@@ -5,7 +5,7 @@ Status: Canonical contract for firmware OSC input behavior
 
 ## Scope
 
-This document defines the OSC interface exposed by lightgraph firmware at `homo_deus/OSCLib.h`.
+This document defines the OSC interface exposed by lightgraph firmware at `firmware/esp/OSCLib.h`.
 
 Artwork/performance sender details (SuperCollider, TidalCycles, workshop scripts) should be documented in the artwork repository integration notes.
 
@@ -29,7 +29,7 @@ Firmware subscribes to:
 - `/auto`
 - `/command`
 
-Source: `homo_deus/OSCLib.h`.
+Source: `firmware/esp/OSCLib.h`.
 
 ## Message contracts
 

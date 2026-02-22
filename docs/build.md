@@ -12,7 +12,13 @@ git submodule update --init --recursive
 
 `ofxColorTheory` is required at `./ofxColorTheory`.
 
-## Firmware (`homo_deus`)
+Optional helper:
+
+```bash
+./scripts/bootstrap.sh
+```
+
+## Firmware (`firmware/esp`)
 
 Prerequisites:
 
@@ -22,7 +28,7 @@ Prerequisites:
 Build:
 
 ```bash
-cd homo_deus
+cd firmware/esp
 pio run -e esp32dev
 ```
 
@@ -32,7 +38,7 @@ Alternative target:
 pio run -e esp32-s3-devkitc-1
 ```
 
-## React control app (`react-app`)
+## React control app (`apps/control-panel`)
 
 Prerequisites:
 
@@ -41,7 +47,7 @@ Prerequisites:
 Install and verify:
 
 ```bash
-cd react-app
+cd apps/control-panel
 npm ci --legacy-peer-deps
 npm run lint
 npm run build
