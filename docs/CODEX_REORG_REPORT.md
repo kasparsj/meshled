@@ -234,7 +234,7 @@ Improvements:
 Risk notes:
 
 - QBS/openFrameworks setups are still environment-sensitive for users with non-default OF layout.
-- PlatformIO warning about `build_src_dir` remains and should be addressed in a dedicated firmware config hardening pass.
+- Full firmware build compatibility is still sensitive to ESP32 framework API differences (see follow-up log below).
 
 Rollback strategy:
 
@@ -255,7 +255,7 @@ Status:
 Recommended next baseline items:
 
 1. Add CI coverage for docs linting and basic markdown link checks (optional).
-2. Evaluate firmware PlatformIO config warnings in a dedicated follow-up.
+2. Resolve remaining full firmware compile blockers around mDNS/ESP-NOW API compatibility.
 
 ---
 
@@ -272,3 +272,29 @@ Recommended next baseline items:
 - `./scripts/build-firmware.sh esp32dev compiledb` passes.
 - Simulator scoped checks pass from `packages/simulator`.
 - Full simulator build remains dependent on local openFrameworks checkout path.
+
+## Follow-up Log (Post-Phase)
+
+Date: 2026-02-22
+
+Completed follow-ups:
+
+1. Firmware config hardening:
+   - Replaced ignored PlatformIO option with valid root source configuration:
+     - `[platformio] src_dir = .`
+2. Firmware dependency declarations:
+   - Added `bblanchon/ArduinoJson @ ^6.21.5`
+   - Added `dvarrel/ESPping @ ^1.0.5`
+
+Current full-build status (`pio run -e esp32dev`):
+
+- `ArduinoJson.h` missing-header issue: fixed.
+- `ESPping.h` missing-header issue: fixed.
+- Remaining blockers (pre-existing behavior now surfaced after dependency fixes):
+  - `MDNSLib.h`: uses `MDNS.address(i)` which is not available in current framework API.
+  - `ESPNowLib.h`: receive callback signature uses `esp_now_recv_info_t`, but framework expects legacy callback type (`esp_now_recv_cb_t` with MAC pointer signature).
+
+Implication:
+
+- Firmware smoke (`compiledb`) remains green.
+- Full firmware compile is still not fully green and needs a dedicated compatibility patch across mDNS/ESP-NOW code paths.
