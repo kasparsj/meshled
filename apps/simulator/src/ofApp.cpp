@@ -485,7 +485,7 @@ ofColor ofApp::getColor(uint16_t i) {
   if (state->object.translateToRealPixel(i) == -1) {
     return ofColor(127, 127, 127);
   }
-  lightpath::Color pixel = state->getPixel(i, MAX_BRIGHTNESS);
+  ColorRGB pixel = state->getPixel(i, MAX_BRIGHTNESS);
   ofColor color = ofColor(pixel.R, pixel.G, pixel.B);
   if (state->showConnections) {
     color.g = (debugger->isConnection(i) ? 1.f : 0.f) * MAX_BRIGHTNESS;

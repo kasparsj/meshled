@@ -16,4 +16,4 @@
 #define OBJ_HEPTAGON3024 3
 
 #include "ColorOrder.h"
-#include <lightpath/legacy.hpp>
+#include <lightpath/lightpath.hpp>
