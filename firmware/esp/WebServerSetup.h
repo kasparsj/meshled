@@ -304,7 +304,8 @@ bool hasIntersectionBetween(Intersection* inter1, Intersection* inter2) {
   // Check if any other intersection exists between these two
   for (uint8_t g = 0; g < MAX_GROUPS; g++) {
     // Only check intersections in the same or compatible groups
-    if (!(inter1->group & (uint8_t)pow(2, g)) && !(inter2->group & (uint8_t)pow(2, g))) {
+    if (!(inter1->group & LPObject::groupMaskForIndex(g)) &&
+        !(inter2->group & LPObject::groupMaskForIndex(g))) {
       continue;
     }
     
@@ -344,7 +345,7 @@ bool hasIntersectionBetween(Intersection* inter1, Intersection* inter2) {
 
 // Helper function to check if intersection has available ports
 bool hasAvailablePort(Intersection* intersection) {
-  if (!intersection || !intersection->ports) return false;
+  if (!intersection) return false;
   
   uint8_t usedPorts = 0;
   
@@ -363,7 +364,7 @@ bool hasAvailablePort(Intersection* intersection) {
 // Helper function to get group index from group mask
 uint8_t getGroupIndex(uint8_t group) {
   for (uint8_t i = 0; i < MAX_GROUPS; i++) {
-    if (group & (uint8_t)pow(2, i)) {
+    if (group & LPObject::groupMaskForIndex(i)) {
       return i;
     }
   }
@@ -406,8 +407,7 @@ void recalculateConnections() {
   for (auto it = connectionsToRemove.rbegin(); it != connectionsToRemove.rend(); ++it) {
     uint8_t group = it->first;
     size_t index = it->second;
-    delete object->conn[group][index];
-    object->conn[group].erase(object->conn[group].begin() + index);
+    object->removeConnection(group, index);
   }
   
   // Second pass: Auto-connect intersections with no intersections in between
@@ -499,7 +499,7 @@ void handleAddIntersection() {
   // Get group index for validation
   uint8_t groupIndex = 0;
   for (uint8_t i = 0; i < MAX_GROUPS; i++) {
-    if (group & (uint8_t)pow(2, i)) {
+    if (group & LPObject::groupMaskForIndex(i)) {
       groupIndex = i;
       break;
     }
@@ -517,7 +517,7 @@ void handleAddIntersection() {
 
 // Helper function to clean up model weights related to an intersection
 void cleanupModelWeights(Intersection* intersection) {
-  if (!intersection || !intersection->ports) return;
+  if (!intersection) return;
   
   // Remove weights for all ports of this intersection from all models
   for (uint8_t m = 0; m < object->models.size(); m++) {
@@ -552,13 +552,13 @@ void removeConnections(Intersection* intersection) {
   
   // Remove connections that involve this intersection
   for (uint8_t g = 0; g < MAX_GROUPS; g++) {
-    auto& connections = object->conn[g];
-    for (auto it = connections.begin(); it != connections.end(); ) {
-      if (*it && ((*it)->from == intersection || (*it)->to == intersection)) {
-        delete *it;
-        it = connections.erase(it);
+    size_t i = 0;
+    while (i < object->conn[g].size()) {
+      Connection* connection = object->conn[g][i];
+      if (connection && (connection->from == intersection || connection->to == intersection)) {
+        object->removeConnection(g, i);
       } else {
-        ++it;
+        i++;
       }
     }
   }
