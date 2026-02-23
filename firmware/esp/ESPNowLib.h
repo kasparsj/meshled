@@ -280,7 +280,7 @@ void handleReceivedLight(const LightMessage* lightMsg) {
   
   // Create a new light with received properties
   LightList* lightList = state->findListById(lightListIdMap[lightMsg->listId]);
-  LPLight* light = lightList->addLightFromMsg(lightMsg);
+  RuntimeLight* light = lightList->addLightFromMsg(lightMsg);
   
   // Set color
   ColorRGB color;
@@ -318,7 +318,7 @@ void handleReceivedLightList(const LightListMessage* lightListMsg) {
   lightListIdMap[oldId] = newId;
   LP_LOGF("Mapping LightList ID: old=%d -> new=%d\n", oldId, newId);
   
-  LPLight* light = receivedLightList->addLightFromMsg(&lightListMsg->light);
+  RuntimeLight* light = receivedLightList->addLightFromMsg(&lightListMsg->light);
   
   // Add main light to the target port's connection
   targetPort->sendOut(light);
@@ -452,7 +452,7 @@ bool initESPNow() {
   return true;
 }
 
-LightMessage packLight(uint8_t portId, LPLight* const light) {
+LightMessage packLight(uint8_t portId, RuntimeLight* const light) {
   LightMessage msg;
   msg.messageType = LIGHT_MESSAGE;
   msg.portId = portId;
@@ -471,7 +471,7 @@ LightMessage packLight(uint8_t portId, LPLight* const light) {
   return msg;
 }
 
-void sendLightViaESPNow_impl(const uint8_t* mac, uint8_t portId, LPLight* const light, bool sendList = false) {
+void sendLightViaESPNow_impl(const uint8_t* mac, uint8_t portId, RuntimeLight* const light, bool sendList = false) {
     if (sendList && light->list) {
         LightListMessage msg;
         msg.messageType = LIGHTLIST_MESSAGE;
@@ -492,7 +492,7 @@ void sendLightViaESPNow_impl(const uint8_t* mac, uint8_t portId, LPLight* const 
 }
 
 // Forward declaration of function pointer from Port.h
-extern void (*sendLightViaESPNow)(const uint8_t* mac, uint8_t id, LPLight* const light, bool sendList);
+extern void (*sendLightViaESPNow)(const uint8_t* mac, uint8_t id, RuntimeLight* const light, bool sendList);
 
 // Auto-assign the implementation when this header is included
 static void __attribute__((constructor)) assignESPNowFunction() {

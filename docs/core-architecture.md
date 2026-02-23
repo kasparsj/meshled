@@ -13,7 +13,7 @@ The core is a shared C++ light engine that runs in both:
 It is responsible for:
 
 - topology-aware light routing (`Intersection`, `Connection`, `Port`)
-- per-layer light lifecycle (`LightList`, `LPLight`, `Light`)
+- per-layer light lifecycle (`LightList`, `RuntimeLight`, `Light`)
 - frame updates and pixel compositing (`State`)
 - parameter-driven behavior (`EmitParams`, `Behaviour`, `Palette`)
 
@@ -25,12 +25,12 @@ It is responsible for:
 
 - `LightList.*`
 - per-layer config/state: speed, fade, easing, palette, blend mode, note binding
-- owns the `LPLight*` array for that layer
+- owns the `RuntimeLight*` array for that layer
 
-- `LPLight.*`, `Light.*`
+- `RuntimeLight.*`, `Light.*`
 - per-light runtime state: owner, position, brightness, expiration, color
 
-- `LPObject.*`, `Intersection.*`, `Connection.*`, `Port.*`, `Model.*`, `Weight.*`
+- `TopologyObject.*`, `Intersection.*`, `Connection.*`, `Port.*`, `Model.*`, `Weight.*`
 - topology graph and weighted routing rules
 
 - `EmitParams.*`, `Behaviour.*`, `Config.h`
@@ -66,7 +66,7 @@ Output
 - slot `0` is reserved for background (`BgLight`) and remains allocated for state lifetime.
 - `LightList` owns its `lights[]` array and deletes contained lights in destructor/reset paths.
 - `Model` owns `Weight*` entries and deletes them in destructor.
-- topology objects (`LPObject` graph) are created by concrete object types (`Line`, `Cross`, `Triangle`, etc.) and live for object lifetime.
+- topology objects (`TopologyObject` graph) are created by concrete object types (`Line`, `Cross`, `Triangle`, etc.) and live for object lifetime.
 
 ## Adapter Contract (Core Boundary)
 

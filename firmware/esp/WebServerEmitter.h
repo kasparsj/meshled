@@ -74,19 +74,19 @@ void handleToggleAuto() {
   server.send(302, "text/plain", "");
 }
 
-// Update LPRandom constants with global settings
+// Update Random constants with global settings
 void updateLPRandomConstants() {
-  LPRandom::MIN_SPEED = emitterMinSpeed;
-  LPRandom::MAX_SPEED = emitterMaxSpeed;
-  LPRandom::MIN_DURATION = emitterMinDur;
-  LPRandom::MAX_DURATION = emitterMaxDur;
-  LPRandom::MIN_SATURATION = emitterMinSat;
-  LPRandom::MAX_SATURATION = emitterMaxSat;
-  LPRandom::MIN_VALUE = emitterMinVal;
-  LPRandom::MAX_VALUE = emitterMaxVal;
-  LPRandom::MIN_NEXT = emitterMinNext;
-  LPRandom::MAX_NEXT = emitterMaxNext;
-  LP_LOGLN("LPRandom constants updated");
+  Random::MIN_SPEED = emitterMinSpeed;
+  Random::MAX_SPEED = emitterMaxSpeed;
+  Random::MIN_DURATION = emitterMinDur;
+  Random::MAX_DURATION = emitterMaxDur;
+  Random::MIN_SATURATION = emitterMinSat;
+  Random::MAX_SATURATION = emitterMaxSat;
+  Random::MIN_VALUE = emitterMinVal;
+  Random::MAX_VALUE = emitterMaxVal;
+  Random::MIN_NEXT = emitterMinNext;
+  Random::MAX_NEXT = emitterMaxNext;
+  LP_LOGLN("Random constants updated");
 }
 
 // Handle AJAX min speed update
@@ -97,7 +97,7 @@ void handleUpdateEmitterMinSpeed() {
       emitterMinSpeed = newemitterMinSpeed;
       LP_LOGLN("Updated min speed via AJAX: " + String(emitterMinSpeed));
 
-      // Update LPRandom constant
+      // Update Random constant
       updateLPRandomConstants();
 
       #ifdef SPIFFS_ENABLED
@@ -120,7 +120,7 @@ void handleUpdateEmitterMaxSpeed() {
       emitterMaxSpeed = newMaxSpeed;
       LP_LOGLN("Updated max speed via AJAX: " + String(emitterMaxSpeed));
 
-      // Update LPRandom constant
+      // Update Random constant
       updateLPRandomConstants();
 
       #ifdef SPIFFS_ENABLED
@@ -143,7 +143,7 @@ void handleUpdateEmitterMinDuration() {
       emitterMinDur = newMinDuration;
       LP_LOGLN("Updated min duration via AJAX: " + String(emitterMinDur));
 
-      // Update LPRandom constant
+      // Update Random constant
       updateLPRandomConstants();
 
       #ifdef SPIFFS_ENABLED
@@ -166,7 +166,7 @@ void handleUpdateEmitterMaxDuration() {
       emitterMaxDur = newMaxDuration;
       LP_LOGLN("Updated max duration via AJAX: " + String(emitterMaxDur));
 
-      // Update LPRandom constant
+      // Update Random constant
       updateLPRandomConstants();
 
       #ifdef SPIFFS_ENABLED
@@ -188,7 +188,7 @@ void handleUpdateEmitterMinSat() {
       emitterMinSat = newMinSat;
       LP_LOGLN("Updated emitter min saturation via AJAX: " + String(emitterMinSat));
 
-      // Update LPRandom constant
+      // Update Random constant
       updateLPRandomConstants();
 
       #ifdef SPIFFS_ENABLED
@@ -210,7 +210,7 @@ void handleUpdateEmitterMaxSat() {
       emitterMaxSat = newMaxSat;
       LP_LOGLN("Updated emitter max saturation via AJAX: " + String(emitterMaxSat));
 
-      // Update LPRandom constant
+      // Update Random constant
       updateLPRandomConstants();
 
       #ifdef SPIFFS_ENABLED
@@ -232,7 +232,7 @@ void handleUpdateEmitterMinVal() {
       emitterMinVal = newMinVal;
       LP_LOGLN("Updated emitter min value via AJAX: " + String(emitterMinVal));
 
-      // Update LPRandom constant
+      // Update Random constant
       updateLPRandomConstants();
 
       #ifdef SPIFFS_ENABLED
@@ -254,7 +254,7 @@ void handleUpdateEmitterMaxVal() {
       emitterMaxVal = newMaxVal;
       LP_LOGLN("Updated emitter max value via AJAX: " + String(emitterMaxVal));
 
-      // Update LPRandom constant
+      // Update Random constant
       updateLPRandomConstants();
 
       #ifdef SPIFFS_ENABLED
@@ -277,7 +277,7 @@ void handleUpdateEmitterMinNext() {
       emitterMinNext = newMinNext;
       LP_LOGLN("Updated min time between emits via AJAX: " + String(emitterMinNext));
 
-      // Update LPRandom constant
+      // Update Random constant
       updateLPRandomConstants();
 
       #ifdef SPIFFS_ENABLED
@@ -300,7 +300,7 @@ void handleUpdateEmitterMaxNext() {
       emitterMaxNext = newMaxNext;
       LP_LOGLN("Updated max time between emits via AJAX: " + String(emitterMaxNext));
 
-      // Update LPRandom constant
+      // Update Random constant
       updateLPRandomConstants();
 
       #ifdef SPIFFS_ENABLED

@@ -74,13 +74,13 @@ Internal definitions live under module-scoped `packages/lightpath/src/*` folders
 - `packages/lightpath/src/Globals.h`
   - globals: `gPerlinNoise`, `gMillis`
 
-- `packages/lightpath/src/LPRandom.h`
-  - `LPRandom` static random/config API
+- `packages/lightpath/src/Random.h`
+  - `Random` static random/config API
 
 ### Topology/routing
 
-- `packages/lightpath/src/topology/LPOwner.h`
-  - `LPOwner`
+- `packages/lightpath/src/topology/Owner.h`
+  - `Owner`
 
 - `packages/lightpath/src/topology/Port.h`
   - `Port`, `InternalPort`, `ExternalPort`
@@ -98,13 +98,13 @@ Internal definitions live under module-scoped `packages/lightpath/src/*` folders
 - `packages/lightpath/src/topology/Model.h`
   - `Model`
 
-- `packages/lightpath/src/topology/LPObject.h`
-  - `LPObject`, `PixelGap`
+- `packages/lightpath/src/topology/TopologyObject.h`
+  - `TopologyObject`, `PixelGap`
 
 ### Runtime/state
 
-- `packages/lightpath/src/runtime/LPLight.h`
-  - `LPLight`
+- `packages/lightpath/src/runtime/RuntimeLight.h`
+  - `RuntimeLight`
 
 - `packages/lightpath/src/runtime/Light.h`
   - `Light`
@@ -133,8 +133,8 @@ Internal definitions live under module-scoped `packages/lightpath/src/*` folders
 
 ### Debug/utilities
 
-- `packages/lightpath/src/debug/LPDebugger.h`
-  - `LPDebugger`
+- `packages/lightpath/src/debug/Debugger.h`
+  - `Debugger`
 
 - `packages/lightpath/src/HashMap.h`
   - `HashMap`
@@ -187,15 +187,15 @@ Internal definitions live under module-scoped `packages/lightpath/src/*` folders
 ### Symbol-level usage hotspots
 
 - `apps/simulator/src/ofApp.cpp`
-  - object/runtime construction: `Heptagon919`, `Heptagon3024`, `Line`, `Cross`, `Triangle`, `State`, `LPDebugger`
+  - object/runtime construction: `Heptagon919`, `Heptagon3024`, `Line`, `Cross`, `Triangle`, `State`, `Debugger`
   - emit/runtime API: `EmitParams`, `EmitParam`, `state->emit`, `state->update`, `state->stopNote`, `state->stopAll`, `state->paletteColor`
-  - topology traversal: `LPObject::inter`, `LPObject::conn`, `Intersection`, `Connection`
+  - topology traversal: `TopologyObject::inter`, `TopologyObject::conn`, `Intersection`, `Connection`
   - render constants/types: `MAX_GROUPS`, `MAX_NOTES_SET`, `INFINITE_DURATION`, `RANDOM_COLOR`, `ListOrder`, `ListHead`, `ColorRGB`, `gMillis`
 
 - `firmware/esp/LEDLib.h`
   - object/runtime creation: `Heptagon919`, `Heptagon3024`, `Line`, `Triangle`, `State`
   - control surface: `State::autoParams`, `state->autoEmit`, `state->update`, `state->stopAll`, `state->colorAll`, `state->splitAll`
-  - command emit: `EmitParams`, `LPObject::getParams`
+  - command emit: `EmitParams`, `TopologyObject::getParams`
 
 - `firmware/esp/OSCLib.h`
   - OSC mapping to API: `EmitParams`, `EmitParam`, `ListOrder`, `RANDOM_COLOR`, `INFINITE_DURATION`, `MAX_NOTES_SET`
@@ -206,11 +206,11 @@ Internal definitions live under module-scoped `packages/lightpath/src/*` folders
   - layer APIs: `LightList`, `BgLight` assumptions, blend/ease/list fields
 
 - `firmware/esp/WebServerSetup.h`
-  - direct graph mutation: `Intersection`, `Connection`, `Model`, `LPObject::inter/conn/models`
+  - direct graph mutation: `Intersection`, `Connection`, `Model`, `TopologyObject::inter/conn/models`
   - topology limits/constants: `MAX_GROUPS`
 
 - `firmware/esp/WLEDApiLib.h`, `firmware/esp/FSLib.h`, `firmware/esp/ESPNowLib.h`, `firmware/esp/NeoPixelBusLib.h`, `firmware/esp/FastLEDLib.h`
-  - direct use of `State`, `LightList`, `ColorRGB`, `Palette`, and pixel translation methods on `LPObject`
+  - direct use of `State`, `LightList`, `ColorRGB`, `Palette`, and pixel translation methods on `TopologyObject`
 
 ## Notes
 

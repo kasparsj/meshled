@@ -22,14 +22,14 @@
 		2B2971BF28BDEDC200B98A88 /* Light.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2B2971A328BDEDC200B98A88 /* Light.cpp */; };
 		2B2971C028BDEDC200B98A88 /* Weight.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2B2971A428BDEDC200B98A88 /* Weight.cpp */; };
 		2B2971C128BDEDC200B98A88 /* State.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2B2971A528BDEDC200B98A88 /* State.cpp */; };
-		2B2971C228BDEDC200B98A88 /* LPRandom.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2B2971A628BDEDC200B98A88 /* LPRandom.cpp */; };
+		2B2971C228BDEDC200B98A88 /* Random.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2B2971A628BDEDC200B98A88 /* Random.cpp */; };
 		2B2971C328BDEDC200B98A88 /* Globals.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2B2971AB28BDEDC200B98A88 /* Globals.cpp */; };
-		2B2971C428BDEDC200B98A88 /* LPObject.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2B2971AC28BDEDC200B98A88 /* LPObject.cpp */; };
+		2B2971C428BDEDC200B98A88 /* TopologyObject.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2B2971AC28BDEDC200B98A88 /* TopologyObject.cpp */; };
 		2B2971C528BDEDC200B98A88 /* Behaviour.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2B2971AD28BDEDC200B98A88 /* Behaviour.cpp */; };
 		2B2971C628BDEDC200B98A88 /* FastNoise.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2B2971AE28BDEDC200B98A88 /* FastNoise.cpp */; };
-		2B2971C728BDEDC200B98A88 /* LPDebugger.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2B2971AF28BDEDC200B98A88 /* LPDebugger.cpp */; };
+		2B2971C728BDEDC200B98A88 /* Debugger.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2B2971AF28BDEDC200B98A88 /* Debugger.cpp */; };
 		2B2971C828BDEDC200B98A88 /* Model.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2B2971B228BDEDC200B98A88 /* Model.cpp */; };
-		2B2971C928BDEDC200B98A88 /* LPLight.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2B2971B428BDEDC200B98A88 /* LPLight.cpp */; };
+		2B2971C928BDEDC200B98A88 /* RuntimeLight.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2B2971B428BDEDC200B98A88 /* RuntimeLight.cpp */; };
 		2B2971CA28BDEDC200B98A88 /* Connection.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2B2971B528BDEDC200B98A88 /* Connection.cpp */; };
 		2B2971CB28BDEDC200B98A88 /* Port.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2B2971B628BDEDC200B98A88 /* Port.cpp */; };
 		2BAA607A2DD9DD8800079917 /* Palette.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2BAA60792DD9D9A300079917 /* Palette.cpp */; };
@@ -96,11 +96,11 @@
 		2B29719628BDEDC200B98A88 /* Intersection.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Intersection.cpp; sourceTree = "<group>"; };
 		2B29719728BDEDC200B98A88 /* EmitParams.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = EmitParams.cpp; sourceTree = "<group>"; };
 		2B29719828BDEDC200B98A88 /* Port.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Port.h; sourceTree = "<group>"; };
-		2B29719928BDEDC200B98A88 /* LPRandom.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LPRandom.h; sourceTree = "<group>"; };
+		2B29719928BDEDC200B98A88 /* Random.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Random.h; sourceTree = "<group>"; };
 		2B29719A28BDEDC200B98A88 /* Intersection.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Intersection.h; sourceTree = "<group>"; };
 		2B29719B28BDEDC200B98A88 /* LightList.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = LightList.cpp; sourceTree = "<group>"; };
 		2B29719C28BDEDC200B98A88 /* FastNoise.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FastNoise.h; sourceTree = "<group>"; };
-		2B29719D28BDEDC200B98A88 /* LPLight.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LPLight.h; sourceTree = "<group>"; };
+		2B29719D28BDEDC200B98A88 /* RuntimeLight.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RuntimeLight.h; sourceTree = "<group>"; };
 		2B29719E28BDEDC200B98A88 /* Palettes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Palettes.h; sourceTree = "<group>"; };
 		2B29719F28BDEDC200B98A88 /* Config.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Config.h; sourceTree = "<group>"; };
 		2B2971A028BDEDC200B98A88 /* Light.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Light.h; sourceTree = "<group>"; };
@@ -109,26 +109,26 @@
 		2B2971A328BDEDC200B98A88 /* Light.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Light.cpp; sourceTree = "<group>"; };
 		2B2971A428BDEDC200B98A88 /* Weight.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Weight.cpp; sourceTree = "<group>"; };
 		2B2971A528BDEDC200B98A88 /* State.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = State.cpp; sourceTree = "<group>"; };
-		2B2971A628BDEDC200B98A88 /* LPRandom.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = LPRandom.cpp; sourceTree = "<group>"; };
+		2B2971A628BDEDC200B98A88 /* Random.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Random.cpp; sourceTree = "<group>"; };
 		2B2971A728BDEDC200B98A88 /* LightList.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LightList.h; sourceTree = "<group>"; };
 		2B2971A828BDEDC200B98A88 /* HashMap.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = HashMap.h; sourceTree = "<group>"; };
-		2B2971A928BDEDC200B98A88 /* LPObject.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LPObject.h; sourceTree = "<group>"; };
+		2B2971A928BDEDC200B98A88 /* TopologyObject.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TopologyObject.h; sourceTree = "<group>"; };
 		2B2971AA28BDEDC200B98A88 /* Globals.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Globals.h; sourceTree = "<group>"; };
 		2B2971AB28BDEDC200B98A88 /* Globals.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Globals.cpp; sourceTree = "<group>"; };
-		2B2971AC28BDEDC200B98A88 /* LPObject.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = LPObject.cpp; sourceTree = "<group>"; };
+		2B2971AC28BDEDC200B98A88 /* TopologyObject.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = TopologyObject.cpp; sourceTree = "<group>"; };
 		2B2971AD28BDEDC200B98A88 /* Behaviour.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Behaviour.cpp; sourceTree = "<group>"; };
 		2B2971AE28BDEDC200B98A88 /* FastNoise.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = FastNoise.cpp; sourceTree = "<group>"; };
-		2B2971AF28BDEDC200B98A88 /* LPDebugger.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = LPDebugger.cpp; sourceTree = "<group>"; };
+		2B2971AF28BDEDC200B98A88 /* Debugger.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Debugger.cpp; sourceTree = "<group>"; };
 		2B2971B128BDEDC200B98A88 /* Model.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Model.h; sourceTree = "<group>"; };
 		2B2971B228BDEDC200B98A88 /* Model.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Model.cpp; sourceTree = "<group>"; };
 		2B2971B328BDEDC200B98A88 /* EmitParams.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = EmitParams.h; sourceTree = "<group>"; };
-		2B2971B428BDEDC200B98A88 /* LPLight.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = LPLight.cpp; sourceTree = "<group>"; };
+		2B2971B428BDEDC200B98A88 /* RuntimeLight.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = RuntimeLight.cpp; sourceTree = "<group>"; };
 		2B2971B528BDEDC200B98A88 /* Connection.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Connection.cpp; sourceTree = "<group>"; };
 		2B2971B628BDEDC200B98A88 /* Port.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Port.cpp; sourceTree = "<group>"; };
 		2B2971B728BDEDC200B98A88 /* ofxEasing.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ofxEasing.h; sourceTree = "<group>"; };
 		2B2971B828BDEDC200B98A88 /* State.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = State.h; sourceTree = "<group>"; };
-		2B2971B928BDEDC200B98A88 /* LPDebugger.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LPDebugger.h; sourceTree = "<group>"; };
-		2B2971BB28BDEDC200B98A88 /* LPOwner.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LPOwner.h; sourceTree = "<group>"; };
+		2B2971B928BDEDC200B98A88 /* Debugger.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Debugger.h; sourceTree = "<group>"; };
+		2B2971BB28BDEDC200B98A88 /* Owner.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Owner.h; sourceTree = "<group>"; };
 		2BAA60782DD9D9A300079917 /* Palette.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Palette.h; sourceTree = "<group>"; };
 		2BAA60792DD9D9A300079917 /* Palette.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Palette.cpp; sourceTree = "<group>"; };
 		2BAA607B2DD9F6DD00079917 /* Palettes.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Palettes.cpp; sourceTree = "<group>"; };
@@ -421,15 +421,15 @@
 				2B2971A028BDEDC200B98A88 /* Light.h */,
 				2B29719B28BDEDC200B98A88 /* LightList.cpp */,
 				2B2971A728BDEDC200B98A88 /* LightList.h */,
-				2B2971AF28BDEDC200B98A88 /* LPDebugger.cpp */,
-				2B2971B928BDEDC200B98A88 /* LPDebugger.h */,
-				2B2971B428BDEDC200B98A88 /* LPLight.cpp */,
-				2B29719D28BDEDC200B98A88 /* LPLight.h */,
-				2B2971AC28BDEDC200B98A88 /* LPObject.cpp */,
-				2B2971A928BDEDC200B98A88 /* LPObject.h */,
-				2B2971BB28BDEDC200B98A88 /* LPOwner.h */,
-				2B2971A628BDEDC200B98A88 /* LPRandom.cpp */,
-				2B29719928BDEDC200B98A88 /* LPRandom.h */,
+				2B2971AF28BDEDC200B98A88 /* Debugger.cpp */,
+				2B2971B928BDEDC200B98A88 /* Debugger.h */,
+				2B2971B428BDEDC200B98A88 /* RuntimeLight.cpp */,
+				2B29719D28BDEDC200B98A88 /* RuntimeLight.h */,
+				2B2971AC28BDEDC200B98A88 /* TopologyObject.cpp */,
+				2B2971A928BDEDC200B98A88 /* TopologyObject.h */,
+				2B2971BB28BDEDC200B98A88 /* Owner.h */,
+				2B2971A628BDEDC200B98A88 /* Random.cpp */,
+				2B29719928BDEDC200B98A88 /* Random.h */,
 				2B2971B228BDEDC200B98A88 /* Model.cpp */,
 				2B2971B128BDEDC200B98A88 /* Model.h */,
 				2B2971B728BDEDC200B98A88 /* ofxEasing.h */,
@@ -981,10 +981,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				2B2971C928BDEDC200B98A88 /* LPLight.cpp in Sources */,
+				2B2971C928BDEDC200B98A88 /* RuntimeLight.cpp in Sources */,
 				2BEE34DA2DB9645400668DEF /* Line.cpp in Sources */,
-				2B2971C728BDEDC200B98A88 /* LPDebugger.cpp in Sources */,
-				2B2971C428BDEDC200B98A88 /* LPObject.cpp in Sources */,
+				2B2971C728BDEDC200B98A88 /* Debugger.cpp in Sources */,
+				2B2971C428BDEDC200B98A88 /* TopologyObject.cpp in Sources */,
 				2B2971BF28BDEDC200B98A88 /* Light.cpp in Sources */,
 				2BEE34D72DB9636700668DEF /* HeptagonStar.cpp in Sources */,
 				E4B69E200A3A1BDC003C02F2 /* main.cpp in Sources */,
@@ -1008,7 +1008,7 @@
 				2BAA607A2DD9DD8800079917 /* Palette.cpp in Sources */,
 				2B137F292E13CA5A008298D3 /* Heptagon3024.cpp in Sources */,
 				FD929F2CC2620ED1F2CEC34B /* OscTypes.cpp in Sources */,
-				2B2971C228BDEDC200B98A88 /* LPRandom.cpp in Sources */,
+				2B2971C228BDEDC200B98A88 /* Random.cpp in Sources */,
 				2B2971C828BDEDC200B98A88 /* Model.cpp in Sources */,
 				2B2971C328BDEDC200B98A88 /* Globals.cpp in Sources */,
 				2B2971CA28BDEDC200B98A88 /* Connection.cpp in Sources */,

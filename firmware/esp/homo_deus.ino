@@ -85,7 +85,7 @@ uint16_t emitterMaxNext = 20000;   // Default max time between auto emits (ms)
 int16_t emitterFrom = -1;   // Default starting point for auto emitter
 
 // State
-LPObject* object;
+TopologyObject* object;
 uint8_t objectType = OBJ_LINE;
 State *state;
 float totalWattage = 0;
@@ -143,7 +143,7 @@ bool updateUserPalette(const UserPalette& palette) {
 
 #ifdef DEBUGGER_ENABLED
 #include <lightpath/integration/debug.hpp>
-LPDebugger *debugger;
+Debugger *debugger;
 #endif
 
 #include "LEDLib.h"
@@ -226,7 +226,7 @@ void setup() {
   loadUserPalettes();
 
   #ifdef DEBUGGER_ENABLED
-  debugger = new LPDebugger(*object);
+  debugger = new Debugger(*object);
   LP_LOGLN("Debugger initialized");
   #endif
 

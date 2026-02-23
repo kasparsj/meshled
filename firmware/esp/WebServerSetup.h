@@ -304,8 +304,8 @@ bool hasIntersectionBetween(Intersection* inter1, Intersection* inter2) {
   // Check if any other intersection exists between these two
   for (uint8_t g = 0; g < MAX_GROUPS; g++) {
     // Only check intersections in the same or compatible groups
-    if (!(inter1->group & LPObject::groupMaskForIndex(g)) &&
-        !(inter2->group & LPObject::groupMaskForIndex(g))) {
+    if (!(inter1->group & TopologyObject::groupMaskForIndex(g)) &&
+        !(inter2->group & TopologyObject::groupMaskForIndex(g))) {
       continue;
     }
     
@@ -364,7 +364,7 @@ bool hasAvailablePort(Intersection* intersection) {
 // Helper function to get group index from group mask
 uint8_t getGroupIndex(uint8_t group) {
   for (uint8_t i = 0; i < MAX_GROUPS; i++) {
-    if (group & LPObject::groupMaskForIndex(i)) {
+    if (group & TopologyObject::groupMaskForIndex(i)) {
       return i;
     }
   }
@@ -499,7 +499,7 @@ void handleAddIntersection() {
   // Get group index for validation
   uint8_t groupIndex = 0;
   for (uint8_t i = 0; i < MAX_GROUPS; i++) {
-    if (group & LPObject::groupMaskForIndex(i)) {
+    if (group & TopologyObject::groupMaskForIndex(i)) {
       groupIndex = i;
       break;
     }
@@ -963,7 +963,7 @@ void handleStateDebug() {
   server.send(302, "text/plain", "");
 }
 
-// Handler for LPDebugger::dumpConnections()
+// Handler for Debugger::dumpConnections()
 void handleDumpConnections() {
   #ifdef DEBUGGER_ENABLED
   debugger->dumpConnections();
@@ -974,7 +974,7 @@ void handleDumpConnections() {
   server.send(302, "text/plain", "");
 }
 
-// Handler for LPDebugger::dumpIntersections()
+// Handler for Debugger::dumpIntersections()
 void handleDumpIntersections() {
   #ifdef DEBUGGER_ENABLED
   debugger->dumpIntersections();
