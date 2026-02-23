@@ -31,7 +31,15 @@ Alternative board:
 pio run -e esp32-s3-devkitc-1
 ```
 
-### 4) Simulator / core smoke (`packages/simulator`)
+### 4) Core host smoke (`packages/core`)
+
+```bash
+cmake -S packages/core -B packages/core/build -DLIGHTGRAPH_CORE_BUILD_TESTS=ON
+cmake --build packages/core/build
+ctest --test-dir packages/core/build --output-on-failure
+```
+
+### 5) Simulator / core smoke (`packages/simulator`)
 
 ```bash
 cd packages/simulator
@@ -44,7 +52,7 @@ If openFrameworks is not in the default location:
 OF_ROOT=/path/to/openframeworks make -n
 ```
 
-### 5) Optional root helper scripts
+### 6) Optional root helper scripts
 
 ```bash
 ./scripts/build-control-panel.sh

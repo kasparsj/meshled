@@ -9,8 +9,9 @@ The core is the shared C++ light engine used by:
 
 - firmware (`firmware/esp`)
 - simulator (`packages/simulator`)
+- standalone host build (`packages/core/CMakeLists.txt`)
 
-There is currently no standalone build target under `packages/core`; verification happens through those adapters.
+The host build is intended for reproducible compile/test checks in CI without requiring openFrameworks or Arduino SDKs.
 
 ## Prerequisites
 
@@ -18,6 +19,9 @@ There is currently no standalone build target under `packages/core`; verificatio
 - For firmware-path verification:
 - Python 3
 - PlatformIO
+- For host verification:
+- CMake 3.20+
+- C++17 compiler
 - For simulator-path verification:
 - openFrameworks checkout
 
@@ -31,7 +35,20 @@ Expected:
 
 - `vendor/ofxColorTheory` exists and has content.
 
-## 2) Verify firmware wiring to shared core
+## 2) Build and test core on host (standalone)
+
+```bash
+cmake -S packages/core -B packages/core/build -DLIGHTGRAPH_CORE_BUILD_TESTS=ON
+cmake --build packages/core/build
+ctest --test-dir packages/core/build --output-on-failure
+```
+
+Expected:
+
+- static library (`lightgraph_core`) builds
+- smoke tests pass (`lightgraph_core_smoke`)
+
+## 3) Verify firmware wiring to shared core
 
 The firmware consumes core sources through a symlink:
 
@@ -43,7 +60,7 @@ Expected:
 
 - `firmware/esp/src -> ../../packages/core/src`
 
-## 3) Core compile smoke through firmware toolchain
+## 4) Core compile smoke through firmware toolchain
 
 ```bash
 cd firmware/esp
@@ -55,7 +72,7 @@ Expected:
 - command succeeds
 - `firmware/esp/compile_commands.json` is generated
 
-## 4) Simulator-path verification (openFrameworks required)
+## 5) Simulator-path verification (openFrameworks required)
 
 ```bash
 cd packages/simulator
@@ -87,6 +104,7 @@ Broken symlink on clone:
 ## Repro checklist for contributors
 
 - submodules initialized
+- host build + tests pass
 - firmware symlink present
 - `pio run -e esp32dev -t compiledb` passes
 - simulator dry-run works when `OF_ROOT` is valid

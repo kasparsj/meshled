@@ -14,3 +14,6 @@ firmware/esp/compile_commands.json
 # openFrameworks local build outputs
 packages/simulator/bin/
 packages/simulator/obj/
+
+# Core host build outputs
+packages/core/build/

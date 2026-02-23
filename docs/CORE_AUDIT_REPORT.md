@@ -17,12 +17,12 @@ Scope: `packages/core/src` and its direct runtime adapters (`packages/simulator`
 
 | Area | Score | Rationale |
 |---|---:|---|
-| Buildability | 5 | Core compiles in firmware path (`pio run -e esp32dev -t compiledb` succeeds), but there is no standalone core target and simulator build depends on external OF layout.
+| Buildability | 7 | Core now compiles via standalone host CMake target and firmware path (`pio run -e esp32dev -t compiledb`), while simulator still depends on external OF layout.
 | Reliability | 4 | Several concrete correctness risks in core (missing return, wrong assignment, unchecked buffer writes, null/modulo edge cases).
-| Docs | 4 | High-level repo docs exist, but core-specific architecture/build/debug docs are thin.
-| Tests | 1 | No unit/integration tests for core logic or topology/animation invariants.
+| Docs | 6 | Core build docs and reproducible host workflow exist, but architecture and troubleshooting depth can still improve.
+| Tests | 3 | Baseline host smoke tests and CI coverage now exist; behavior coverage is still shallow.
 | Portability | 4 | Dual Arduino/openFrameworks abstraction exists, but host build is OF-coupled and firmware integration relies on symlink behavior.
-| Maintainability | 4 | Centralized state and heavy raw-pointer ownership with weak ownership contracts increase change risk.
+| Maintainability | 5 | Build/test ergonomics improved, but centralized state and raw-pointer ownership still increase change risk.
 
 ### 5 highest-impact wins
 
@@ -96,7 +96,7 @@ Outputs
 
 ### Build systems detected
 
-- No standalone core build system in `packages/core` (no CMake/meson/bazel for core itself).
+- Standalone host build for core: CMake (`packages/core/CMakeLists.txt`).
 - openFrameworks simulator build surfaces:
 - GNU Make (`packages/simulator/Makefile` + `config.make` + `addons.make`).
 - QBS (`packages/simulator/simulator.qbs`).
@@ -132,6 +132,9 @@ Outputs
 
 ### Current build verification from this audit
 
+- `cmake -S packages/core -B packages/core/build -DLIGHTGRAPH_CORE_BUILD_TESTS=ON` succeeded.
+- `cmake --build packages/core/build` succeeded (builds `lightgraph_core` + `lightgraph_core_smoke`).
+- `ctest --test-dir packages/core/build --output-on-failure` succeeded (1/1 passing).
 - `pio run -e esp32dev -t compiledb` succeeded (core sources compile under firmware toolchain).
 - `make -n` in `packages/simulator` failed locally due missing openFrameworks path at expected default (`../../../../openframeworks`).
 
@@ -232,15 +235,19 @@ Outputs
 
 ### Testability assessment
 
-- Medium-to-low testability in current form:
+- Medium testability in current form:
 - strong coupling to globals/macros.
-- no standalone build target.
+- host build target now exists (`packages/core/CMakeLists.txt`) and can run in CI.
 - topology setup code is deterministic and testable once harness exists.
 
 ### Existing tests and coverage gaps
 
-- No unit tests found for core logic.
-- No regression tests for emission/routing/blending/palette logic.
+- Added baseline smoke tests in `packages/core/tests/core_smoke_test.cpp`:
+- `HashMap` const lookup behavior.
+- `LightList::setDuration` assignment correctness.
+- `State::emit` invalid model guard.
+- `State::emit` zero-emitter guard via dummy object.
+- Coverage remains sparse for routing/lifecycle/render blending behavior.
 
 ### Likely performance hotspots
 
@@ -250,21 +257,27 @@ Outputs
 
 ### High-signal code risks identified
 
-- Missing return in `LightList::addLightFromMsg` (`packages/core/src/LightList.cpp:81`).
-- Wrong assignment in `LightList::setDuration` (`this->duration = duration`) (`packages/core/src/LightList.cpp:91`).
-- `LightList::doEmit` uses `uint8_t` counters for potentially larger lists (`packages/core/src/LightList.cpp:224`).
-- Potential buffer overflow in segment/link pixel packing (`packages/core/src/LPLight.h:67`, `packages/core/src/LPLight.cpp:82`).
-- Potential null dereference in `Intersection::update` (`port->isExternal()` before null check) (`packages/core/src/Intersection.cpp:62`).
-- Potential divide/modulo by zero when no emit candidates exist (`packages/core/src/State.cpp:99`, `packages/core/src/State.cpp:106`).
-- Const `HashMap::operator[]` is recursively defined (`packages/core/src/HashMap.h:41`).
-- Model selection modulo logic likely off-by-one in `Line`, `Cross`, `Triangle` (`packages/core/src/objects/Line.h:31`, `packages/core/src/objects/Cross.h:40`, `packages/core/src/objects/Triangle.h:46`).
+Resolved in Phase 1:
+- Missing return in `LightList::addLightFromMsg`.
+- Wrong assignment in `LightList::setDuration`.
+- `LightList::doEmit` `uint8_t` truncation risk on larger lists.
+- Segment/link pixel packing overflow risk in `LPLight`.
+- Null dereference path in `Intersection::update`.
+- Divide/modulo-by-zero risk in `State::getEmitter`.
+- Recursive const `HashMap::operator[]`.
+- Off-by-one model modulo in `Line`, `Cross`, `Triangle`.
+
+Remaining high-signal risks:
+- `State` destructor does not release `lightLists` and owned list memory.
+- Core still relies on macro-heavy platform indirection (`Config.h` + `ofMain`/Arduino shims).
+- No lifecycle/regression tests around `State::update` rendering behavior and blend mode correctness.
 
 ## 7) Open Source Readiness Assessment
 
 ### Missing for “build core from scratch”
 
-- No standalone core build target independent of simulator/firmware adapters.
-- No core-specific quickstart that clearly states supported host compilers/targets and expected toolchain versions.
+- Host target now exists (`packages/core/CMakeLists.txt`) and is CI-validated.
+- Core-specific quickstart now exists (`docs/core-build.md`) but still lacks a platform/version support matrix.
 - Simulator build prerequisites depend on user-managed openFrameworks path/version without explicit pin.
 
 ### Docs needed
@@ -364,6 +377,7 @@ Files/modules: new `packages/core` build files (e.g., CMake or simple host make)
 Acceptance criteria: core compiles outside OF/Arduino adapters on CI host.
 Complexity: M.
 Dependencies: 1.1.
+Status: completed in this phase (`packages/core/CMakeLists.txt` + `packages/core/host/include/ofMain.h`).
 
 ### Task 2.2
 Goal: add regression tests for routing and lifecycle.
@@ -371,6 +385,7 @@ Files/modules: test sources around `State`, `LPObject`, `LightList`, `Palette`.
 Acceptance criteria: tests cover emit/update expiry, model routing, palette interpolation, and edge cases (empty emit groups).
 Complexity: M.
 Dependencies: 2.1.
+Status: partially complete (smoke tests added for guardrails; routing/lifecycle coverage still pending).
 
 ### Task 2.3
 Goal: add sanitizer/strict-warning CI lane for core host target.
@@ -378,6 +393,7 @@ Files/modules: CI workflow.
 Acceptance criteria: ASan/UBSan pass on core test suite; warnings tracked as actionable.
 Complexity: M.
 Dependencies: 2.1, 2.2.
+Status: partially complete (core host build + smoke tests now run in CI; sanitizer lane not added yet).
 
 ## Phase 3: architectural refactors (optional/high risk)
 
@@ -432,6 +448,28 @@ Dependencies: 3.1.
 Validation after Phase 1:
 - `pio run -e esp32dev -t compiledb` succeeded in `firmware/esp`.
 - `make -n` in `packages/simulator` still fails only due missing local openFrameworks path (`../../../../openframeworks`), unchanged from pre-fix state.
+
+### Phase 2 build/test baseline (implemented)
+
+- Added standalone host build target:
+- `packages/core/CMakeLists.txt`
+- Added host compatibility shim for core-only CMake builds:
+- `packages/core/host/include/ofMain.h`
+- Added baseline smoke tests:
+- `packages/core/tests/core_smoke_test.cpp`
+- Added CI job for core host build + tests:
+- `.github/workflows/ci.yml` (`Core (host build + smoke tests)`)
+- Updated docs:
+- `README.md`
+- `docs/core-build.md`
+- `docs/build.md`
+
+Validation after Phase 2 baseline:
+- `cmake -S packages/core -B packages/core/build -DLIGHTGRAPH_CORE_BUILD_TESTS=ON` succeeded.
+- `cmake --build packages/core/build` succeeded.
+- `ctest --test-dir packages/core/build --output-on-failure` succeeded (1/1).
+- `pio run -e esp32dev -t compiledb` still succeeds.
+- `packages/simulator make -n` status unchanged without local openFrameworks checkout.
 
 ## Appendix A: Search-driven findings
 

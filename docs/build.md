@@ -90,15 +90,31 @@ If openFrameworks is elsewhere:
 OF_ROOT=/path/to/openframeworks make -n
 ```
 
+## Core host build (`packages/core`)
+
+Prerequisites:
+
+- CMake 3.20+
+- C++17 compiler
+
+Build and test:
+
+```bash
+cmake -S packages/core -B packages/core/build -DLIGHTGRAPH_CORE_BUILD_TESTS=ON
+cmake --build packages/core/build
+ctest --test-dir packages/core/build --output-on-failure
+```
+
 ## CI coverage
 
 GitHub Actions workflow: `.github/workflows/ci.yml`
 
 Jobs:
 
-1. `Web (React)`: `npm ci --legacy-peer-deps`, lint, build.
-2. `Firmware (PlatformIO smoke)`: generates `compile_commands.json` for `esp32dev` (`pio run -e esp32dev -t compiledb`) to validate dependency resolution and toolchain setup.
-3. `Simulator (Scoped smoke)`: project/config integrity checks, plus optional `make -n` when `OF_ROOT` is provided in CI environment.
+1. `Core (host build + smoke tests)`: CMake configure/build + `ctest` for the shared native engine.
+2. `Web (React)`: `npm ci --legacy-peer-deps`, lint, build.
+3. `Firmware (PlatformIO smoke)`: generates `compile_commands.json` for `esp32dev` (`pio run -e esp32dev -t compiledb`) to validate dependency resolution and toolchain setup.
+4. `Simulator (Scoped smoke)`: project/config integrity checks, plus optional `make -n` when `OF_ROOT` is provided in CI environment.
 
 Note:
 
