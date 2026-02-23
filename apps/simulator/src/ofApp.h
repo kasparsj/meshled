@@ -19,9 +19,9 @@ public:
         OBJ_HEPTAGON3024 = 4
     };
     
-    LPObject *object;
-    State *state;
-    LPDebugger *debugger;
+    lightpath::Object *object;
+    lightpath::RuntimeState *state;
+    lightpath::Debugger *debugger;
     ObjectType currentObjectType;
 
     void setup();
@@ -47,13 +47,13 @@ public:
     void onNoteOff(const ofxOscMessage& m);
     void onNotesSet(const ofxOscMessage& m);
     void onAuto(const ofxOscMessage& m);
-    void parseParams(EmitParams &p, const ofxOscMessage &m);
-    void parseParam(EmitParams &p, const ofxOscMessage &m, EmitParam &param, uint8_t j);
+    void parseParams(lightpath::EmitParams &p, const ofxOscMessage &m);
+    void parseParam(lightpath::EmitParams &p, const ofxOscMessage &m, lightpath::EmitParam &param, uint8_t j);
     void doCommand(char command);
-    glm::vec2 intersectionPos(Intersection* intersection, int8_t j = -1);
-    LPObject* createObject(ObjectType type, uint16_t pixelCount);
+    glm::vec2 intersectionPos(lightpath::Intersection* intersection, int8_t j = -1);
+    lightpath::Object* createObject(ObjectType type, uint16_t pixelCount);
     ofColor getColor(uint16_t i);
-    void doEmit(EmitParams &params);
+    void doEmit(lightpath::EmitParams &params);
 
     ofxOscReceiver receiver;
     uint8_t showModel = 0;
