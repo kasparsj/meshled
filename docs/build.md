@@ -1,4 +1,4 @@
-# Lightgraph Build and Verification
+# MeshLED Build and Verification
 
 Date: 2026-02-22
 
@@ -103,7 +103,7 @@ Prerequisites:
 Build and test:
 
 ```bash
-cmake -S packages/core -B packages/core/build -DLIGHTGRAPH_CORE_BUILD_TESTS=ON
+cmake -S packages/core -B packages/core/build -DLIGHTPATH_CORE_BUILD_TESTS=ON
 cmake --build packages/core/build
 ctest --test-dir packages/core/build --output-on-failure
 ```
@@ -124,7 +124,7 @@ Jobs:
 1. `Core (host build + tests)`: CMake configure/build + `ctest` for the shared native engine.
 2. `Core (ASan)`: host build/test with AddressSanitizer enabled.
 3. `Core (UBSan)`: host build/test with UndefinedBehaviorSanitizer enabled.
-4. `Core (Warnings)`: host build/test with strict warnings enabled (`LIGHTGRAPH_CORE_ENABLE_STRICT_WARNINGS=ON`) and warnings treated as errors.
+4. `Core (Warnings)`: host build/test with strict warnings enabled (`LIGHTPATH_CORE_ENABLE_STRICT_WARNINGS=ON`) and warnings treated as errors.
 5. `Web (React)`: `npm ci --legacy-peer-deps`, lint, build.
 6. `Firmware (PlatformIO smoke)`: generates `compile_commands.json` for `esp32dev` (`pio run -e esp32dev -t compiledb`) to validate dependency resolution and toolchain setup.
 7. `Simulator (Scoped smoke)`: project/config integrity checks, plus optional `make -n` when `OF_ROOT` is provided in CI environment.

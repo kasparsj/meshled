@@ -1,6 +1,6 @@
-# Lightgraph
+# MeshLED
 
-Lightgraph is a networked light system with three runnable surfaces: a shared C++ core model/engine, ESP32 firmware that exposes OSC + HTTP control endpoints, and a React control panel for managing devices on a local network.
+MeshLED is a networked light system with three runnable surfaces: a shared C++ core model/engine, ESP32 firmware that exposes OSC + HTTP control endpoints, and a React control panel for managing devices on a local network.
 
 ## Quickstart
 
@@ -36,7 +36,7 @@ pio run -e esp32-s3-devkitc-1
 ### 4) Core host smoke (`packages/core`)
 
 ```bash
-cmake -S packages/core -B packages/core/build -DLIGHTGRAPH_CORE_BUILD_TESTS=ON
+cmake -S packages/core -B packages/core/build -DLIGHTPATH_CORE_BUILD_TESTS=ON
 cmake --build packages/core/build
 ctest --test-dir packages/core/build --output-on-failure
 ```

@@ -1,4 +1,4 @@
-# Lightgraph Core Audit Report
+# MeshLED Core Audit Report
 
 Date: 2026-02-23
 Scope: `packages/core/src` and its direct runtime adapters (`packages/simulator`, firmware integration points only where needed to explain core behavior)
@@ -132,12 +132,12 @@ Outputs
 
 ### Current build verification from this audit
 
-- `cmake -S packages/core -B packages/core/build -DLIGHTGRAPH_CORE_BUILD_TESTS=ON` succeeded.
-- `cmake --build packages/core/build` succeeded (builds `lightgraph_core`, `lightgraph_core_smoke`, `lightgraph_core_regression`).
+- `cmake -S packages/core -B packages/core/build -DLIGHTPATH_CORE_BUILD_TESTS=ON` succeeded.
+- `cmake --build packages/core/build` succeeded (builds core static library and host test executables).
 - `ctest --test-dir packages/core/build --output-on-failure` succeeded (2/2 passing).
-- `CC=clang CXX=clang++ cmake -S packages/core -B packages/core/build-asan -DLIGHTGRAPH_CORE_BUILD_TESTS=ON -DLIGHTGRAPH_CORE_ENABLE_ASAN=ON` succeeded.
+- `CC=clang CXX=clang++ cmake -S packages/core -B packages/core/build-asan -DLIGHTPATH_CORE_BUILD_TESTS=ON -DLIGHTPATH_CORE_ENABLE_ASAN=ON` succeeded.
 - `ASAN_OPTIONS=detect_leaks=0 ctest --test-dir packages/core/build-asan --output-on-failure` succeeded (2/2 passing).
-- `CC=clang CXX=clang++ cmake -S packages/core -B packages/core/build-ubsan -DLIGHTGRAPH_CORE_BUILD_TESTS=ON -DLIGHTGRAPH_CORE_ENABLE_UBSAN=ON` succeeded.
+- `CC=clang CXX=clang++ cmake -S packages/core -B packages/core/build-ubsan -DLIGHTPATH_CORE_BUILD_TESTS=ON -DLIGHTPATH_CORE_ENABLE_UBSAN=ON` succeeded.
 - `ctest --test-dir packages/core/build-ubsan --output-on-failure` succeeded (2/2 passing).
 - `pio run -e esp32dev -t compiledb` succeeded (core sources compile under firmware toolchain).
 - `make -n` in `packages/simulator` failed locally due missing openFrameworks path at expected default (`../../../../openframeworks`).
@@ -403,7 +403,7 @@ Files/modules: CI workflow.
 Acceptance criteria: ASan/UBSan pass on core test suite; warnings tracked as actionable.
 Complexity: M.
 Dependencies: 2.1, 2.2.
-Status: completed (ASan + UBSan + strict warning lane added; strict lane uses `LIGHTGRAPH_CORE_ENABLE_STRICT_WARNINGS=ON` with targeted suppression for legacy `ofxEasing` sequencing warnings).
+Status: completed (ASan + UBSan + strict warning lane added; strict lane uses `LIGHTPATH_CORE_ENABLE_STRICT_WARNINGS=ON` with targeted suppression for legacy `ofxEasing` sequencing warnings).
 
 ## Phase 3: architectural refactors (optional/high risk)
 
@@ -481,15 +481,15 @@ Validation after Phase 1:
 - Added ASan lane for host core tests:
 - `.github/workflows/ci.yml` (`Core (ASan)`)
 - Added ASan toggle in host build:
-- `LIGHTGRAPH_CORE_ENABLE_ASAN` in `packages/core/CMakeLists.txt`
+- `LIGHTPATH_CORE_ENABLE_ASAN` in `packages/core/CMakeLists.txt`
 - Added UBSan lane for host core tests:
 - `.github/workflows/ci.yml` (`Core (UBSan)`)
 - Added UBSan toggle in host build:
-- `LIGHTGRAPH_CORE_ENABLE_UBSAN` in `packages/core/CMakeLists.txt`
+- `LIGHTPATH_CORE_ENABLE_UBSAN` in `packages/core/CMakeLists.txt`
 - Added strict warning lane for host core tests:
 - `.github/workflows/ci.yml` (`Core (Warnings)`)
 - Added strict warning toggle in host build:
-- `LIGHTGRAPH_CORE_ENABLE_STRICT_WARNINGS` in `packages/core/CMakeLists.txt`
+- `LIGHTPATH_CORE_ENABLE_STRICT_WARNINGS` in `packages/core/CMakeLists.txt`
 - Warning cleanup and annotation improvements:
 - `LPLight` and `LightList` now have virtual destructors, `LPLight` ctor init order was fixed, object overrides were annotated, and warning-only footguns were cleaned up in `LPObject`/`LightList`.
 - Improved teardown cleanup in core:
@@ -508,14 +508,14 @@ Validation after Phase 1:
 - `docs/build.md`
 
 Validation after Phase 2 expansion:
-- `cmake -S packages/core -B packages/core/build -DLIGHTGRAPH_CORE_BUILD_TESTS=ON` succeeded.
+- `cmake -S packages/core -B packages/core/build -DLIGHTPATH_CORE_BUILD_TESTS=ON` succeeded.
 - `cmake --build packages/core/build` succeeded.
 - `ctest --test-dir packages/core/build --output-on-failure` succeeded (2/2).
-- `CC=clang CXX=clang++ cmake -S packages/core -B packages/core/build-asan -DLIGHTGRAPH_CORE_BUILD_TESTS=ON -DLIGHTGRAPH_CORE_ENABLE_ASAN=ON` succeeded.
+- `CC=clang CXX=clang++ cmake -S packages/core -B packages/core/build-asan -DLIGHTPATH_CORE_BUILD_TESTS=ON -DLIGHTPATH_CORE_ENABLE_ASAN=ON` succeeded.
 - `ASAN_OPTIONS=detect_leaks=0 ctest --test-dir packages/core/build-asan --output-on-failure` succeeded (2/2).
-- `CC=clang CXX=clang++ cmake -S packages/core -B packages/core/build-ubsan -DLIGHTGRAPH_CORE_BUILD_TESTS=ON -DLIGHTGRAPH_CORE_ENABLE_UBSAN=ON` succeeded.
+- `CC=clang CXX=clang++ cmake -S packages/core -B packages/core/build-ubsan -DLIGHTPATH_CORE_BUILD_TESTS=ON -DLIGHTPATH_CORE_ENABLE_UBSAN=ON` succeeded.
 - `ctest --test-dir packages/core/build-ubsan --output-on-failure` succeeded (2/2).
-- `CC=clang CXX=clang++ cmake -S packages/core -B packages/core/build-warnings -DLIGHTGRAPH_CORE_BUILD_TESTS=ON -DLIGHTGRAPH_CORE_ENABLE_STRICT_WARNINGS=ON` succeeded.
+- `CC=clang CXX=clang++ cmake -S packages/core -B packages/core/build-warnings -DLIGHTPATH_CORE_BUILD_TESTS=ON -DLIGHTPATH_CORE_ENABLE_STRICT_WARNINGS=ON` succeeded.
 - `ctest --test-dir packages/core/build-warnings --output-on-failure` succeeded (2/2).
 - `pio run -e esp32dev -t compiledb` still succeeds.
 - `packages/simulator make -n` status unchanged without local openFrameworks checkout.

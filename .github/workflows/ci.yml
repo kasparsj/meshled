@@ -20,7 +20,7 @@ jobs:
           submodules: recursive
 
       - name: Configure core host build
-        run: cmake -S packages/core -B packages/core/build -DLIGHTGRAPH_CORE_BUILD_TESTS=ON
+        run: cmake -S packages/core -B packages/core/build -DLIGHTPATH_CORE_BUILD_TESTS=ON
 
       - name: Build core host target
         run: cmake --build packages/core/build --parallel
@@ -40,7 +40,7 @@ jobs:
           submodules: recursive
 
       - name: Configure ASan build
-        run: CC=clang CXX=clang++ cmake -S packages/core -B packages/core/build-asan -DLIGHTGRAPH_CORE_BUILD_TESTS=ON -DLIGHTGRAPH_CORE_ENABLE_ASAN=ON
+        run: CC=clang CXX=clang++ cmake -S packages/core -B packages/core/build-asan -DLIGHTPATH_CORE_BUILD_TESTS=ON -DLIGHTPATH_CORE_ENABLE_ASAN=ON
 
       - name: Build ASan target
         run: cmake --build packages/core/build-asan --parallel
@@ -58,7 +58,7 @@ jobs:
           submodules: recursive
 
       - name: Configure UBSan build
-        run: CC=clang CXX=clang++ cmake -S packages/core -B packages/core/build-ubsan -DLIGHTGRAPH_CORE_BUILD_TESTS=ON -DLIGHTGRAPH_CORE_ENABLE_UBSAN=ON
+        run: CC=clang CXX=clang++ cmake -S packages/core -B packages/core/build-ubsan -DLIGHTPATH_CORE_BUILD_TESTS=ON -DLIGHTPATH_CORE_ENABLE_UBSAN=ON
 
       - name: Build UBSan target
         run: cmake --build packages/core/build-ubsan --parallel
@@ -76,7 +76,7 @@ jobs:
           submodules: recursive
 
       - name: Configure strict warning build
-        run: CC=clang CXX=clang++ cmake -S packages/core -B packages/core/build-warnings -DLIGHTGRAPH_CORE_BUILD_TESTS=ON -DLIGHTGRAPH_CORE_ENABLE_STRICT_WARNINGS=ON
+        run: CC=clang CXX=clang++ cmake -S packages/core -B packages/core/build-warnings -DLIGHTPATH_CORE_BUILD_TESTS=ON -DLIGHTPATH_CORE_ENABLE_STRICT_WARNINGS=ON
 
       - name: Build strict warning target
         run: cmake --build packages/core/build-warnings --parallel

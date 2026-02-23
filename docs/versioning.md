@@ -1,10 +1,10 @@
-# Lightgraph Versioning and Release Policy
+# MeshLED Versioning and Release Policy
 
 Date: 2026-02-22
 
 ## Version scheme
 
-`lightgraph` uses Semantic Versioning with `v` prefix:
+`meshled` uses Semantic Versioning with `v` prefix:
 
 - `vMAJOR.MINOR.PATCH`
 - Examples: `v0.1.0`, `v0.2.3`, `v1.0.0`
@@ -44,11 +44,11 @@ For each release:
 3. Create an annotated tag:
 
 ```bash
-git tag -a vX.Y.Z -m "lightgraph vX.Y.Z"
+git tag -a vX.Y.Z -m "meshled vX.Y.Z"
 git push origin vX.Y.Z
 ```
 
-4. In artwork repo, bump `runtime/lightgraph` submodule in a separate commit.
+4. In artwork repo, bump `runtime/meshled` submodule in a separate commit.
 
 ## First stable runtime tag
 

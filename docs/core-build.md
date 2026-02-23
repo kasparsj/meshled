@@ -42,20 +42,20 @@ Expected:
 ## 2) Build and test core on host (standalone)
 
 ```bash
-cmake -S packages/core -B packages/core/build -DLIGHTGRAPH_CORE_BUILD_TESTS=ON
+cmake -S packages/core -B packages/core/build -DLIGHTPATH_CORE_BUILD_TESTS=ON
 cmake --build packages/core/build
 ctest --test-dir packages/core/build --output-on-failure
 ```
 
 Expected:
 
-- static library (`lightgraph_core`) builds
-- smoke/regression tests pass (`lightgraph_core_smoke`, `lightgraph_core_regression`)
+- static library target builds
+- smoke/regression tests pass
 
 Optional ASan run:
 
 ```bash
-CC=clang CXX=clang++ cmake -S packages/core -B packages/core/build-asan -DLIGHTGRAPH_CORE_BUILD_TESTS=ON -DLIGHTGRAPH_CORE_ENABLE_ASAN=ON
+CC=clang CXX=clang++ cmake -S packages/core -B packages/core/build-asan -DLIGHTPATH_CORE_BUILD_TESTS=ON -DLIGHTPATH_CORE_ENABLE_ASAN=ON
 cmake --build packages/core/build-asan
 ASAN_OPTIONS=detect_leaks=0 ctest --test-dir packages/core/build-asan --output-on-failure
 ```
@@ -63,7 +63,7 @@ ASAN_OPTIONS=detect_leaks=0 ctest --test-dir packages/core/build-asan --output-o
 Optional UBSan run:
 
 ```bash
-CC=clang CXX=clang++ cmake -S packages/core -B packages/core/build-ubsan -DLIGHTGRAPH_CORE_BUILD_TESTS=ON -DLIGHTGRAPH_CORE_ENABLE_UBSAN=ON
+CC=clang CXX=clang++ cmake -S packages/core -B packages/core/build-ubsan -DLIGHTPATH_CORE_BUILD_TESTS=ON -DLIGHTPATH_CORE_ENABLE_UBSAN=ON
 cmake --build packages/core/build-ubsan
 ctest --test-dir packages/core/build-ubsan --output-on-failure
 ```
@@ -71,7 +71,7 @@ ctest --test-dir packages/core/build-ubsan --output-on-failure
 Optional strict warnings run:
 
 ```bash
-CC=clang CXX=clang++ cmake -S packages/core -B packages/core/build-warnings -DLIGHTGRAPH_CORE_BUILD_TESTS=ON -DLIGHTGRAPH_CORE_ENABLE_STRICT_WARNINGS=ON
+CC=clang CXX=clang++ cmake -S packages/core -B packages/core/build-warnings -DLIGHTPATH_CORE_BUILD_TESTS=ON -DLIGHTPATH_CORE_ENABLE_STRICT_WARNINGS=ON
 cmake --build packages/core/build-warnings
 ctest --test-dir packages/core/build-warnings --output-on-failure
 ```

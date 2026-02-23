@@ -2,7 +2,7 @@
 
 Date: 2026-02-23
 
-This document tracks third-party code used by Lightgraph and where license text/provenance is confirmed or still pending.
+This document tracks third-party code used by MeshLED and where license text/provenance is confirmed or still pending.
 
 ## Confirmed Dependencies
 

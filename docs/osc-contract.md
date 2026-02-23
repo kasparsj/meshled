@@ -1,11 +1,11 @@
-# Lightgraph OSC Input Contract
+# MeshLED OSC Input Contract
 
 Date: 2026-02-23  
 Status: Canonical contract for firmware OSC input behavior
 
 ## Scope
 
-This document defines the OSC interface exposed by lightgraph firmware at `firmware/esp/OSCLib.h`.
+This document defines the OSC interface exposed by meshled firmware at `firmware/esp/OSCLib.h`.
 
 Artwork/performance sender details (SuperCollider, TidalCycles, workshop scripts) should be documented in the artwork repository integration notes.
 

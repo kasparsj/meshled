@@ -1,7 +1,7 @@
-# Lightgraph Firmware HTTP API (Draft v0)
+# MeshLED Firmware HTTP API (Draft v0)
 
 Date: 2026-02-22  
-Applies to: `firmware/esp` firmware in `lightgraph` (`main`)
+Applies to: `firmware/esp` firmware in `meshled` (`main`)
 
 ## Scope
 

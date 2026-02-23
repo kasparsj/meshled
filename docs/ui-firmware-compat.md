@@ -2,7 +2,7 @@
 
 Date: 2026-02-22  
 UI target: `apps/control-panel` (package version `0.0.0`)  
-Firmware target: `firmware/esp` on `lightgraph/main`
+Firmware target: `firmware/esp` on `meshled/main`
 
 ## Purpose
 

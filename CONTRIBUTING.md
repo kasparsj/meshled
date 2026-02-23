@@ -1,4 +1,4 @@
-# Contributing to Lightgraph
+# Contributing to MeshLED
 
 ## Prerequisites
 

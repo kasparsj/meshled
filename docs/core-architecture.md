@@ -96,7 +96,7 @@ Adapters map incoming controls to:
 ## Quick Verification
 
 ```bash
-cmake -S packages/core -B packages/core/build -DLIGHTGRAPH_CORE_BUILD_TESTS=ON
+cmake -S packages/core -B packages/core/build -DLIGHTPATH_CORE_BUILD_TESTS=ON
 cmake --build packages/core/build
 ctest --test-dir packages/core/build --output-on-failure
 ```
