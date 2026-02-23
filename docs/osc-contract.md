@@ -173,7 +173,7 @@ Source of truth: `packages/lightpath/src/runtime/EmitParams.h`.
 ## Easing
 
 - Valid `EASE` range: `0..33`
-- Matches `packages/lightpath/src/Config.h` (`EASE_NONE` to `EASE_ELASTIC_INOUT`)
+- Matches `packages/lightpath/src/core/Types.h` (`EASE_NONE` to `EASE_ELASTIC_INOUT`)
 
 ## Behaviour flags (bitmask)
 
@@ -190,7 +190,7 @@ Source of truth: `packages/lightpath/src/runtime/EmitParams.h`.
 - `1024` `MIRROR_ROTATE`
 - `2048` `SMOOTH_CHANGES`
 
-Source: `packages/lightpath/src/Config.h`.
+Source: `packages/lightpath/src/core/Types.h`.
 
 ## Compatibility and caveats
 

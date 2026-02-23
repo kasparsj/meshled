@@ -57,10 +57,15 @@ Internal definitions live under module-scoped `packages/lightpath/src/*` folders
 
 ### Core config/types
 
-- `packages/lightpath/src/Config.h`
+- `packages/lightpath/src/core/Types.h`
   - `ColorRGB`
   - `Groups`, `BehaviourFlags`, `ListOrder`, `ListHead`, `BlendMode`, `Ease`
-  - global compile-time constants/macros (e.g. `MAX_GROUPS`, `MAX_LIGHT_LISTS`, `RANDOM_COLOR`, `INFINITE_DURATION`)
+
+- `packages/lightpath/src/core/Limits.h`
+  - global compile-time limits/macros (e.g. `MAX_GROUPS`, `MAX_LIGHT_LISTS`, `RANDOM_COLOR`, `INFINITE_DURATION`)
+
+- `packages/lightpath/src/core/Platform.h`
+  - platform adapters/macros (`LP_LOG*`, `LP_RANDOM`, `LP_STRING`)
 
 - `packages/lightpath/src/runtime/EmitParams.h`
   - `EmitParam`
