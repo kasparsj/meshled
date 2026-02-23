@@ -3,7 +3,7 @@
 #include <optional>
 
 //--------------------------------------------------------------
-lightpath::Object* ofApp::createObject(ObjectType type, uint16_t pixelCount) {
+lightpath::integration::Object* ofApp::createObject(ObjectType type, uint16_t pixelCount) {
     currentObjectType = type;
     switch (type) {
         case OBJ_HEPTAGON919:
@@ -26,8 +26,8 @@ void ofApp::setup(){
     ofSetFrameRate(62);
     // Default to HeptagonStar for now but can be changed via key commands
     object = createObject(OBJ_HEPTAGON919, HEPTAGON919_PIXEL_COUNT);
-    state = new lightpath::RuntimeState(*object);
-    debugger = new lightpath::Debugger(*object);
+    state = new lightpath::integration::RuntimeState(*object);
+    debugger = new lightpath::integration::Debugger(*object);
     receiver.setup(OSC_PORT);
 }
 
@@ -76,13 +76,13 @@ void ofApp::onCommand(const ofxOscMessage& m) {
 }
 
 void ofApp::onEmit(const ofxOscMessage& m) {
-  lightpath::EmitParams params;
+  lightpath::integration::EmitParams params;
   parseParams(params, m);
   doEmit(params);
 }
 
 void ofApp::onNoteOn(const ofxOscMessage& m) {
-  lightpath::EmitParams params;
+  lightpath::integration::EmitParams params;
   params.duration = INFINITE_DURATION;
   parseParams(params, m);
   doEmit(params);
@@ -99,7 +99,7 @@ void ofApp::onNoteOff(const ofxOscMessage& m) {
 }
 
 void ofApp::onNotesSet(const ofxOscMessage& m) {
-    lightpath::EmitParams notesSet[MAX_NOTES_SET];
+    lightpath::integration::EmitParams notesSet[MAX_NOTES_SET];
     for (uint8_t i=0; i<m.getNumArgs() / 3; i++) {
         uint16_t noteId = m.getArgAsInt(i*3);
         uint8_t k = 0;
@@ -109,7 +109,7 @@ void ofApp::onNotesSet(const ofxOscMessage& m) {
             break;
           }
         }
-        lightpath::EmitParam param = static_cast<lightpath::EmitParam>(m.getArgAsInt(i*3+1));
+        lightpath::integration::EmitParam param = static_cast<lightpath::integration::EmitParam>(m.getArgAsInt(i*3+1));
         uint8_t j = i*3+2;
         parseParam(notesSet[k], m, param, j);
     }
@@ -124,15 +124,15 @@ void ofApp::onAuto(const ofxOscMessage &m) {
   state->autoEnabled = !state->autoEnabled;
 }
 
-void ofApp::parseParams(lightpath::EmitParams &p, const ofxOscMessage &m) {
+void ofApp::parseParams(lightpath::integration::EmitParams &p, const ofxOscMessage &m) {
     for (uint8_t i=0; i<m.getNumArgs() / 2; i++) {
-        lightpath::EmitParam param = static_cast<lightpath::EmitParam>(m.getArgAsInt(i*2));
+        lightpath::integration::EmitParam param = static_cast<lightpath::integration::EmitParam>(m.getArgAsInt(i*2));
         uint8_t j = i*2+1;
         parseParam(p, m, param, j);
     }
 }
 
-void ofApp::parseParam(lightpath::EmitParams &p, const ofxOscMessage &m, lightpath::EmitParam &param, uint8_t j) {
+void ofApp::parseParam(lightpath::integration::EmitParams &p, const ofxOscMessage &m, lightpath::integration::EmitParam &param, uint8_t j) {
     switch (param) {
         case P_MODEL:
             p.model = m.getArgAsInt(j);
@@ -174,7 +174,7 @@ void ofApp::parseParam(lightpath::EmitParams &p, const ofxOscMessage &m, lightpa
             p.duration = m.getArgAsInt(j);
             break;
         case P_DURATION_FRAMES:
-            p.duration = m.getArgAsInt(j) * lightpath::EmitParams::frameMs();
+            p.duration = m.getArgAsInt(j) * lightpath::integration::EmitParams::frameMs();
             break;
         case P_COLOR:
             p.setColors(m.getArgAsInt(j));
@@ -300,8 +300,8 @@ void ofApp::doCommand(char command) {
           }
 
           object = createObject(newType, pixelCount);
-          state = new lightpath::RuntimeState(*object);
-          debugger = new lightpath::Debugger(*object);
+          state = new lightpath::integration::RuntimeState(*object);
+          debugger = new lightpath::integration::Debugger(*object);
 
           const char* objName;
           switch (newType) {
@@ -340,7 +340,7 @@ void ofApp::doCommand(char command) {
       debugger->dumpIntersections();
       break;
     default:
-      if (std::optional<lightpath::EmitParams> params = object->getParams(command)) {
+      if (std::optional<lightpath::integration::EmitParams> params = object->getParams(command)) {
         doEmit(*params);
       }
       break;
@@ -370,7 +370,7 @@ void ofApp::draw(){
         }
         if (object->conn[i].size() > 0) {
             for (uint8_t j=0; j<object->conn[i].size(); j++) {
-                lightpath::Connection* conn = object->conn[i][j];
+                lightpath::integration::Connection* conn = object->conn[i][j];
                 glm::vec2 fromPos = intersectionPos(conn->from);
                 glm::vec2 toPos = intersectionPos(conn->to);
                 float dist = glm::distance(fromPos, toPos);
@@ -406,7 +406,7 @@ void ofApp::draw(){
 
 }
 
-glm::vec2 ofApp::intersectionPos(lightpath::Intersection* intersection, int8_t j) {
+glm::vec2 ofApp::intersectionPos(lightpath::integration::Intersection* intersection, int8_t j) {
     uint16_t groupDiam[MAX_GROUPS] = {0};
 
     if (currentObjectType == OBJ_HEPTAGON919 || currentObjectType == OBJ_HEPTAGON3024) {
@@ -500,7 +500,7 @@ ofColor ofApp::getColor(uint16_t i) {
   //return colorGamma.Correct(color);
 }
 
-void ofApp::doEmit(lightpath::EmitParams &params) {
+void ofApp::doEmit(lightpath::integration::EmitParams &params) {
     lastList = state->emit(params);
 }
 

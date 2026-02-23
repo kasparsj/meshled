@@ -142,7 +142,7 @@ bool updateUserPalette(const UserPalette& palette) {
 }
 
 #ifdef DEBUGGER_ENABLED
-#include <lightpath/debug.hpp>
+#include <lightpath/integration/debug.hpp>
 LPDebugger *debugger;
 #endif
 
