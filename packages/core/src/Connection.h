@@ -20,8 +20,9 @@ class Connection : public LPOwner {
     uint16_t toPixel;
     
     Connection(Intersection *from, Intersection *to, uint8_t group, int16_t numLeds = -1);
+    ~Connection() override = default;
     
-    uint8_t getType() { return TYPE_CONNECTION; };
+    uint8_t getType() override { return TYPE_CONNECTION; };
     inline void add(LPLight* const light) const {
         if (numLeds > 0) {
             LPOwner::add(light);
@@ -30,8 +31,8 @@ class Connection : public LPOwner {
             outgoing(light);
         }
     }
-    void emit(LPLight* const light) const;
-    void update(LPLight* const light) const;
+    void emit(LPLight* const light) const override;
+    void update(LPLight* const light) const override;
     uint16_t getPixel(uint16_t i) const {
       return fromPixel + (i * (pixelDir ? 1 : -1));
     }

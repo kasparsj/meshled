@@ -64,6 +64,14 @@ cmake --build packages/core/build-ubsan
 ctest --test-dir packages/core/build-ubsan --output-on-failure
 ```
 
+Optional strict warnings run:
+
+```bash
+CC=clang CXX=clang++ cmake -S packages/core -B packages/core/build-warnings -DLIGHTGRAPH_CORE_BUILD_TESTS=ON -DLIGHTGRAPH_CORE_ENABLE_STRICT_WARNINGS=ON
+cmake --build packages/core/build-warnings
+ctest --test-dir packages/core/build-warnings --output-on-failure
+```
+
 ## 3) Verify firmware wiring to shared core
 
 The firmware consumes core sources through a symlink:

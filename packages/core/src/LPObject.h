@@ -31,7 +31,7 @@ class LPObject {
     virtual Connection* addConnection(Connection *connection);
     virtual Connection* addBridge(uint16_t fromPixel, uint16_t toPixel, uint8_t group, uint8_t numPorts = 2);
     Model* getModel(int i) {
-      return i < models.size() ? models[i] : nullptr;
+      return i >= 0 && static_cast<size_t>(i) < models.size() ? models[i] : nullptr;
     }
     Intersection* getIntersection(uint8_t i, uint8_t groups);
     uint8_t countIntersections(uint8_t groups) {

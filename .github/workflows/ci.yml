@@ -66,6 +66,24 @@ jobs:
       - name: Run UBSan tests
         run: ctest --test-dir packages/core/build-ubsan --output-on-failure
 
+  core-warnings:
+    name: Core (Warnings)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Configure strict warning build
+        run: CC=clang CXX=clang++ cmake -S packages/core -B packages/core/build-warnings -DLIGHTGRAPH_CORE_BUILD_TESTS=ON -DLIGHTGRAPH_CORE_ENABLE_STRICT_WARNINGS=ON
+
+      - name: Build strict warning target
+        run: cmake --build packages/core/build-warnings --parallel
+
+      - name: Run strict warning tests
+        run: ctest --test-dir packages/core/build-warnings --output-on-failure
+
   web:
     name: Web (React)
     runs-on: ubuntu-latest

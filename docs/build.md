@@ -114,9 +114,10 @@ Jobs:
 1. `Core (host build + tests)`: CMake configure/build + `ctest` for the shared native engine.
 2. `Core (ASan)`: host build/test with AddressSanitizer enabled.
 3. `Core (UBSan)`: host build/test with UndefinedBehaviorSanitizer enabled.
-4. `Web (React)`: `npm ci --legacy-peer-deps`, lint, build.
-5. `Firmware (PlatformIO smoke)`: generates `compile_commands.json` for `esp32dev` (`pio run -e esp32dev -t compiledb`) to validate dependency resolution and toolchain setup.
-6. `Simulator (Scoped smoke)`: project/config integrity checks, plus optional `make -n` when `OF_ROOT` is provided in CI environment.
+4. `Core (Warnings)`: host build/test with strict warnings enabled (`LIGHTGRAPH_CORE_ENABLE_STRICT_WARNINGS=ON`) and warnings treated as errors.
+5. `Web (React)`: `npm ci --legacy-peer-deps`, lint, build.
+6. `Firmware (PlatformIO smoke)`: generates `compile_commands.json` for `esp32dev` (`pio run -e esp32dev -t compiledb`) to validate dependency resolution and toolchain setup.
+7. `Simulator (Scoped smoke)`: project/config integrity checks, plus optional `make -n` when `OF_ROOT` is provided in CI environment.
 
 Note:
 

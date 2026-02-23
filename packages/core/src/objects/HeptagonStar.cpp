@@ -25,9 +25,9 @@ uint16_t* HeptagonStar::getMirroredPixels(uint16_t pixel, LPOwner* mirrorFlipEmi
 
 uint8_t HeptagonStar::getStarSegmentIndex(uint16_t pixel) const {
     uint8_t stripIndex = 0;
-    for (int i=0; i<conn[0].size(); i++) {
+    for (size_t i = 0; i < conn[0].size(); i++) {
         if (pixel >= conn[0][i]->to->topPixel && pixel <= conn[0][(i + 3) % 7]->from->topPixel) {
-            stripIndex = i;
+            stripIndex = static_cast<uint8_t>(i);
         }
     }
     return stripIndex;

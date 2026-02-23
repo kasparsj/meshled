@@ -20,7 +20,7 @@ float Behaviour::getPosition(LPLight* const light) const {
   return light->position + light->getSpeed();
 }
 
-ColorRGB Behaviour::getColor(const LPLight *light, uint8_t group) const {
+ColorRGB Behaviour::getColor(const LPLight *light, uint8_t /*group*/) const {
   if (light->getPrev() != NULL) {
     return light->getPrev()->getColor();
   }

@@ -12,6 +12,7 @@ class LPOwner
     uint8_t group;
 
     LPOwner(uint8_t group) : group(group) {}
+    virtual ~LPOwner() = default;
 
     virtual uint8_t getType() = 0;
     virtual void emit(LPLight* const light) const = 0;
@@ -21,4 +22,3 @@ class LPOwner
     }
     virtual void update(LPLight* const light) const = 0;
 };
-

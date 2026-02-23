@@ -23,10 +23,10 @@ class HeptagonStar : public LPObject {
     HeptagonStar(uint16_t pixelCount) : LPObject(pixelCount) {
     }
     
-    virtual ~HeptagonStar() {}
+    ~HeptagonStar() override = default;
     
-    bool isMirrorSupported() { return true; }
-    uint16_t* getMirroredPixels(uint16_t pixel, LPOwner* mirrorFlipEmitter, bool mirrorRotate);
+    bool isMirrorSupported() override { return true; }
+    uint16_t* getMirroredPixels(uint16_t pixel, LPOwner* mirrorFlipEmitter, bool mirrorRotate) override;
     uint8_t getStarSegmentIndex(uint16_t pixel) const;
     float getProgressOnStarSegment(uint8_t pathIndex, uint16_t pixel) const;
     uint16_t getPixelOnStarSegment(uint8_t pathIndex, float perc) const;

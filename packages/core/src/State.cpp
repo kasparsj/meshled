@@ -14,7 +14,7 @@ uint8_t State::randomModel() {
   return floor(LP_RANDOM(object.models.size()));
 }
 
-ColorRGB State::paletteColor(uint8_t index, uint8_t maxBrightness) {
+ColorRGB State::paletteColor(uint8_t index, uint8_t /*maxBrightness*/) {
     Palette palette = getPalette(currentPalette);
     return Palette::wrapColors(index, 60, palette.getRGBColors(), palette.getWrapMode());
 }

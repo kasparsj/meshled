@@ -16,7 +16,6 @@ public:
     }
     
 private:
-  void setup();
+  void setup() override;
     
 };
-

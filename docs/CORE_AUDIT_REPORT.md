@@ -278,7 +278,7 @@ Resolved in Phase 1:
 
 Remaining high-signal risks:
 - Core still relies on macro-heavy platform indirection (`Config.h` + `ofMain`/Arduino shims).
-- Compile warnings remain high (`ofxEasing` and override-annotation issues), reducing signal quality for future warning-gated CI.
+- Warning-gated CI is now in place for core host builds, but it currently relies on targeted suppression for legacy `ofxEasing` sequencing diagnostics.
 - No lifecycle/regression tests around `State::update` rendering behavior and blend mode correctness.
 
 ## 7) Open Source Readiness Assessment
@@ -402,7 +402,7 @@ Files/modules: CI workflow.
 Acceptance criteria: ASan/UBSan pass on core test suite; warnings tracked as actionable.
 Complexity: M.
 Dependencies: 2.1, 2.2.
-Status: mostly complete (ASan + UBSan CI lanes added and passing; warning-policy enforcement still pending).
+Status: completed (ASan + UBSan + strict warning lane added; strict lane uses `LIGHTGRAPH_CORE_ENABLE_STRICT_WARNINGS=ON` with targeted suppression for legacy `ofxEasing` sequencing warnings).
 
 ## Phase 3: architectural refactors (optional/high risk)
 
@@ -478,6 +478,12 @@ Validation after Phase 1:
 - `.github/workflows/ci.yml` (`Core (UBSan)`)
 - Added UBSan toggle in host build:
 - `LIGHTGRAPH_CORE_ENABLE_UBSAN` in `packages/core/CMakeLists.txt`
+- Added strict warning lane for host core tests:
+- `.github/workflows/ci.yml` (`Core (Warnings)`)
+- Added strict warning toggle in host build:
+- `LIGHTGRAPH_CORE_ENABLE_STRICT_WARNINGS` in `packages/core/CMakeLists.txt`
+- Warning cleanup and annotation improvements:
+- `LPLight` and `LightList` now have virtual destructors, `LPLight` ctor init order was fixed, object overrides were annotated, and warning-only footguns were cleaned up in `LPObject`/`LightList`.
 - Improved teardown cleanup in core:
 - `State` now deletes owned `LightList` instances on destruction.
 - `Model` now deletes owned `Weight` instances on destruction.
@@ -494,6 +500,8 @@ Validation after Phase 2 expansion:
 - `ASAN_OPTIONS=detect_leaks=0 ctest --test-dir packages/core/build-asan --output-on-failure` succeeded (2/2).
 - `CC=clang CXX=clang++ cmake -S packages/core -B packages/core/build-ubsan -DLIGHTGRAPH_CORE_BUILD_TESTS=ON -DLIGHTGRAPH_CORE_ENABLE_UBSAN=ON` succeeded.
 - `ctest --test-dir packages/core/build-ubsan --output-on-failure` succeeded (2/2).
+- `CC=clang CXX=clang++ cmake -S packages/core -B packages/core/build-warnings -DLIGHTGRAPH_CORE_BUILD_TESTS=ON -DLIGHTGRAPH_CORE_ENABLE_STRICT_WARNINGS=ON` succeeded.
+- `ctest --test-dir packages/core/build-warnings --output-on-failure` succeeded (2/2).
 - `pio run -e esp32dev -t compiledb` still succeeds.
 - `packages/simulator make -n` status unchanged without local openFrameworks checkout.
 

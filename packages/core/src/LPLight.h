@@ -29,9 +29,10 @@ class LPLight
     const LPOwner *owner = 0;
     uint32_t lifeMillis = 0; // for LPLight this is offsetMillis
 
-    LPLight(LightList* const list, uint16_t idx = 0, uint8_t maxBri = 255) : list(list), idx(idx), maxBri(maxBri) {
+    LPLight(LightList* const list, uint16_t idx = 0, uint8_t maxBri = 255) : idx(idx), maxBri(maxBri), list(list) {
         position = -1;
     }
+    virtual ~LPLight() = default;
 
     void setInPort(Port* const port) {
       inPort = port;
@@ -51,9 +52,9 @@ class LPLight
     virtual ofxeasing::function getEasing() const;
     virtual float getFadeSpeed() const;
     virtual uint32_t getLife() const;
-    virtual void setDuration(uint32_t durMillis) {}
+    virtual void setDuration(uint32_t /*durMillis*/) {}
     virtual ColorRGB getColor() const;
-    virtual void setColor(ColorRGB color) {}
+    virtual void setColor(ColorRGB /*color*/) {}
     virtual uint8_t getBrightness() const;
     virtual ColorRGB getPixelColor() const;
     uint16_t* getPixels();

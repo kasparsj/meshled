@@ -19,3 +19,5 @@ packages/simulator/obj/
 packages/core/build/
 packages/core/build-asan/
 packages/core/build-ubsan/
+packages/core/build-warnings/
+packages/core/build-warnscan/

@@ -30,10 +30,10 @@ class Cross : public LPObject {
         setup();
     }
     
-    virtual ~Cross() {}
+    ~Cross() override = default;
     
-    bool isMirrorSupported() { return true; }
-    uint16_t* getMirroredPixels(uint16_t pixel, LPOwner* mirrorFlipEmitter, bool mirrorRotate);
+    bool isMirrorSupported() override { return true; }
+    uint16_t* getMirroredPixels(uint16_t pixel, LPOwner* mirrorFlipEmitter, bool mirrorRotate) override;
     float getProgressOnLine(uint16_t pixel, bool isVertical) const;
     uint16_t getPixelOnLine(float perc, bool isVertical) const;
     
