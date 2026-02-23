@@ -17,3 +17,4 @@
 
 #include "ColorOrder.h"
 #include <lightpath/integration.hpp>
+#include "src/core/Platform.h"
