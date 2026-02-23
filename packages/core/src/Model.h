@@ -24,6 +24,9 @@ class Model {
     }
   
     ~Model() {
+        for (unsigned int i = 0; i < weights->size(); i++) {
+            delete weights->valueAt(i);
+        }
         delete weights;
     }
     

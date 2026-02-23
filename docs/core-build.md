@@ -56,6 +56,14 @@ cmake --build packages/core/build-asan
 ASAN_OPTIONS=detect_leaks=0 ctest --test-dir packages/core/build-asan --output-on-failure
 ```
 
+Optional UBSan run:
+
+```bash
+CC=clang CXX=clang++ cmake -S packages/core -B packages/core/build-ubsan -DLIGHTGRAPH_CORE_BUILD_TESTS=ON -DLIGHTGRAPH_CORE_ENABLE_UBSAN=ON
+cmake --build packages/core/build-ubsan
+ctest --test-dir packages/core/build-ubsan --output-on-failure
+```
+
 ## 3) Verify firmware wiring to shared core
 
 The firmware consumes core sources through a symlink:

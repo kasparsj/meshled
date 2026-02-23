@@ -25,7 +25,7 @@ jobs:
       - name: Build core host target
         run: cmake --build packages/core/build --parallel
 
-      - name: Run core smoke tests
+      - name: Run core tests
         run: ctest --test-dir packages/core/build --output-on-failure
 
   core-asan:
@@ -47,6 +47,24 @@ jobs:
 
       - name: Run ASan tests
         run: ctest --test-dir packages/core/build-asan --output-on-failure
+
+  core-ubsan:
+    name: Core (UBSan)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Configure UBSan build
+        run: CC=clang CXX=clang++ cmake -S packages/core -B packages/core/build-ubsan -DLIGHTGRAPH_CORE_BUILD_TESTS=ON -DLIGHTGRAPH_CORE_ENABLE_UBSAN=ON
+
+      - name: Build UBSan target
+        run: cmake --build packages/core/build-ubsan --parallel
+
+      - name: Run UBSan tests
+        run: ctest --test-dir packages/core/build-ubsan --output-on-failure
 
   web:
     name: Web (React)

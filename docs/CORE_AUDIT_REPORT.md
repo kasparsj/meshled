@@ -18,9 +18,9 @@ Scope: `packages/core/src` and its direct runtime adapters (`packages/simulator`
 | Area | Score | Rationale |
 |---|---:|---|
 | Buildability | 7 | Core now compiles via standalone host CMake target and firmware path (`pio run -e esp32dev -t compiledb`), while simulator still depends on external OF layout.
-| Reliability | 4 | Several concrete correctness risks in core (missing return, wrong assignment, unchecked buffer writes, null/modulo edge cases).
+| Reliability | 5 | Core teardown safety improved and sanitizer lanes are passing, but macro-heavy abstractions and known warnings still create risk.
 | Docs | 6 | Core build docs and reproducible host workflow exist, but architecture and troubleshooting depth can still improve.
-| Tests | 5 | Host smoke/regression tests now run in CI (including ASan lane), though rendering/long-run coverage is still limited.
+| Tests | 6 | Host smoke/regression tests run in CI with ASan and UBSan, though rendering/long-run coverage is still limited.
 | Portability | 4 | Dual Arduino/openFrameworks abstraction exists, but host build is OF-coupled and firmware integration relies on symlink behavior.
 | Maintainability | 5 | Build/test ergonomics improved, but centralized state and raw-pointer ownership still increase change risk.
 
@@ -137,6 +137,8 @@ Outputs
 - `ctest --test-dir packages/core/build --output-on-failure` succeeded (2/2 passing).
 - `CC=clang CXX=clang++ cmake -S packages/core -B packages/core/build-asan -DLIGHTGRAPH_CORE_BUILD_TESTS=ON -DLIGHTGRAPH_CORE_ENABLE_ASAN=ON` succeeded.
 - `ASAN_OPTIONS=detect_leaks=0 ctest --test-dir packages/core/build-asan --output-on-failure` succeeded (2/2 passing).
+- `CC=clang CXX=clang++ cmake -S packages/core -B packages/core/build-ubsan -DLIGHTGRAPH_CORE_BUILD_TESTS=ON -DLIGHTGRAPH_CORE_ENABLE_UBSAN=ON` succeeded.
+- `ctest --test-dir packages/core/build-ubsan --output-on-failure` succeeded (2/2 passing).
 - `pio run -e esp32dev -t compiledb` succeeded (core sources compile under firmware toolchain).
 - `make -n` in `packages/simulator` failed locally due missing openFrameworks path at expected default (`../../../../openframeworks`).
 
@@ -275,8 +277,8 @@ Resolved in Phase 1:
 - Off-by-one model modulo in `Line`, `Cross`, `Triangle`.
 
 Remaining high-signal risks:
-- `State` destructor does not release `lightLists` and owned list memory.
 - Core still relies on macro-heavy platform indirection (`Config.h` + `ofMain`/Arduino shims).
+- Compile warnings remain high (`ofxEasing` and override-annotation issues), reducing signal quality for future warning-gated CI.
 - No lifecycle/regression tests around `State::update` rendering behavior and blend mode correctness.
 
 ## 7) Open Source Readiness Assessment
@@ -400,7 +402,7 @@ Files/modules: CI workflow.
 Acceptance criteria: ASan/UBSan pass on core test suite; warnings tracked as actionable.
 Complexity: M.
 Dependencies: 2.1, 2.2.
-Status: partially complete (ASan CI lane added and passing; UBSan and warning-policy enforcement still pending).
+Status: mostly complete (ASan + UBSan CI lanes added and passing; warning-policy enforcement still pending).
 
 ## Phase 3: architectural refactors (optional/high risk)
 
@@ -472,6 +474,13 @@ Validation after Phase 1:
 - `.github/workflows/ci.yml` (`Core (ASan)`)
 - Added ASan toggle in host build:
 - `LIGHTGRAPH_CORE_ENABLE_ASAN` in `packages/core/CMakeLists.txt`
+- Added UBSan lane for host core tests:
+- `.github/workflows/ci.yml` (`Core (UBSan)`)
+- Added UBSan toggle in host build:
+- `LIGHTGRAPH_CORE_ENABLE_UBSAN` in `packages/core/CMakeLists.txt`
+- Improved teardown cleanup in core:
+- `State` now deletes owned `LightList` instances on destruction.
+- `Model` now deletes owned `Weight` instances on destruction.
 - Updated docs:
 - `README.md`
 - `docs/core-build.md`
@@ -483,6 +492,8 @@ Validation after Phase 2 expansion:
 - `ctest --test-dir packages/core/build --output-on-failure` succeeded (2/2).
 - `CC=clang CXX=clang++ cmake -S packages/core -B packages/core/build-asan -DLIGHTGRAPH_CORE_BUILD_TESTS=ON -DLIGHTGRAPH_CORE_ENABLE_ASAN=ON` succeeded.
 - `ASAN_OPTIONS=detect_leaks=0 ctest --test-dir packages/core/build-asan --output-on-failure` succeeded (2/2).
+- `CC=clang CXX=clang++ cmake -S packages/core -B packages/core/build-ubsan -DLIGHTGRAPH_CORE_BUILD_TESTS=ON -DLIGHTGRAPH_CORE_ENABLE_UBSAN=ON` succeeded.
+- `ctest --test-dir packages/core/build-ubsan --output-on-failure` succeeded (2/2).
 - `pio run -e esp32dev -t compiledb` still succeeds.
 - `packages/simulator make -n` status unchanged without local openFrameworks checkout.
 

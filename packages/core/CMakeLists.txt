@@ -4,6 +4,7 @@ project(lightgraph_core LANGUAGES CXX)
 
 option(LIGHTGRAPH_CORE_BUILD_TESTS "Build Lightgraph core tests" ON)
 option(LIGHTGRAPH_CORE_ENABLE_ASAN "Enable AddressSanitizer for host builds" OFF)
+option(LIGHTGRAPH_CORE_ENABLE_UBSAN "Enable UndefinedBehaviorSanitizer for host builds" OFF)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -31,6 +32,15 @@ if(LIGHTGRAPH_CORE_ENABLE_ASAN)
     target_link_options(lightgraph_core PUBLIC -fsanitize=address)
   else()
     message(WARNING "LIGHTGRAPH_CORE_ENABLE_ASAN is only supported with Clang/GCC")
+  endif()
+endif()
+
+if(LIGHTGRAPH_CORE_ENABLE_UBSAN)
+  if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(lightgraph_core PUBLIC -fsanitize=undefined -fno-sanitize-recover=undefined)
+    target_link_options(lightgraph_core PUBLIC -fsanitize=undefined -fno-sanitize-recover=undefined)
+  else()
+    message(WARNING "LIGHTGRAPH_CORE_ENABLE_UBSAN is only supported with Clang/GCC")
   endif()
 endif()
 

@@ -34,6 +34,12 @@ class State {
         setupBg(0);
     }
     ~State() {
+      for (uint8_t i = 0; i < MAX_LIGHT_LISTS; i++) {
+        if (lightLists[i] != NULL) {
+          delete lightLists[i];
+          lightLists[i] = NULL;
+        }
+      }
       delete[] pixelValuesR;
       delete[] pixelValuesG;
       delete[] pixelValuesB;
