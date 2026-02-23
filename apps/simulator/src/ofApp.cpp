@@ -1,5 +1,7 @@
 #include "ofApp.h"
 
+#include <optional>
+
 //--------------------------------------------------------------
 LPObject* ofApp::createObject(ObjectType type, uint16_t pixelCount) {
     currentObjectType = type;
@@ -338,11 +340,9 @@ void ofApp::doCommand(char command) {
       debugger->dumpIntersections();
       break;
     default:
-      EmitParams* params = object->getParams(command);
-      if (params != NULL) {
+      if (std::optional<EmitParams> params = object->getParams(command)) {
         doEmit(*params);
       }
-      delete params;
       break;
   }
 }

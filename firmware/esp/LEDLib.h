@@ -1,5 +1,7 @@
 #pragma once
 
+#include <optional>
+
 #ifdef FASTLED_ENABLED
 #include <FastLED.h>
 CRGB* leds1;
@@ -173,11 +175,9 @@ void doCommand(char command) {
       break;
     #endif
     default:
-      EmitParams* params = object->getParams(command);
-      if (params != NULL) {
+      if (std::optional<EmitParams> params = object->getParams(command)) {
         doEmit(*params);
       }
-      delete params;
       break;
   }
 }
