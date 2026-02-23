@@ -81,12 +81,20 @@ void LPLight::setPixel1() {
 
 void LPLight::setSegmentPixels() {
     if (outPort != NULL) {
+        if (CONNECTION_MAX_LEDS < 3) {
+            setPixel1();
+            return;
+        }
+        const uint16_t maxPayload = CONNECTION_MAX_LEDS - 1;
         uint16_t numPixels = outPort->connection->numLeds;
-        pixels[0] = numPixels+2;
+        if (numPixels + 2 > maxPayload) {
+            numPixels = maxPayload - 2;
+        }
+        pixels[0] = numPixels + 2;
         pixels[1] = outPort->connection->getFromPixel();
         pixels[2] = outPort->connection->getToPixel();
-        for (uint16_t i=3; i<numPixels+3; i++) {
-            pixels[i] = outPort->connection->getPixel(i-3);
+        for (uint16_t i=0; i<numPixels; i++) {
+            pixels[i + 3] = outPort->connection->getPixel(i);
         }
     }
     else {
@@ -97,7 +105,15 @@ void LPLight::setSegmentPixels() {
 void LPLight::setLinkPixels() {
     LPLight* prev = getPrev();
     if (prev != NULL && owner == prev->owner) {
+        if (CONNECTION_MAX_LEDS < 2) {
+            setPixel1();
+            return;
+        }
         uint16_t numPixels = abs(pixel1 - prev->pixel1);
+        const uint16_t maxPayload = CONNECTION_MAX_LEDS - 1;
+        if (numPixels > maxPayload) {
+            numPixels = maxPayload;
+        }
         pixels[0] = numPixels;
         for (uint16_t i=1; i<numPixels+1; i++) {
             pixels[i] = pixel1 + (i-1) * (pixel1 < prev->pixel1 ? 1 : -1);

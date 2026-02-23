@@ -29,6 +29,10 @@ void State::autoEmit(unsigned long ms) {
 int8_t State::emit(EmitParams &params) {
     uint8_t which = params.model >= 0 ? params.model : randomModel();
     Model *model = object.getModel(which);
+    if (model == NULL) {
+        LP_LOGF("emit failed, model %d not found\n", which);
+        return -1;
+    }
     int8_t index = getOrCreateList(params);
     if (index > -1) {
         lightLists[index]->model = model;
@@ -39,7 +43,7 @@ int8_t State::emit(EmitParams &params) {
         }
         doEmit(emitter, lightLists[index], params);
         #ifdef LP_OSC_REPLY
-        LP_OSC_REPLY(i);
+        LP_OSC_REPLY(index);
         #endif
     }
     return index;
@@ -73,6 +77,7 @@ int8_t State::setupListFrom(uint8_t i, EmitParams &params) {
     if (totalLights - oldLights + newLen > MAX_TOTAL_LIGHTS) {
         // todo: if it's a change, maybe emit max possible?
         LP_LOGF("emit failed, %d is over max %d lights\n", totalLights + newLen, MAX_TOTAL_LIGHTS);
+        delete newBehaviour;
         return -1;
     }
     if (lightList == NULL) {
@@ -93,16 +98,27 @@ int8_t State::setupListFrom(uint8_t i, EmitParams &params) {
 }
 
 LPOwner* State::getEmitter(Model* model, Behaviour* behaviour, EmitParams& params) {
+    if (model == NULL || behaviour == NULL) {
+        return NULL;
+    }
     int8_t from = params.getEmit();
     if (behaviour->emitFromConnection()) {
         uint8_t emitGroups = params.emitGroups;
         uint8_t connCount = object.countConnections(emitGroups);
+        if (connCount == 0) {
+            LP_LOGF("emit failed, no connections for groups %d\n", emitGroups);
+            return NULL;
+        }
         from = from >= 0 ? from : LP_RANDOM(connCount);
         return object.getConnection(from % connCount, emitGroups);
     }
     else {
         uint8_t emitGroups = params.getEmitGroups(model->emitGroups);
         uint8_t interCount = object.countIntersections(emitGroups);
+        if (interCount == 0) {
+            LP_LOGF("emit failed, no intersections for groups %d\n", emitGroups);
+            return NULL;
+        }
         from = from >= 0 ? from : LP_RANDOM(interCount);
         return object.getIntersection(from % interCount, emitGroups);
     }

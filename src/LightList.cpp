@@ -86,10 +86,11 @@ LPLight* LightList::addLightFromMsg(const LightMessage* lightMsg) {
     else {
         light = new LPLight(this, lightMsg->lightIdx, lightMsg->brightness);
     }
+    return light;
 }
 
 void LightList::setDuration(uint32_t durMillis) {
-    this->duration = duration;
+    this->duration = durMillis;
     this->lifeMillis = MIN(gMillis + durMillis, INFINITE_DURATION);
     for (uint16_t i=0; i<numLights; i++) {
         if ((*this)[i] == 0) continue;
@@ -222,9 +223,9 @@ void LightList::doEmit() {
         return;
     }
     if (numEmitted < numLights) {
-        const uint8_t batchSize = numLights - numEmitted;
-        const uint8_t j = numEmitted;
-        for (uint8_t i=0; i<batchSize; i++) {
+        const uint16_t batchSize = numLights - numEmitted;
+        const uint16_t j = numEmitted;
+        for (uint16_t i=0; i<batchSize; i++) {
             LPLight* const light = (*this)[i+j];
             if (light->position < 0) {
                 break;

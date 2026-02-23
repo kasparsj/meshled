@@ -34,12 +34,16 @@ class HashMap
       return values[idx];
     }
 
-    bool willOverflow() {
+    bool willOverflow() const {
         return (currentIndex + 1 > capacity);
     }
 
     const V& operator[](const K key) const {
-        return operator[](key);
+        int index = indexOf(key);
+        if (index > -1) {
+            return values[index];
+        }
+        return nilValue;
     }
 
     V& operator[](const K key) {
@@ -65,7 +69,7 @@ class HashMap
         operator[](key) = value;
     }
 
-    int indexOf(K key) {
+    int indexOf(K key) const {
       for (unsigned int i = 0; i < currentIndex; i++)
       {
         if (cb_comparator)
@@ -86,7 +90,7 @@ class HashMap
       return -1;
     }
 
-    bool contains(K key) {
+    bool contains(K key) const {
       for (unsigned int i = 0; i < currentIndex; i++)
       {
         if (cb_comparator)

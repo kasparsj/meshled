@@ -44,7 +44,7 @@ class Triangle : public LPObject {
     uint8_t getSegmentForPixel(uint16_t pixel) const;
     
     EmitParams* getModelParams(int model) override {
-        EmitParams* params = new EmitParams(model % TriangleModel::T_LAST, LPRandom::randomSpeed());
+        EmitParams* params = new EmitParams(model % (TriangleModel::T_LAST + 1), LPRandom::randomSpeed());
         return params;
     }
 

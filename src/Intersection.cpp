@@ -59,7 +59,7 @@ void Intersection::update(LPLight* const light) const {
         Port* port = getPrevOutPort(light);
         if (port == NULL) {
             port = choosePort(light->getModel(), light);
-            sendList = port->isExternal();
+            sendList = (port != NULL && port->isExternal());
         }
         light->setOutPort(port, id);
         light->setInPort(NULL);
