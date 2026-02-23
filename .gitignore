@@ -17,3 +17,4 @@ packages/simulator/obj/
 
 # Core host build outputs
 packages/core/build/
+packages/core/build-asan/

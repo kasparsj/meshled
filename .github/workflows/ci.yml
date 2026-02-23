@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   core:
-    name: Core (host build + smoke tests)
+    name: Core (host build + tests)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -27,6 +27,26 @@ jobs:
 
       - name: Run core smoke tests
         run: ctest --test-dir packages/core/build --output-on-failure
+
+  core-asan:
+    name: Core (ASan)
+    runs-on: ubuntu-latest
+    env:
+      ASAN_OPTIONS: detect_leaks=0
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Configure ASan build
+        run: CC=clang CXX=clang++ cmake -S packages/core -B packages/core/build-asan -DLIGHTGRAPH_CORE_BUILD_TESTS=ON -DLIGHTGRAPH_CORE_ENABLE_ASAN=ON
+
+      - name: Build ASan target
+        run: cmake --build packages/core/build-asan --parallel
+
+      - name: Run ASan tests
+        run: ctest --test-dir packages/core/build-asan --output-on-failure
 
   web:
     name: Web (React)

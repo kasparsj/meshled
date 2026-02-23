@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.20)
 project(lightgraph_core LANGUAGES CXX)
 
 option(LIGHTGRAPH_CORE_BUILD_TESTS "Build Lightgraph core tests" ON)
+option(LIGHTGRAPH_CORE_ENABLE_ASAN "Enable AddressSanitizer for host builds" OFF)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -24,6 +25,15 @@ target_include_directories(
     "${CMAKE_CURRENT_SOURCE_DIR}/src"
 )
 
+if(LIGHTGRAPH_CORE_ENABLE_ASAN)
+  if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(lightgraph_core PUBLIC -fsanitize=address -fno-omit-frame-pointer)
+    target_link_options(lightgraph_core PUBLIC -fsanitize=address)
+  else()
+    message(WARNING "LIGHTGRAPH_CORE_ENABLE_ASAN is only supported with Clang/GCC")
+  endif()
+endif()
+
 if(LIGHTGRAPH_CORE_BUILD_TESTS)
   enable_testing()
 
@@ -35,4 +45,13 @@ if(LIGHTGRAPH_CORE_BUILD_TESTS)
   target_link_libraries(lightgraph_core_smoke PRIVATE lightgraph_core)
 
   add_test(NAME lightgraph_core_smoke COMMAND lightgraph_core_smoke)
+
+  add_executable(
+    lightgraph_core_regression
+    tests/core_regression_test.cpp
+  )
+
+  target_link_libraries(lightgraph_core_regression PRIVATE lightgraph_core)
+
+  add_test(NAME lightgraph_core_regression COMMAND lightgraph_core_regression)
 endif()

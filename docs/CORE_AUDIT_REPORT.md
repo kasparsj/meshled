@@ -20,7 +20,7 @@ Scope: `packages/core/src` and its direct runtime adapters (`packages/simulator`
 | Buildability | 7 | Core now compiles via standalone host CMake target and firmware path (`pio run -e esp32dev -t compiledb`), while simulator still depends on external OF layout.
 | Reliability | 4 | Several concrete correctness risks in core (missing return, wrong assignment, unchecked buffer writes, null/modulo edge cases).
 | Docs | 6 | Core build docs and reproducible host workflow exist, but architecture and troubleshooting depth can still improve.
-| Tests | 3 | Baseline host smoke tests and CI coverage now exist; behavior coverage is still shallow.
+| Tests | 5 | Host smoke/regression tests now run in CI (including ASan lane), though rendering/long-run coverage is still limited.
 | Portability | 4 | Dual Arduino/openFrameworks abstraction exists, but host build is OF-coupled and firmware integration relies on symlink behavior.
 | Maintainability | 5 | Build/test ergonomics improved, but centralized state and raw-pointer ownership still increase change risk.
 
@@ -133,8 +133,10 @@ Outputs
 ### Current build verification from this audit
 
 - `cmake -S packages/core -B packages/core/build -DLIGHTGRAPH_CORE_BUILD_TESTS=ON` succeeded.
-- `cmake --build packages/core/build` succeeded (builds `lightgraph_core` + `lightgraph_core_smoke`).
-- `ctest --test-dir packages/core/build --output-on-failure` succeeded (1/1 passing).
+- `cmake --build packages/core/build` succeeded (builds `lightgraph_core`, `lightgraph_core_smoke`, `lightgraph_core_regression`).
+- `ctest --test-dir packages/core/build --output-on-failure` succeeded (2/2 passing).
+- `CC=clang CXX=clang++ cmake -S packages/core -B packages/core/build-asan -DLIGHTGRAPH_CORE_BUILD_TESTS=ON -DLIGHTGRAPH_CORE_ENABLE_ASAN=ON` succeeded.
+- `ASAN_OPTIONS=detect_leaks=0 ctest --test-dir packages/core/build-asan --output-on-failure` succeeded (2/2 passing).
 - `pio run -e esp32dev -t compiledb` succeeded (core sources compile under firmware toolchain).
 - `make -n` in `packages/simulator` failed locally due missing openFrameworks path at expected default (`../../../../openframeworks`).
 
@@ -247,7 +249,12 @@ Outputs
 - `LightList::setDuration` assignment correctness.
 - `State::emit` invalid model guard.
 - `State::emit` zero-emitter guard via dummy object.
-- Coverage remains sparse for routing/lifecycle/render blending behavior.
+- Added regression tests in `packages/core/tests/core_regression_test.cpp`:
+- model-selection wrap behavior for `Line`/`Cross`/`Triangle`.
+- palette repeat-wrap behavior.
+- emit/update/stop lifecycle checks on `Line`.
+- same-note list reuse behavior.
+- Coverage remains limited for blend-mode math correctness and longer-running animation invariants.
 
 ### Likely performance hotspots
 
@@ -385,7 +392,7 @@ Files/modules: test sources around `State`, `LPObject`, `LightList`, `Palette`.
 Acceptance criteria: tests cover emit/update expiry, model routing, palette interpolation, and edge cases (empty emit groups).
 Complexity: M.
 Dependencies: 2.1.
-Status: partially complete (smoke tests added for guardrails; routing/lifecycle coverage still pending).
+Status: largely complete baseline (regression tests added for lifecycle/model-wrap/palette wrap + edge-case guards; deeper blend/long-run coverage still pending).
 
 ### Task 2.3
 Goal: add sanitizer/strict-warning CI lane for core host target.
@@ -393,7 +400,7 @@ Files/modules: CI workflow.
 Acceptance criteria: ASan/UBSan pass on core test suite; warnings tracked as actionable.
 Complexity: M.
 Dependencies: 2.1, 2.2.
-Status: partially complete (core host build + smoke tests now run in CI; sanitizer lane not added yet).
+Status: partially complete (ASan CI lane added and passing; UBSan and warning-policy enforcement still pending).
 
 ## Phase 3: architectural refactors (optional/high risk)
 
@@ -449,7 +456,7 @@ Validation after Phase 1:
 - `pio run -e esp32dev -t compiledb` succeeded in `firmware/esp`.
 - `make -n` in `packages/simulator` still fails only due missing local openFrameworks path (`../../../../openframeworks`), unchanged from pre-fix state.
 
-### Phase 2 build/test baseline (implemented)
+### Phase 2 build/test expansion (implemented)
 
 - Added standalone host build target:
 - `packages/core/CMakeLists.txt`
@@ -457,17 +464,25 @@ Validation after Phase 1:
 - `packages/core/host/include/ofMain.h`
 - Added baseline smoke tests:
 - `packages/core/tests/core_smoke_test.cpp`
+- Added regression tests:
+- `packages/core/tests/core_regression_test.cpp`
 - Added CI job for core host build + tests:
-- `.github/workflows/ci.yml` (`Core (host build + smoke tests)`)
+- `.github/workflows/ci.yml` (`Core (host build + tests)`)
+- Added ASan lane for host core tests:
+- `.github/workflows/ci.yml` (`Core (ASan)`)
+- Added ASan toggle in host build:
+- `LIGHTGRAPH_CORE_ENABLE_ASAN` in `packages/core/CMakeLists.txt`
 - Updated docs:
 - `README.md`
 - `docs/core-build.md`
 - `docs/build.md`
 
-Validation after Phase 2 baseline:
+Validation after Phase 2 expansion:
 - `cmake -S packages/core -B packages/core/build -DLIGHTGRAPH_CORE_BUILD_TESTS=ON` succeeded.
 - `cmake --build packages/core/build` succeeded.
-- `ctest --test-dir packages/core/build --output-on-failure` succeeded (1/1).
+- `ctest --test-dir packages/core/build --output-on-failure` succeeded (2/2).
+- `CC=clang CXX=clang++ cmake -S packages/core -B packages/core/build-asan -DLIGHTGRAPH_CORE_BUILD_TESTS=ON -DLIGHTGRAPH_CORE_ENABLE_ASAN=ON` succeeded.
+- `ASAN_OPTIONS=detect_leaks=0 ctest --test-dir packages/core/build-asan --output-on-failure` succeeded (2/2).
 - `pio run -e esp32dev -t compiledb` still succeeds.
 - `packages/simulator make -n` status unchanged without local openFrameworks checkout.
 

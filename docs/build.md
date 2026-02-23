@@ -111,10 +111,11 @@ GitHub Actions workflow: `.github/workflows/ci.yml`
 
 Jobs:
 
-1. `Core (host build + smoke tests)`: CMake configure/build + `ctest` for the shared native engine.
-2. `Web (React)`: `npm ci --legacy-peer-deps`, lint, build.
-3. `Firmware (PlatformIO smoke)`: generates `compile_commands.json` for `esp32dev` (`pio run -e esp32dev -t compiledb`) to validate dependency resolution and toolchain setup.
-4. `Simulator (Scoped smoke)`: project/config integrity checks, plus optional `make -n` when `OF_ROOT` is provided in CI environment.
+1. `Core (host build + tests)`: CMake configure/build + `ctest` for the shared native engine.
+2. `Core (ASan)`: host build/test with AddressSanitizer enabled.
+3. `Web (React)`: `npm ci --legacy-peer-deps`, lint, build.
+4. `Firmware (PlatformIO smoke)`: generates `compile_commands.json` for `esp32dev` (`pio run -e esp32dev -t compiledb`) to validate dependency resolution and toolchain setup.
+5. `Simulator (Scoped smoke)`: project/config integrity checks, plus optional `make -n` when `OF_ROOT` is provided in CI environment.
 
 Note:
 

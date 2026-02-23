@@ -46,7 +46,15 @@ ctest --test-dir packages/core/build --output-on-failure
 Expected:
 
 - static library (`lightgraph_core`) builds
-- smoke tests pass (`lightgraph_core_smoke`)
+- smoke/regression tests pass (`lightgraph_core_smoke`, `lightgraph_core_regression`)
+
+Optional ASan run:
+
+```bash
+CC=clang CXX=clang++ cmake -S packages/core -B packages/core/build-asan -DLIGHTGRAPH_CORE_BUILD_TESTS=ON -DLIGHTGRAPH_CORE_ENABLE_ASAN=ON
+cmake --build packages/core/build-asan
+ASAN_OPTIONS=detect_leaks=0 ctest --test-dir packages/core/build-asan --output-on-failure
+```
 
 ## 3) Verify firmware wiring to shared core
 
