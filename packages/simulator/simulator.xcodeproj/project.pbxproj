@@ -393,7 +393,7 @@
 			children = (
 				2B1751182DD67E760013F6A9 /* src */,
 			);
-			path = ../../vendor/ofxColorTheory;
+			path = ../../packages/core/vendor/ofxColorTheory;
 			sourceTree = "<group>";
 		};
 		2B29719428BDEDC200B98A88 /* src */ = {

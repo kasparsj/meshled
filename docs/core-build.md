@@ -11,13 +11,15 @@ The core is the shared C++ light engine used by:
 - simulator (`packages/simulator`)
 - standalone host build (`packages/core/CMakeLists.txt`)
 
+In this monorepo, `packages/core` is a git submodule sourced from `git@github.com:kasparsj/lightpath.git`.
+
 The host build is intended for reproducible compile/test checks in CI without requiring openFrameworks or Arduino SDKs.
 
 For architecture details (module responsibilities, update loop, ownership), see `docs/core-architecture.md`.
 
 ## Prerequisites
 
-- Git submodules initialized (required for `vendor/ofxColorTheory`)
+- Git submodules initialized (required for `packages/core/vendor/ofxColorTheory`)
 - For firmware-path verification:
 - Python 3
 - PlatformIO
@@ -35,7 +37,7 @@ git submodule update --init --recursive
 
 Expected:
 
-- `vendor/ofxColorTheory` exists and has content.
+- `packages/core/vendor/ofxColorTheory` exists and has content.
 
 ## 2) Build and test core on host (standalone)
 
@@ -129,7 +131,7 @@ Missing OF checkout:
 
 Missing submodule:
 
-- Symptom: include errors under `vendor/ofxColorTheory`
+- Symptom: include errors under `packages/core/vendor/ofxColorTheory`
 - Fix: run submodule init/update command
 
 Broken symlink on clone:

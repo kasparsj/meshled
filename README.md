@@ -10,6 +10,8 @@ Lightgraph is a networked light system with three runnable surfaces: a shared C+
 git submodule update --init --recursive
 ```
 
+This initializes `packages/core` from [lightpath](https://github.com/kasparsj/lightpath) and its nested `ofxColorTheory` submodule.
+
 ### 2) Control panel (`apps/control-panel`)
 
 ```bash
@@ -69,11 +71,11 @@ OF_ROOT=/path/to/openframeworks make -n
 ├── firmware/
 │   └── esp/               # ESP32/ESP32-S3 firmware (PlatformIO + Arduino)
 ├── packages/
-│   ├── core/
-│   │   └── src/           # shared C++ core model/engine
+│   ├── core/              # git submodule: github.com/kasparsj/lightpath
+│   │   ├── src/           # shared C++ core model/engine
+│   │   └── vendor/
+│   │       └── ofxColorTheory/  # nested submodule used by core
 │   └── simulator/         # openFrameworks desktop simulator
-├── vendor/
-│   └── ofxColorTheory/    # color-theory dependency (git submodule)
 ├── tools/
 │   └── esp-stacktrace-decoder/
 ├── docs/                  # build/API/contract docs

@@ -8,7 +8,7 @@ This document tracks third-party code used by Lightgraph and where license text/
 
 | Dependency | Location | Usage | License status |
 |---|---|---|---|
-| ofxColorTheory | `vendor/ofxColorTheory` (git submodule) | color-rule generation in core palette/light code | Confirmed MIT (`vendor/ofxColorTheory/LICENSE`) |
+| ofxColorTheory | `packages/core/vendor/ofxColorTheory` (git submodule) | color-rule generation in core palette/light code | Confirmed MIT (`packages/core/vendor/ofxColorTheory/LICENSE`) |
 | FastNoise | `packages/core/src/FastNoise.h`, `packages/core/src/FastNoise.cpp` | procedural noise behavior | Confirmed MIT header in source file |
 
 ## Dependencies Requiring Follow-up
@@ -20,7 +20,7 @@ This document tracks third-party code used by Lightgraph and where license text/
 
 ## Operational Notes
 
-- Keep `vendor/ofxColorTheory` as a submodule; do not vendor inline copies elsewhere.
+- Keep `packages/core/vendor/ofxColorTheory` as a submodule; do not vendor inline copies elsewhere.
 - When adding a new third-party dependency, include:
 - source URL/repository
 - version or commit reference

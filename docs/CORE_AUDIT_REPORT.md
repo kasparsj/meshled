@@ -87,7 +87,7 @@ Outputs
 
 ### Addons/plugins and third-party integration
 
-- `ofxColorTheory` submodule (`vendor/ofxColorTheory`) is used directly in `Palette.h` and `LightList.cpp` for color rules/schemes.
+- `ofxColorTheory` submodule (`packages/core/vendor/ofxColorTheory`) is used directly in `Palette.h` and `LightList.cpp` for color rules/schemes.
 - `ofxOsc` is used in simulator (`packages/simulator/addons.make`, `packages/simulator/src/ofApp.h`) for OSC input.
 - `ofxEasing.h` is vendored in core and used heavily for timing/easing.
 - `FastNoise.*` is vendored in core for noise-driven behavior.
@@ -114,7 +114,7 @@ Outputs
 
 - Required external:
 - openFrameworks checkout for simulator.
-- `vendor/ofxColorTheory` submodule.
+- `packages/core/vendor/ofxColorTheory` submodule.
 - PlatformIO + Arduino framework for firmware integration build path.
 - Core-local/vendored:
 - `ofxEasing.h`
@@ -145,7 +145,7 @@ Outputs
 ### Typical failure modes and debugging
 
 - Missing OF checkout or wrong `OF_ROOT` causes simulator make failure.
-- Missing/uninitialized submodule (`vendor/ofxColorTheory`) causes compile failures in core palette code.
+- Missing/uninitialized submodule (`packages/core/vendor/ofxColorTheory`) causes compile failures in core palette code.
 - Firmware-core path depends on symlink (`firmware/esp/src`) which can be problematic on environments that do not preserve symlinks.
 - Debug visibility:
 - `LP_LOG*` macros route to `Serial` (Arduino) or `ofLog` (OF).
@@ -442,6 +442,7 @@ Dependencies: 3.1.
 - Added `docs/core-architecture.md` with a concise module map, runtime flow, ownership/lifecycle notes, and adapter boundary contract.
 - Added `docs/third-party-licenses.md` to track confirmed licenses and unresolved provenance follow-ups (`ofxEasing`, palette attribution).
 - Added `scripts/build-core.sh` (`default|asan|ubsan|warnings|all`) for reproducible host core verification from repo root.
+- Extracted core into standalone repo `git@github.com:kasparsj/lightpath.git` and reconnected monorepo `packages/core` as a git submodule.
 - Updated `docs/build.md` to point to `docs/core-build.md`.
 - Updated `README.md` key docs list to include `docs/core-build.md`, `docs/core-architecture.md`, and `docs/third-party-licenses.md`.
 

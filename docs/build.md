@@ -10,7 +10,8 @@ If this repo is used as a submodule, ensure nested submodules are initialized:
 git submodule update --init --recursive
 ```
 
-`ofxColorTheory` is required at `./vendor/ofxColorTheory`.
+`ofxColorTheory` is required at `./packages/core/vendor/ofxColorTheory`.
+`packages/core` itself is a submodule sourced from `git@github.com:kasparsj/lightpath.git`.
 
 Core-specific reproducibility notes live in `docs/core-build.md`.
 Core architecture notes live in `docs/core-architecture.md`.
