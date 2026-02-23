@@ -1,7 +1,7 @@
 # MeshLED Core Audit Report
 
 Date: 2026-02-23
-Scope: `packages/core/src` and its direct runtime adapters (`packages/simulator`, firmware integration points only where needed to explain core behavior)
+Scope: `packages/lightpath/src` and its direct runtime adapters (`apps/simulator`, firmware integration points only where needed to explain core behavior)
 
 ## 1) Executive Summary
 
@@ -11,7 +11,7 @@ Scope: `packages/core/src` and its direct runtime adapters (`packages/simulator`
 - Maintains runtime animation layers (`LightList`) that emit and update light particles (`LPLight`/`Light`) every frame.
 - Applies color/palette interpolation (including `ofxColorTheory` color rules) and per-layer blend modes into shared pixel accumulators in `State`.
 - Supports behavior flags for movement/brightness/mirroring/segment rendering (`BehaviourFlags` in `Config.h`) that alter propagation and rendering semantics.
-- Is reused in two surfaces: desktop simulator (openFrameworks + OSC input) and ESP firmware (Arduino + OSC/HTTP control), with firmware compiling core through a symlink (`firmware/esp/src -> ../../packages/core/src`).
+- Is reused in two surfaces: desktop simulator (openFrameworks + OSC input) and ESP firmware (Arduino + OSC/HTTP control), with firmware compiling core through a symlink (`firmware/esp/src -> ../../packages/lightpath/src`).
 
 ### Readiness score (0-10)
 
@@ -36,7 +36,7 @@ Scope: `packages/core/src` and its direct runtime adapters (`packages/simulator`
 
 ### Directory/module map
 
-- `packages/core/src`
+- `packages/lightpath/src`
 - Purpose: shared native engine used by firmware and simulator.
 - Notable files:
 - `State.*`: frame update, emission, blending, layer lifecycle.
@@ -46,17 +46,17 @@ Scope: `packages/core/src` and its direct runtime adapters (`packages/simulator`
 - `EmitParams.*`, `Behaviour.*`, `Config.h`: parameter schema and behavior flags.
 - `Palette.*`, `Palettes.*`: palette generation/interpolation and preset palettes.
 - `objects/*`: concrete topologies (`Heptagon919`, `Heptagon3024`, `Line`, `Cross`, `Triangle`).
-- `packages/simulator/src`
+- `apps/simulator/src`
 - Purpose: openFrameworks adapter around core.
 - `main.cpp`: app entrypoint.
 - `ofApp.*`: OSC receiver, command parsing, core updates, visualization.
 
 ### Key classes/modules and responsibilities
 
-- `State` (`packages/core/src/State.h`): owns active `LightList`s and pixel accumulators; orchestrates `autoEmit`, `emit`, `update`, and final pixel sampling.
-- `LightList` (`packages/core/src/LightList.h`): per-layer configuration/state (speed, easing, fade, palette, behavior, blend mode), light allocation/reset/update.
-- `LPLight`/`Light` (`packages/core/src/LPLight.h`, `packages/core/src/Light.h`): per-light progression on topology and color/brightness computation.
-- `LPObject` (`packages/core/src/LPObject.h`): topology container for intersections/connections/models and command presets.
+- `State` (`packages/lightpath/src/State.h`): owns active `LightList`s and pixel accumulators; orchestrates `autoEmit`, `emit`, `update`, and final pixel sampling.
+- `LightList` (`packages/lightpath/src/LightList.h`): per-layer configuration/state (speed, easing, fade, palette, behavior, blend mode), light allocation/reset/update.
+- `LPLight`/`Light` (`packages/lightpath/src/LPLight.h`, `packages/lightpath/src/Light.h`): per-light progression on topology and color/brightness computation.
+- `LPObject` (`packages/lightpath/src/LPObject.h`): topology container for intersections/connections/models and command presets.
 - `Intersection`/`Connection`/`Port`: route lights across graph edges and optionally out to external sinks.
 - `Model`/`Weight`: weighted routing table per model.
 - `Palette`/`Palettes`: color handling, interpolation and presets, optional color-rule generation through `ofxColorTheory`.
@@ -87,8 +87,8 @@ Outputs
 
 ### Addons/plugins and third-party integration
 
-- `ofxColorTheory` submodule (`packages/core/vendor/ofxColorTheory`) is used directly in `Palette.h` and `LightList.cpp` for color rules/schemes.
-- `ofxOsc` is used in simulator (`packages/simulator/addons.make`, `packages/simulator/src/ofApp.h`) for OSC input.
+- `ofxColorTheory` submodule (`packages/lightpath/vendor/ofxColorTheory`) is used directly in `Palette.h` and `LightList.cpp` for color rules/schemes.
+- `ofxOsc` is used in simulator (`apps/simulator/addons.make`, `apps/simulator/src/ofApp.h`) for OSC input.
 - `ofxEasing.h` is vendored in core and used heavily for timing/easing.
 - `FastNoise.*` is vendored in core for noise-driven behavior.
 
@@ -96,11 +96,11 @@ Outputs
 
 ### Build systems detected
 
-- Standalone host build for core: CMake (`packages/core/CMakeLists.txt`).
+- Standalone host build for core: CMake (`packages/lightpath/CMakeLists.txt`).
 - openFrameworks simulator build surfaces:
-- GNU Make (`packages/simulator/Makefile` + `config.make` + `addons.make`).
-- QBS (`packages/simulator/simulator.qbs`).
-- Xcode project (`packages/simulator/simulator.xcodeproj`).
+- GNU Make (`apps/simulator/Makefile` + `config.make` + `addons.make`).
+- QBS (`apps/simulator/simulator.qbs`).
+- Xcode project (`apps/simulator/simulator.xcodeproj`).
 - Firmware build surface: PlatformIO (`firmware/esp/platformio.ini`), compiling core via symlinked source dir.
 
 ### Supported platforms (inferred)
@@ -114,7 +114,7 @@ Outputs
 
 - Required external:
 - openFrameworks checkout for simulator.
-- `packages/core/vendor/ofxColorTheory` submodule.
+- `packages/lightpath/vendor/ofxColorTheory` submodule.
 - PlatformIO + Arduino framework for firmware integration build path.
 - Core-local/vendored:
 - `ofxEasing.h`
@@ -122,7 +122,7 @@ Outputs
 
 ### Entrypoints and runtime model
 
-- Simulator entrypoint: `packages/simulator/src/main.cpp` -> `ofRunApp(new ofApp())`.
+- Simulator entrypoint: `apps/simulator/src/main.cpp` -> `ofRunApp(new ofApp())`.
 - Simulator loop:
 - `ofApp::update()` -> OSC polling -> `State::autoEmit()` -> `State::update()`.
 - `ofApp::draw()` visualizes topology/pixels.
@@ -132,20 +132,20 @@ Outputs
 
 ### Current build verification from this audit
 
-- `cmake -S packages/core -B packages/core/build -DLIGHTPATH_CORE_BUILD_TESTS=ON` succeeded.
-- `cmake --build packages/core/build` succeeded (builds core static library and host test executables).
-- `ctest --test-dir packages/core/build --output-on-failure` succeeded (2/2 passing).
-- `CC=clang CXX=clang++ cmake -S packages/core -B packages/core/build-asan -DLIGHTPATH_CORE_BUILD_TESTS=ON -DLIGHTPATH_CORE_ENABLE_ASAN=ON` succeeded.
-- `ASAN_OPTIONS=detect_leaks=0 ctest --test-dir packages/core/build-asan --output-on-failure` succeeded (2/2 passing).
-- `CC=clang CXX=clang++ cmake -S packages/core -B packages/core/build-ubsan -DLIGHTPATH_CORE_BUILD_TESTS=ON -DLIGHTPATH_CORE_ENABLE_UBSAN=ON` succeeded.
-- `ctest --test-dir packages/core/build-ubsan --output-on-failure` succeeded (2/2 passing).
+- `cmake -S packages/lightpath -B packages/lightpath/build -DLIGHTPATH_CORE_BUILD_TESTS=ON` succeeded.
+- `cmake --build packages/lightpath/build` succeeded (builds core static library and host test executables).
+- `ctest --test-dir packages/lightpath/build --output-on-failure` succeeded (2/2 passing).
+- `CC=clang CXX=clang++ cmake -S packages/lightpath -B packages/lightpath/build-asan -DLIGHTPATH_CORE_BUILD_TESTS=ON -DLIGHTPATH_CORE_ENABLE_ASAN=ON` succeeded.
+- `ASAN_OPTIONS=detect_leaks=0 ctest --test-dir packages/lightpath/build-asan --output-on-failure` succeeded (2/2 passing).
+- `CC=clang CXX=clang++ cmake -S packages/lightpath -B packages/lightpath/build-ubsan -DLIGHTPATH_CORE_BUILD_TESTS=ON -DLIGHTPATH_CORE_ENABLE_UBSAN=ON` succeeded.
+- `ctest --test-dir packages/lightpath/build-ubsan --output-on-failure` succeeded (2/2 passing).
 - `pio run -e esp32dev -t compiledb` succeeded (core sources compile under firmware toolchain).
-- `make -n` in `packages/simulator` failed locally due missing openFrameworks path at expected default (`../../../../openframeworks`).
+- `make -n` in `apps/simulator` failed locally due missing openFrameworks path at expected default (`../../../../openframeworks`).
 
 ### Typical failure modes and debugging
 
 - Missing OF checkout or wrong `OF_ROOT` causes simulator make failure.
-- Missing/uninitialized submodule (`packages/core/vendor/ofxColorTheory`) causes compile failures in core palette code.
+- Missing/uninitialized submodule (`packages/lightpath/vendor/ofxColorTheory`) causes compile failures in core palette code.
 - Firmware-core path depends on symlink (`firmware/esp/src`) which can be problematic on environments that do not preserve symlinks.
 - Debug visibility:
 - `LP_LOG*` macros route to `Serial` (Arduino) or `ofLog` (OF).
@@ -183,7 +183,7 @@ Outputs
 
 - Predominantly raw `new`/`delete` ownership.
 - Ownership boundaries are implicit and in places incomplete (see risks in section 6).
-- `State` destructor does not release `lightLists` (`packages/core/src/State.h:36`), implying leaks on teardown/object switches.
+- `State` destructor does not release `lightLists` (`packages/lightpath/src/State.h:36`), implying leaks on teardown/object switches.
 
 ### Config/parameter system
 
@@ -207,7 +207,7 @@ Outputs
 
 - OSC pair/triplet param contract maps to `EmitParam` IDs and `EmitParams` fields.
 - HTTP control panel endpoints (e.g. `/get_layers`, `/update_palette`, `/update_behaviour_flags`) mutate `state->lightLists[...]` fields directly in firmware handlers.
-- Core supports external propagation hook via `ExternalPort` + `sendLightViaESPNow` function pointer (`packages/core/src/Port.h:62`).
+- Core supports external propagation hook via `ExternalPort` + `sendLightViaESPNow` function pointer (`packages/lightpath/src/Port.h:62`).
 
 ### Reliability considerations
 
@@ -241,17 +241,17 @@ Outputs
 
 - Medium testability in current form:
 - strong coupling to globals/macros.
-- host build target now exists (`packages/core/CMakeLists.txt`) and can run in CI.
+- host build target now exists (`packages/lightpath/CMakeLists.txt`) and can run in CI.
 - topology setup code is deterministic and testable once harness exists.
 
 ### Existing tests and coverage gaps
 
-- Added baseline smoke tests in `packages/core/tests/core_smoke_test.cpp`:
+- Added baseline smoke tests in `packages/lightpath/tests/core_smoke_test.cpp`:
 - `HashMap` const lookup behavior.
 - `LightList::setDuration` assignment correctness.
 - `State::emit` invalid model guard.
 - `State::emit` zero-emitter guard via dummy object.
-- Added regression tests in `packages/core/tests/core_regression_test.cpp`:
+- Added regression tests in `packages/lightpath/tests/core_regression_test.cpp`:
 - model-selection wrap behavior for `Line`/`Cross`/`Triangle`.
 - palette repeat-wrap behavior.
 - emit/update/stop lifecycle checks on `Line`, including `stopNote`, `stopAll`, and `findListById` checks.
@@ -286,7 +286,7 @@ Remaining high-signal risks:
 
 ### Missing for “build core from scratch”
 
-- Host target now exists (`packages/core/CMakeLists.txt`) and is CI-validated.
+- Host target now exists (`packages/lightpath/CMakeLists.txt`) and is CI-validated.
 - Core-specific quickstart now exists (`docs/core-build.md`) but still lacks a platform/version support matrix.
 - Simulator build prerequisites depend on user-managed openFrameworks path/version without explicit pin.
 
@@ -306,7 +306,7 @@ Remaining high-signal risks:
 
 ### Dev tooling suggestions (without overengineering)
 
-- Add `clang-format` config for `packages/core/src` + basic format check in CI.
+- Add `clang-format` config for `packages/lightpath/src` + basic format check in CI.
 - Add a minimal core host test job (even one executable) once standalone target exists.
 - Add optional static analysis pass (`clang-tidy` or compiler warnings-as-errors for core only).
 
@@ -314,7 +314,7 @@ Remaining high-signal risks:
 
 ### Assumptions made
 
-- `packages/core/src` is canonical core source used by both firmware and simulator.
+- `packages/lightpath/src` is canonical core source used by both firmware and simulator.
 - Firmware symlink (`firmware/esp/src`) remains the intended integration mechanism.
 - Simulator is intended as the primary host runtime for visual verification of core behavior.
 
@@ -383,11 +383,11 @@ Dependencies: 1.1.
 
 ### Task 2.1
 Goal: add standalone core host target for tests.
-Files/modules: new `packages/core` build files (e.g., CMake or simple host make), minimal harness.
+Files/modules: new `packages/lightpath` build files (e.g., CMake or simple host make), minimal harness.
 Acceptance criteria: core compiles outside OF/Arduino adapters on CI host.
 Complexity: M.
 Dependencies: 1.1.
-Status: completed in this phase (`packages/core/CMakeLists.txt` + `packages/core/host/include/ofMain.h`).
+Status: completed in this phase (`packages/lightpath/CMakeLists.txt` + `packages/lightpath/host/include/ofMain.h`).
 
 ### Task 2.2
 Goal: add regression tests for routing and lifecycle.
@@ -442,7 +442,7 @@ Dependencies: 3.1.
 - Added `docs/core-architecture.md` with a concise module map, runtime flow, ownership/lifecycle notes, and adapter boundary contract.
 - Added `docs/third-party-licenses.md` to track confirmed licenses and unresolved provenance follow-ups (`ofxEasing`, palette attribution).
 - Added `scripts/build-core.sh` (`default|asan|ubsan|warnings|all`) for reproducible host core verification from repo root.
-- Extracted core into standalone repo `git@github.com:kasparsj/lightpath.git` and reconnected monorepo `packages/core` as a git submodule.
+- Extracted core into standalone repo `git@github.com:kasparsj/lightpath.git` and reconnected monorepo `packages/lightpath` as a git submodule.
 - Updated `docs/build.md` to point to `docs/core-build.md`.
 - Updated `README.md` key docs list to include `docs/core-build.md`, `docs/core-architecture.md`, and `docs/third-party-licenses.md`.
 
@@ -461,18 +461,18 @@ Dependencies: 3.1.
 
 Validation after Phase 1:
 - `pio run -e esp32dev -t compiledb` succeeded in `firmware/esp`.
-- `make -n` in `packages/simulator` still fails only due missing local openFrameworks path (`../../../../openframeworks`), unchanged from pre-fix state.
+- `make -n` in `apps/simulator` still fails only due missing local openFrameworks path (`../../../../openframeworks`), unchanged from pre-fix state.
 
 ### Phase 2 build/test expansion (implemented)
 
 - Added standalone host build target:
-- `packages/core/CMakeLists.txt`
+- `packages/lightpath/CMakeLists.txt`
 - Added host compatibility shim for core-only CMake builds:
-- `packages/core/host/include/ofMain.h`
+- `packages/lightpath/host/include/ofMain.h`
 - Added baseline smoke tests:
-- `packages/core/tests/core_smoke_test.cpp`
+- `packages/lightpath/tests/core_smoke_test.cpp`
 - Added regression tests:
-- `packages/core/tests/core_regression_test.cpp`
+- `packages/lightpath/tests/core_regression_test.cpp`
 - Expanded regression coverage:
 - deterministic blend-mode compositing checks across all documented blend modes (`BLEND_NORMAL` through `BLEND_PIN_LIGHT`) using stacked `BgLight` layers.
 - lifecycle assertions for `stopNote` and `findListById` behavior.
@@ -481,15 +481,15 @@ Validation after Phase 1:
 - Added ASan lane for host core tests:
 - `.github/workflows/ci.yml` (`Core (ASan)`)
 - Added ASan toggle in host build:
-- `LIGHTPATH_CORE_ENABLE_ASAN` in `packages/core/CMakeLists.txt`
+- `LIGHTPATH_CORE_ENABLE_ASAN` in `packages/lightpath/CMakeLists.txt`
 - Added UBSan lane for host core tests:
 - `.github/workflows/ci.yml` (`Core (UBSan)`)
 - Added UBSan toggle in host build:
-- `LIGHTPATH_CORE_ENABLE_UBSAN` in `packages/core/CMakeLists.txt`
+- `LIGHTPATH_CORE_ENABLE_UBSAN` in `packages/lightpath/CMakeLists.txt`
 - Added strict warning lane for host core tests:
 - `.github/workflows/ci.yml` (`Core (Warnings)`)
 - Added strict warning toggle in host build:
-- `LIGHTPATH_CORE_ENABLE_STRICT_WARNINGS` in `packages/core/CMakeLists.txt`
+- `LIGHTPATH_CORE_ENABLE_STRICT_WARNINGS` in `packages/lightpath/CMakeLists.txt`
 - Warning cleanup and annotation improvements:
 - `LPLight` and `LightList` now have virtual destructors, `LPLight` ctor init order was fixed, object overrides were annotated, and warning-only footguns were cleaned up in `LPObject`/`LightList`.
 - Improved teardown cleanup in core:
@@ -497,9 +497,9 @@ Validation after Phase 1:
 - `Model` now deletes owned `Weight` instances on destruction.
 - `Connection` now deletes owned `Port` instances, and `LPObject` now destroys connections before intersections to keep port cleanup order safe.
 - Added long-run lifecycle regression coverage:
-- `packages/core/tests/core_regression_test.cpp` now verifies bounded repeated emit/update/stop cycles and post-`stopAll` drain behavior over a full `Line` traversal window, including background-slot (`lightLists[0]`) and `totalLightLists` invariants.
+- `packages/lightpath/tests/core_regression_test.cpp` now verifies bounded repeated emit/update/stop cycles and post-`stopAll` drain behavior over a full `Line` traversal window, including background-slot (`lightLists[0]`) and `totalLightLists` invariants.
 - Added teardown regression check:
-- `packages/core/tests/core_regression_test.cpp` now asserts the global `Port` pool is empty after scoped object teardown.
+- `packages/lightpath/tests/core_regression_test.cpp` now asserts the global `Port` pool is empty after scoped object teardown.
 - Fixed list counter underflow during repeated expired background updates:
 - `State::update` now keeps slot `0` allocated/non-visible without decrementing `totalLightLists` on every frame.
 - Updated docs:
@@ -508,21 +508,21 @@ Validation after Phase 1:
 - `docs/build.md`
 
 Validation after Phase 2 expansion:
-- `cmake -S packages/core -B packages/core/build -DLIGHTPATH_CORE_BUILD_TESTS=ON` succeeded.
-- `cmake --build packages/core/build` succeeded.
-- `ctest --test-dir packages/core/build --output-on-failure` succeeded (2/2).
-- `CC=clang CXX=clang++ cmake -S packages/core -B packages/core/build-asan -DLIGHTPATH_CORE_BUILD_TESTS=ON -DLIGHTPATH_CORE_ENABLE_ASAN=ON` succeeded.
-- `ASAN_OPTIONS=detect_leaks=0 ctest --test-dir packages/core/build-asan --output-on-failure` succeeded (2/2).
-- `CC=clang CXX=clang++ cmake -S packages/core -B packages/core/build-ubsan -DLIGHTPATH_CORE_BUILD_TESTS=ON -DLIGHTPATH_CORE_ENABLE_UBSAN=ON` succeeded.
-- `ctest --test-dir packages/core/build-ubsan --output-on-failure` succeeded (2/2).
-- `CC=clang CXX=clang++ cmake -S packages/core -B packages/core/build-warnings -DLIGHTPATH_CORE_BUILD_TESTS=ON -DLIGHTPATH_CORE_ENABLE_STRICT_WARNINGS=ON` succeeded.
-- `ctest --test-dir packages/core/build-warnings --output-on-failure` succeeded (2/2).
+- `cmake -S packages/lightpath -B packages/lightpath/build -DLIGHTPATH_CORE_BUILD_TESTS=ON` succeeded.
+- `cmake --build packages/lightpath/build` succeeded.
+- `ctest --test-dir packages/lightpath/build --output-on-failure` succeeded (2/2).
+- `CC=clang CXX=clang++ cmake -S packages/lightpath -B packages/lightpath/build-asan -DLIGHTPATH_CORE_BUILD_TESTS=ON -DLIGHTPATH_CORE_ENABLE_ASAN=ON` succeeded.
+- `ASAN_OPTIONS=detect_leaks=0 ctest --test-dir packages/lightpath/build-asan --output-on-failure` succeeded (2/2).
+- `CC=clang CXX=clang++ cmake -S packages/lightpath -B packages/lightpath/build-ubsan -DLIGHTPATH_CORE_BUILD_TESTS=ON -DLIGHTPATH_CORE_ENABLE_UBSAN=ON` succeeded.
+- `ctest --test-dir packages/lightpath/build-ubsan --output-on-failure` succeeded (2/2).
+- `CC=clang CXX=clang++ cmake -S packages/lightpath -B packages/lightpath/build-warnings -DLIGHTPATH_CORE_BUILD_TESTS=ON -DLIGHTPATH_CORE_ENABLE_STRICT_WARNINGS=ON` succeeded.
+- `ctest --test-dir packages/lightpath/build-warnings --output-on-failure` succeeded (2/2).
 - `pio run -e esp32dev -t compiledb` still succeeds.
-- `packages/simulator make -n` status unchanged without local openFrameworks checkout.
+- `apps/simulator make -n` status unchanged without local openFrameworks checkout.
 
 ## Appendix A: Search-driven findings
 
-Keyword scans performed across `packages/core` and `packages/simulator`:
+Keyword scans performed across `packages/lightpath` and `apps/simulator`:
 
 - Networking terms (`udp|osc|websocket|http|mdns|ssdp|espnow|tcp`): simulator OSC usage and core `ExternalPort` callback hook were found; no core-native socket stack.
 - Parameter/config terms (`param|settings|json|palette|EmitParam|behaviourFlags`): `EmitParams`, palette system, behavior flags, and simulator parser paths confirmed.
@@ -531,8 +531,8 @@ Keyword scans performed across `packages/core` and `packages/simulator`:
 
 ## Appendix B: Known TODO/FIXME markers
 
-- `packages/core/src/State.cpp`: `todo` on max-light overflow strategy and pixel retrieval note.
-- `packages/core/src/LightList.cpp`: `todo` on behavior gate and split trail handling.
-- `packages/core/src/objects/Heptagon919.cpp`: `todo` maxLength for all models.
-- `packages/core/src/objects/Heptagon3024.cpp`: `todo` maxLength for all models.
-- `packages/core/src/objects/HeptagonStar.h`: `todo` implement `getXYZ`.
+- `packages/lightpath/src/State.cpp`: `todo` on max-light overflow strategy and pixel retrieval note.
+- `packages/lightpath/src/LightList.cpp`: `todo` on behavior gate and split trail handling.
+- `packages/lightpath/src/objects/Heptagon919.cpp`: `todo` maxLength for all models.
+- `packages/lightpath/src/objects/Heptagon3024.cpp`: `todo` maxLength for all models.
+- `packages/lightpath/src/objects/HeptagonStar.h`: `todo` implement `getXYZ`.

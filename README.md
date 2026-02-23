@@ -10,7 +10,7 @@ MeshLED is a networked light system with three runnable surfaces: a shared C++ c
 git submodule update --init --recursive
 ```
 
-This initializes `packages/core` from [lightpath](https://github.com/kasparsj/lightpath) and its nested `ofxColorTheory` submodule.
+This initializes `packages/lightpath` from [lightpath](https://github.com/kasparsj/lightpath) and its nested `ofxColorTheory` submodule.
 
 ### 2) Control panel (`apps/control-panel`)
 
@@ -33,18 +33,18 @@ Alternative board:
 pio run -e esp32-s3-devkitc-1
 ```
 
-### 4) Core host smoke (`packages/core`)
+### 4) Core host smoke (`packages/lightpath`)
 
 ```bash
-cmake -S packages/core -B packages/core/build -DLIGHTPATH_CORE_BUILD_TESTS=ON
-cmake --build packages/core/build
-ctest --test-dir packages/core/build --output-on-failure
+cmake -S packages/lightpath -B packages/lightpath/build -DLIGHTPATH_CORE_BUILD_TESTS=ON
+cmake --build packages/lightpath/build
+ctest --test-dir packages/lightpath/build --output-on-failure
 ```
 
-### 5) Simulator / core smoke (`packages/simulator`)
+### 5) Simulator / core smoke (`apps/simulator`)
 
 ```bash
-cd packages/simulator
+cd apps/simulator
 make -n
 ```
 

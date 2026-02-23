@@ -12,12 +12,12 @@ firmware/esp/.pio/
 firmware/esp/compile_commands.json
 
 # openFrameworks local build outputs
-packages/simulator/bin/
-packages/simulator/obj/
+apps/simulator/bin/
+apps/simulator/obj/
 
 # Core host build outputs
-packages/core/build/
-packages/core/build-asan/
-packages/core/build-ubsan/
-packages/core/build-warnings/
-packages/core/build-warnscan/
+packages/lightpath/build/
+packages/lightpath/build-asan/
+packages/lightpath/build-ubsan/
+packages/lightpath/build-warnings/
+packages/lightpath/build-warnscan/

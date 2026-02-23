@@ -10,8 +10,8 @@ If this repo is used as a submodule, ensure nested submodules are initialized:
 git submodule update --init --recursive
 ```
 
-`ofxColorTheory` is required at `./packages/core/vendor/ofxColorTheory`.
-`packages/core` itself is a submodule sourced from `git@github.com:kasparsj/lightpath.git`.
+`ofxColorTheory` is required at `./packages/lightpath/vendor/ofxColorTheory`.
+`packages/lightpath` itself is a submodule sourced from `git@github.com:kasparsj/lightpath.git`.
 
 Core-specific reproducibility notes live in `docs/core-build.md`.
 Core architecture notes live in `docs/core-architecture.md`.
@@ -70,7 +70,7 @@ Local dev server:
 npm run dev
 ```
 
-## Simulator (`packages/simulator`)
+## Simulator (`apps/simulator`)
 
 Prerequisites:
 
@@ -83,7 +83,7 @@ Default expectation from simulator directory:
 Dry-run make:
 
 ```bash
-cd packages/simulator
+cd apps/simulator
 make -n
 ```
 
@@ -93,7 +93,7 @@ If openFrameworks is elsewhere:
 OF_ROOT=/path/to/openframeworks make -n
 ```
 
-## Core host build (`packages/core`)
+## Core host build (`packages/lightpath`)
 
 Prerequisites:
 
@@ -103,9 +103,9 @@ Prerequisites:
 Build and test:
 
 ```bash
-cmake -S packages/core -B packages/core/build -DLIGHTPATH_CORE_BUILD_TESTS=ON
-cmake --build packages/core/build
-ctest --test-dir packages/core/build --output-on-failure
+cmake -S packages/lightpath -B packages/lightpath/build -DLIGHTPATH_CORE_BUILD_TESTS=ON
+cmake --build packages/lightpath/build
+ctest --test-dir packages/lightpath/build --output-on-failure
 ```
 
 Script helper:

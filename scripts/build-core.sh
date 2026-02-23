@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-CORE_DIR="$ROOT_DIR/packages/core"
+CORE_DIR="$ROOT_DIR/packages/lightpath"
 PROFILE="${1:-default}"
 
 configure_compiler() {

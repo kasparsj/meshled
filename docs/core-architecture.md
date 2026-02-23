@@ -1,14 +1,14 @@
 # Core Architecture Primer
 
 Date: 2026-02-23
-Scope: `packages/core/src`
+Scope: `packages/lightpath/src`
 
 ## Purpose
 
 The core is a shared C++ light engine that runs in both:
 
 - firmware (`firmware/esp`)
-- simulator (`packages/simulator`)
+- simulator (`apps/simulator`)
 
 It is responsible for:
 
@@ -96,7 +96,7 @@ Adapters map incoming controls to:
 ## Quick Verification
 
 ```bash
-cmake -S packages/core -B packages/core/build -DLIGHTPATH_CORE_BUILD_TESTS=ON
-cmake --build packages/core/build
-ctest --test-dir packages/core/build --output-on-failure
+cmake -S packages/lightpath -B packages/lightpath/build -DLIGHTPATH_CORE_BUILD_TESTS=ON
+cmake --build packages/lightpath/build
+ctest --test-dir packages/lightpath/build --output-on-failure
 ```

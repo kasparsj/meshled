@@ -8,19 +8,19 @@ This document tracks third-party code used by MeshLED and where license text/pro
 
 | Dependency | Location | Usage | License status |
 |---|---|---|---|
-| ofxColorTheory | `packages/core/vendor/ofxColorTheory` (git submodule) | color-rule generation in core palette/light code | Confirmed MIT (`packages/core/vendor/ofxColorTheory/LICENSE`) |
-| FastNoise | `packages/core/src/FastNoise.h`, `packages/core/src/FastNoise.cpp` | procedural noise behavior | Confirmed MIT header in source file |
+| ofxColorTheory | `packages/lightpath/vendor/ofxColorTheory` (git submodule) | color-rule generation in core palette/light code | Confirmed MIT (`packages/lightpath/vendor/ofxColorTheory/LICENSE`) |
+| FastNoise | `packages/lightpath/src/FastNoise.h`, `packages/lightpath/src/FastNoise.cpp` | procedural noise behavior | Confirmed MIT header in source file |
 
 ## Dependencies Requiring Follow-up
 
 | Dependency/material | Location | Current status | Follow-up |
 |---|---|---|---|
-| ofxEasing | `packages/core/src/ofxEasing.h` | No explicit license header in vendored file | Confirm upstream source + license and add attribution/copy to repo docs |
-| FastLED/cpt-city derived palette data | `packages/core/src/Palettes.h`, `packages/core/src/Palettes.cpp` | Source comment mentions derivation, but attribution text is incomplete | Add explicit attribution + license compatibility note for reused palette data |
+| ofxEasing | `packages/lightpath/src/ofxEasing.h` | No explicit license header in vendored file | Confirm upstream source + license and add attribution/copy to repo docs |
+| FastLED/cpt-city derived palette data | `packages/lightpath/src/Palettes.h`, `packages/lightpath/src/Palettes.cpp` | Source comment mentions derivation, but attribution text is incomplete | Add explicit attribution + license compatibility note for reused palette data |
 
 ## Operational Notes
 
-- Keep `packages/core/vendor/ofxColorTheory` as a submodule; do not vendor inline copies elsewhere.
+- Keep `packages/lightpath/vendor/ofxColorTheory` as a submodule; do not vendor inline copies elsewhere.
 - When adding a new third-party dependency, include:
 - source URL/repository
 - version or commit reference

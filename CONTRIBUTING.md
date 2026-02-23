@@ -22,13 +22,13 @@ Run the checks for the area you touched:
 ```bash
 ./scripts/build-control-panel.sh
 ./scripts/build-firmware.sh esp32dev compiledb
-cd packages/simulator && make -n
+cd apps/simulator && make -n
 ```
 
 If `openframeworks` is not at the default path, override `OF_ROOT`:
 
 ```bash
-cd packages/simulator
+cd apps/simulator
 OF_ROOT=/path/to/openframeworks make -n
 ```
 

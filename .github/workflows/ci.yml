@@ -20,13 +20,13 @@ jobs:
           submodules: recursive
 
       - name: Configure core host build
-        run: cmake -S packages/core -B packages/core/build -DLIGHTPATH_CORE_BUILD_TESTS=ON
+        run: cmake -S packages/lightpath -B packages/lightpath/build -DLIGHTPATH_CORE_BUILD_TESTS=ON
 
       - name: Build core host target
-        run: cmake --build packages/core/build --parallel
+        run: cmake --build packages/lightpath/build --parallel
 
       - name: Run core tests
-        run: ctest --test-dir packages/core/build --output-on-failure
+        run: ctest --test-dir packages/lightpath/build --output-on-failure
 
   core-asan:
     name: Core (ASan)
@@ -40,13 +40,13 @@ jobs:
           submodules: recursive
 
       - name: Configure ASan build
-        run: CC=clang CXX=clang++ cmake -S packages/core -B packages/core/build-asan -DLIGHTPATH_CORE_BUILD_TESTS=ON -DLIGHTPATH_CORE_ENABLE_ASAN=ON
+        run: CC=clang CXX=clang++ cmake -S packages/lightpath -B packages/lightpath/build-asan -DLIGHTPATH_CORE_BUILD_TESTS=ON -DLIGHTPATH_CORE_ENABLE_ASAN=ON
 
       - name: Build ASan target
-        run: cmake --build packages/core/build-asan --parallel
+        run: cmake --build packages/lightpath/build-asan --parallel
 
       - name: Run ASan tests
-        run: ctest --test-dir packages/core/build-asan --output-on-failure
+        run: ctest --test-dir packages/lightpath/build-asan --output-on-failure
 
   core-ubsan:
     name: Core (UBSan)
@@ -58,13 +58,13 @@ jobs:
           submodules: recursive
 
       - name: Configure UBSan build
-        run: CC=clang CXX=clang++ cmake -S packages/core -B packages/core/build-ubsan -DLIGHTPATH_CORE_BUILD_TESTS=ON -DLIGHTPATH_CORE_ENABLE_UBSAN=ON
+        run: CC=clang CXX=clang++ cmake -S packages/lightpath -B packages/lightpath/build-ubsan -DLIGHTPATH_CORE_BUILD_TESTS=ON -DLIGHTPATH_CORE_ENABLE_UBSAN=ON
 
       - name: Build UBSan target
-        run: cmake --build packages/core/build-ubsan --parallel
+        run: cmake --build packages/lightpath/build-ubsan --parallel
 
       - name: Run UBSan tests
-        run: ctest --test-dir packages/core/build-ubsan --output-on-failure
+        run: ctest --test-dir packages/lightpath/build-ubsan --output-on-failure
 
   core-warnings:
     name: Core (Warnings)
@@ -76,13 +76,13 @@ jobs:
           submodules: recursive
 
       - name: Configure strict warning build
-        run: CC=clang CXX=clang++ cmake -S packages/core -B packages/core/build-warnings -DLIGHTPATH_CORE_BUILD_TESTS=ON -DLIGHTPATH_CORE_ENABLE_STRICT_WARNINGS=ON
+        run: CC=clang CXX=clang++ cmake -S packages/lightpath -B packages/lightpath/build-warnings -DLIGHTPATH_CORE_BUILD_TESTS=ON -DLIGHTPATH_CORE_ENABLE_STRICT_WARNINGS=ON
 
       - name: Build strict warning target
-        run: cmake --build packages/core/build-warnings --parallel
+        run: cmake --build packages/lightpath/build-warnings --parallel
 
       - name: Run strict warning tests
-        run: ctest --test-dir packages/core/build-warnings --output-on-failure
+        run: ctest --test-dir packages/lightpath/build-warnings --output-on-failure
 
   web:
     name: Web (React)
@@ -133,7 +133,7 @@ jobs:
       - name: Validate shared core wiring
         run: |
           test -L src
-          test "$(readlink src)" = "../../packages/core/src"
+          test "$(readlink src)" = "../../packages/lightpath/src"
 
       - name: Generate esp32dev compilation database
         run: pio run -e esp32dev -t compiledb
@@ -143,7 +143,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: packages/simulator
+        working-directory: apps/simulator
     steps:
       - name: Checkout
         uses: actions/checkout@v4
