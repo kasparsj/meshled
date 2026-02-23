@@ -69,6 +69,8 @@ uint16_t oscPort = 54321;
 bool otaEnabled = true; // OTA updates enabled by default
 uint16_t otaPort = 3232;
 String otaPassword = "homodeus";
+bool apiAuthEnabled = false;
+String apiAuthToken = "";
 
 // Auto Emitter
 bool emitterEnabled = false; // Default auto emitter enabled state

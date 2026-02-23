@@ -1,6 +1,8 @@
 #pragma once
 
+#include <algorithm>
 #include <ArduinoJson.h>
+#include <functional>
 
 // todo: gist does not work because of CORS
 #define SCRIPTS_FALLBACK "//gist.githubusercontent.com/kasparsj/e297e6ffff5a4d4aca3657912a17f993/raw/scripts.js"
@@ -13,6 +15,47 @@
 //#define SPIFFS_FORMAT
 #endif
 #define WEBSERVER_SPIFFS defined(SPIFFS_UPLOAD) or defined(SPIFFS_DELETE) or defined(SPIFFS_FORMAT)
+
+void sendCORSHeaders(String methods);
+
+bool isApiRequestAuthorized() {
+  if (!apiAuthEnabled) {
+    return true;
+  }
+
+  String token = "";
+  if (server.hasHeader("Authorization")) {
+    token = server.header("Authorization");
+    const String bearerPrefix = "Bearer ";
+    if (token.startsWith(bearerPrefix)) {
+      token = token.substring(bearerPrefix.length());
+    }
+  } else if (server.hasHeader("X-API-Token")) {
+    token = server.header("X-API-Token");
+  } else if (server.hasArg("token")) {
+    token = server.arg("token");
+  }
+
+  return token.length() > 0 && token == apiAuthToken;
+}
+
+bool requireApiAuth() {
+  if (isApiRequestAuthorized()) {
+    return true;
+  }
+  sendCORSHeaders("GET, POST, PUT, DELETE");
+  server.send(401, "application/json", "{\"error\":\"Unauthorized\"}");
+  return false;
+}
+
+std::function<void(void)> guardMutatingRoute(void (*handler)()) {
+  return [handler]() {
+    if (!requireApiAuth()) {
+      return;
+    }
+    handler();
+  };
+}
 
 void sendCORSHeaders(String methods = "GET, POST, PUT, DELETE") {
   server.sendHeader("Access-Control-Allow-Origin", "*");
@@ -188,7 +231,7 @@ void streamConfigDisplay(WiFiClient &client) {
 
 String getFooterMenu() {
   String menu = "";
-  menu += "<p><a href='/wifi'>Configure WiFi</a> | <a href='/restart'>Restart Device</a></p>";
+  menu += "<p><a href='/wifi'>Configure WiFi</a> | <a href='#' onclick=\"fetch('/restart',{method:'POST'}).catch(console.error); return false;\">Restart Device</a></p>";
   return menu;
 }
 
@@ -233,7 +276,7 @@ void lowMemory() {
     "<h1>Low Memory Warning</h1>"
     "<p>System memory is low (" + String(ESP.getFreeHeap() / 1024) + " KB available). "
     "Try reducing the number of active lights or restart the device.</p>"
-    "<p><a href='/restart' style='color:#0066ff'>Restart Device</a></p>"
+    "<p><a href='#' onclick=\"fetch('/restart',{method:'POST'}).catch(console.error); return false;\" style='color:#0066ff'>Restart Device</a></p>"
     "</body></html>");
 }
 
@@ -491,8 +534,9 @@ void handleAddIntersection() {
     return;
   }
   
-  if (group >= MAX_GROUPS) {
-    server.send(400, "application/json", "{\"error\":\"group must be less than MAX_GROUPS\"}");
+  const uint8_t maxGroupMask = static_cast<uint8_t>((1u << MAX_GROUPS) - 1u);
+  if (group == 0 || group > maxGroupMask || (group & (group - 1)) != 0) {
+    server.send(400, "application/json", "{\"error\":\"group must be a single valid group bit\"}");
     return;
   }
   
@@ -521,25 +565,10 @@ void cleanupModelWeights(Intersection* intersection) {
   
   // Remove weights for all ports of this intersection from all models
   for (uint8_t m = 0; m < object->models.size(); m++) {
-    if (object->models[m] && object->models[m]->weights) {
+    if (object->models[m]) {
       for (uint8_t p = 0; p < intersection->numPorts; p++) {
         if (intersection->ports[p]) {
-          uint8_t portId = intersection->ports[p]->id;
-          
-          // Remove this port's weights
-          Weight* weight = object->models[m]->weights->get(portId);
-          if (weight) {
-            delete weight;
-            object->models[m]->weights->remove(portId);
-          }
-          
-          // Remove references to this port from other ports' weights
-          for (uint8_t otherId = 0; otherId < 255; otherId++) {
-            Weight* otherWeight = object->models[m]->weights->get(otherId);
-            if (otherWeight) {
-              otherWeight->remove(intersection->ports[p]);
-            }
-          }
+          object->models[m]->removePort(intersection->ports[p]);
         }
       }
     }
@@ -592,32 +621,26 @@ void handleRemoveIntersection() {
   uint8_t intersectionId = doc["id"];
   uint8_t group = doc["group"];
   
-  // Find and remove the intersection
-  bool found = false;
+  // Find intersection in the requested group and remove through TopologyObject.
+  Intersection* target = nullptr;
   if (group < MAX_GROUPS) {
-    auto& intersections = object->inter[group];
-    for (auto it = intersections.begin(); it != intersections.end(); ++it) {
-      if (*it && (*it)->id == intersectionId) {
-        Intersection* intersection = *it;
-        
-        // Remove related model weights
-        cleanupModelWeights(intersection);
-        
-        // Remove connections involving this intersection
-        removeConnections(intersection);
-        
-        // Delete the intersection and remove from vector
-        delete intersection;
-        intersections.erase(it);
-        
-        found = true;
+    for (Intersection* intersection : object->inter[group]) {
+      if (intersection && intersection->id == intersectionId) {
+        target = intersection;
         break;
       }
     }
   }
   
-  if (!found) {
+  if (!target) {
     server.send(404, "application/json", "{\"error\":\"Intersection not found\"}");
+    return;
+  }
+
+  // Remove related model weights first, then delegate ownership-safe removal.
+  cleanupModelWeights(target);
+  if (!object->removeIntersection(target)) {
+    server.send(500, "application/json", "{\"error\":\"Failed to remove intersection\"}");
     return;
   }
   
@@ -951,6 +974,366 @@ void handleGetModel() {
   // Allow time for data to be sent
   delay(1);
 }
+
+bool parseBoundedLong(JsonVariantConst value, long minValue, long maxValue, long& out) {
+  const bool isNumber =
+      value.is<int>() || value.is<long>() || value.is<unsigned int>() || value.is<unsigned long>();
+  if (!isNumber) {
+    return false;
+  }
+  const long parsed = value.as<long>();
+  if (parsed < minValue || parsed > maxValue) {
+    return false;
+  }
+  out = parsed;
+  return true;
+}
+
+bool parseTopologySnapshotFromJson(JsonObjectConst root, TopologySnapshot& snapshot, String& error) {
+  long pixelCount = 0;
+  if (!parseBoundedLong(root["pixelCount"], 1, 65535, pixelCount)) {
+    error = "Invalid or missing pixelCount";
+    return false;
+  }
+  snapshot.pixelCount = static_cast<uint16_t>(pixelCount);
+
+  JsonArrayConst intersections = root["intersections"];
+  if (intersections.isNull()) {
+    error = "Missing intersections array";
+    return false;
+  }
+  for (JsonObjectConst intersectionJson : intersections) {
+    long id = 0;
+    long numPorts = 0;
+    long topPixel = 0;
+    long group = 0;
+    if (!parseBoundedLong(intersectionJson["id"], 0, 255, id) ||
+        !parseBoundedLong(intersectionJson["numPorts"], 1, 8, numPorts) ||
+        !parseBoundedLong(intersectionJson["topPixel"], 0, 65535, topPixel) ||
+        !parseBoundedLong(intersectionJson["group"], 1, 255, group)) {
+      error = "Invalid intersection entry";
+      return false;
+    }
+    long bottomPixel = -1;
+    if (!intersectionJson["bottomPixel"].isNull()) {
+      if (!parseBoundedLong(intersectionJson["bottomPixel"], -1, 32767, bottomPixel)) {
+        error = "Invalid intersection bottomPixel";
+        return false;
+      }
+    }
+    snapshot.intersections.push_back({
+      static_cast<uint8_t>(id),
+      static_cast<uint8_t>(numPorts),
+      static_cast<uint16_t>(topPixel),
+      static_cast<int16_t>(bottomPixel),
+      static_cast<uint8_t>(group),
+    });
+  }
+
+  JsonArrayConst connections = root["connections"];
+  if (connections.isNull()) {
+    error = "Missing connections array";
+    return false;
+  }
+  for (JsonObjectConst connectionJson : connections) {
+    long fromIntersectionId = 0;
+    long toIntersectionId = 0;
+    long group = 0;
+    long numLeds = 0;
+    if (!parseBoundedLong(connectionJson["fromIntersectionId"], 0, 255, fromIntersectionId) ||
+        !parseBoundedLong(connectionJson["toIntersectionId"], 0, 255, toIntersectionId) ||
+        !parseBoundedLong(connectionJson["group"], 1, 255, group) ||
+        !parseBoundedLong(connectionJson["numLeds"], 0, 65535, numLeds)) {
+      error = "Invalid connection entry";
+      return false;
+    }
+    snapshot.connections.push_back({
+      static_cast<uint8_t>(fromIntersectionId),
+      static_cast<uint8_t>(toIntersectionId),
+      static_cast<uint8_t>(group),
+      static_cast<uint16_t>(numLeds),
+    });
+  }
+
+  JsonArrayConst ports = root["ports"];
+  if (ports.isNull()) {
+    error = "Missing ports array";
+    return false;
+  }
+  for (JsonObjectConst portJson : ports) {
+    long id = 0;
+    long intersectionId = 0;
+    long slotIndex = 0;
+    if (!parseBoundedLong(portJson["id"], 0, 255, id) ||
+        !parseBoundedLong(portJson["intersectionId"], 0, 255, intersectionId) ||
+        !parseBoundedLong(portJson["slotIndex"], 0, 255, slotIndex)) {
+      error = "Invalid port entry";
+      return false;
+    }
+    snapshot.ports.push_back({
+      static_cast<uint8_t>(id),
+      static_cast<uint8_t>(intersectionId),
+      static_cast<uint8_t>(slotIndex),
+    });
+  }
+
+  JsonArrayConst models = root["models"];
+  if (!models.isNull()) {
+    for (JsonObjectConst modelJson : models) {
+      long id = 0;
+      long defaultWeight = 0;
+      long emitGroups = 0;
+      long maxLength = 0;
+      long routingStrategy = 0;
+      if (!parseBoundedLong(modelJson["id"], 0, 255, id) ||
+          !parseBoundedLong(modelJson["defaultWeight"], 0, 255, defaultWeight) ||
+          !parseBoundedLong(modelJson["emitGroups"], 0, 255, emitGroups) ||
+          !parseBoundedLong(modelJson["maxLength"], 0, 65535, maxLength)) {
+        error = "Invalid model entry";
+        return false;
+      }
+      if (!modelJson["routingStrategy"].isNull() &&
+          !parseBoundedLong(modelJson["routingStrategy"], 0, 1, routingStrategy)) {
+        error = "Invalid model routingStrategy";
+        return false;
+      }
+
+      TopologyModelSnapshot modelSnapshot{
+        static_cast<uint8_t>(id),
+        static_cast<uint8_t>(defaultWeight),
+        static_cast<uint8_t>(emitGroups),
+        static_cast<uint16_t>(maxLength),
+        static_cast<RoutingStrategy>(routingStrategy),
+        {},
+      };
+
+      JsonArrayConst weights = modelJson["weights"];
+      if (!weights.isNull()) {
+        for (JsonObjectConst weightJson : weights) {
+          long outgoingPortId = 0;
+          long portDefaultWeight = 0;
+          if (!parseBoundedLong(weightJson["outgoingPortId"], 0, 255, outgoingPortId) ||
+              !parseBoundedLong(weightJson["defaultWeight"], 0, 255, portDefaultWeight)) {
+            error = "Invalid model weight entry";
+            return false;
+          }
+          TopologyPortWeightSnapshot weightSnapshot{
+            static_cast<uint8_t>(outgoingPortId),
+            static_cast<uint8_t>(portDefaultWeight),
+            {},
+          };
+
+          JsonArrayConst conditionals = weightJson["conditionals"];
+          if (!conditionals.isNull()) {
+            for (JsonObjectConst conditionalJson : conditionals) {
+              long incomingPortId = 0;
+              long conditionalWeight = 0;
+              if (!parseBoundedLong(conditionalJson["incomingPortId"], 0, 255, incomingPortId) ||
+                  !parseBoundedLong(conditionalJson["weight"], 0, 255, conditionalWeight)) {
+                error = "Invalid conditional model weight entry";
+                return false;
+              }
+              weightSnapshot.conditionals.push_back({
+                static_cast<uint8_t>(incomingPortId),
+                static_cast<uint8_t>(conditionalWeight),
+              });
+            }
+          }
+
+          modelSnapshot.weights.push_back(weightSnapshot);
+        }
+      }
+
+      snapshot.models.push_back(modelSnapshot);
+    }
+  }
+
+  JsonArrayConst gaps = root["gaps"];
+  if (!gaps.isNull()) {
+    for (JsonObjectConst gapJson : gaps) {
+      long fromPixel = 0;
+      long toPixel = 0;
+      if (!parseBoundedLong(gapJson["fromPixel"], 0, 65535, fromPixel) ||
+          !parseBoundedLong(gapJson["toPixel"], 0, 65535, toPixel)) {
+        error = "Invalid gap entry";
+        return false;
+      }
+      snapshot.gaps.push_back({
+        static_cast<uint16_t>(fromPixel),
+        static_cast<uint16_t>(toPixel),
+      });
+    }
+  }
+
+  return true;
+}
+
+void streamTopologySnapshot(const TopologySnapshot& snapshot) {
+  WiFiClient client = server.client();
+  if (!client) {
+    server.send(500, "text/plain", "Client connection error");
+    return;
+  }
+
+  client.println("HTTP/1.1 200 OK");
+  client.println("Content-Type: application/json");
+  client.println("Access-Control-Allow-Origin: *");
+  client.println("Access-Control-Allow-Methods: GET, OPTIONS");
+  client.println("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
+  client.println("Connection: close");
+  client.println();
+
+  client.print("{\"schemaVersion\":1,");
+  client.printf("\"pixelCount\":%d,", snapshot.pixelCount);
+
+  client.print("\"intersections\":[");
+  for (size_t i = 0; i < snapshot.intersections.size(); i++) {
+    if (i > 0) client.print(",");
+    const TopologyIntersectionSnapshot& intersection = snapshot.intersections[i];
+    client.printf(
+        "{\"id\":%d,\"numPorts\":%d,\"topPixel\":%d,\"bottomPixel\":%d,\"group\":%d}",
+        intersection.id,
+        intersection.numPorts,
+        intersection.topPixel,
+        intersection.bottomPixel,
+        intersection.group);
+  }
+  client.print("],");
+
+  client.print("\"connections\":[");
+  for (size_t i = 0; i < snapshot.connections.size(); i++) {
+    if (i > 0) client.print(",");
+    const TopologyConnectionSnapshot& connection = snapshot.connections[i];
+    client.printf(
+        "{\"fromIntersectionId\":%d,\"toIntersectionId\":%d,\"group\":%d,\"numLeds\":%d}",
+        connection.fromIntersectionId,
+        connection.toIntersectionId,
+        connection.group,
+        connection.numLeds);
+  }
+  client.print("],");
+
+  client.print("\"models\":[");
+  for (size_t i = 0; i < snapshot.models.size(); i++) {
+    if (i > 0) client.print(",");
+    const TopologyModelSnapshot& model = snapshot.models[i];
+    client.printf(
+        "{\"id\":%d,\"defaultWeight\":%d,\"emitGroups\":%d,\"maxLength\":%d,\"routingStrategy\":%d,\"weights\":[",
+        model.id,
+        model.defaultWeight,
+        model.emitGroups,
+        model.maxLength,
+        static_cast<uint8_t>(model.routingStrategy));
+
+    for (size_t j = 0; j < model.weights.size(); j++) {
+      if (j > 0) client.print(",");
+      const TopologyPortWeightSnapshot& weight = model.weights[j];
+      client.printf(
+          "{\"outgoingPortId\":%d,\"defaultWeight\":%d,\"conditionals\":[",
+          weight.outgoingPortId,
+          weight.defaultWeight);
+
+      for (size_t k = 0; k < weight.conditionals.size(); k++) {
+        if (k > 0) client.print(",");
+        const TopologyWeightConditionalSnapshot& conditional = weight.conditionals[k];
+        client.printf(
+            "{\"incomingPortId\":%d,\"weight\":%d}",
+            conditional.incomingPortId,
+            conditional.weight);
+      }
+      client.print("]}");
+    }
+    client.print("]}");
+  }
+  client.print("],");
+
+  client.print("\"ports\":[");
+  for (size_t i = 0; i < snapshot.ports.size(); i++) {
+    if (i > 0) client.print(",");
+    const TopologyPortSnapshot& port = snapshot.ports[i];
+    client.printf(
+        "{\"id\":%d,\"intersectionId\":%d,\"slotIndex\":%d}",
+        port.id,
+        port.intersectionId,
+        port.slotIndex);
+  }
+  client.print("],");
+
+  client.print("\"gaps\":[");
+  for (size_t i = 0; i < snapshot.gaps.size(); i++) {
+    if (i > 0) client.print(",");
+    const PixelGap& gap = snapshot.gaps[i];
+    client.printf("{\"fromPixel\":%d,\"toPixel\":%d}", gap.fromPixel, gap.toPixel);
+  }
+  client.print("]}");
+}
+
+void handleExportTopology() {
+  sendCORSHeaders("GET");
+
+  if (!object) {
+    server.send(404, "application/json", "{\"error\":\"No model object available\"}");
+    return;
+  }
+
+  streamTopologySnapshot(object->exportSnapshot());
+}
+
+void handleImportTopology() {
+  sendCORSHeaders("POST");
+
+  if (!object) {
+    server.send(404, "application/json", "{\"error\":\"No model object available\"}");
+    return;
+  }
+
+  String body = server.arg("plain");
+  if (body.length() == 0) {
+    server.send(400, "application/json", "{\"error\":\"Missing JSON payload\"}");
+    return;
+  }
+
+  const size_t docCapacity = std::max<size_t>(8192, body.length() * 2);
+  DynamicJsonDocument doc(docCapacity);
+  const DeserializationError parseError = deserializeJson(doc, body);
+  if (parseError) {
+    server.send(400, "application/json", "{\"error\":\"Invalid JSON\"}");
+    return;
+  }
+
+  TopologySnapshot snapshot;
+  String validationError;
+  if (!parseTopologySnapshotFromJson(doc.as<JsonObjectConst>(), snapshot, validationError)) {
+    server.send(400, "application/json", "{\"error\":\"" + validationError + "\"}");
+    return;
+  }
+
+  if (!object->importSnapshot(snapshot, true)) {
+    server.send(400, "application/json", "{\"error\":\"Topology import validation failed\"}");
+    return;
+  }
+
+  if (state != nullptr) {
+    delete state;
+    state = nullptr;
+  }
+  state = new State(*object);
+  State::autoParams.from = emitterFrom;
+  state->autoEnabled = emitterEnabled;
+
+  #ifdef DEBUGGER_ENABLED
+  if (debugger != nullptr) {
+    delete debugger;
+  }
+  debugger = new Debugger(*object);
+  #endif
+
+  server.send(
+      200,
+      "application/json",
+      "{\"success\":true,\"intersectionCount\":" + String(snapshot.intersections.size()) +
+          ",\"connectionCount\":" + String(snapshot.connections.size()) + "}");
+}
 #endif
 
 #ifdef DEBUGGER_ENABLED
@@ -1127,6 +1510,9 @@ Cors allowCORS(String methods) {
 }
 
 void setupWebServer() {
+  static const char* headerKeys[] = {"Authorization", "X-API-Token"};
+  server.collectHeaders(headerKeys, 2);
+
   server.on("/", HTTP_GET, handleRoot);
   server.on("/get_devices", HTTP_GET, handleGetDevices);
 
@@ -1140,70 +1526,70 @@ void setupWebServer() {
   // LAYERS
   server.on("/get_layers", HTTP_GET, handleGetLayers);
   server.on("/get_layers", HTTP_OPTIONS, allowCORS("GET"));
-  server.on("/toggle_visible", HTTP_GET, handleToggleVisible);
-  server.on("/toggle_visible", HTTP_OPTIONS, allowCORS("GET"));
-  server.on("/update_palette", HTTP_ANY, handleUpdatePalette);
+  server.on("/toggle_visible", HTTP_POST, guardMutatingRoute(handleToggleVisible));
+  server.on("/toggle_visible", HTTP_OPTIONS, allowCORS("POST"));
+  server.on("/update_palette", HTTP_POST, guardMutatingRoute(handleUpdatePalette));
   server.on("/update_palette", HTTP_OPTIONS, handleCORS);
-  server.on("/update_layer_brightness", HTTP_GET, handleUpdateLayerBrightness);
-  server.on("/update_layer_brightness", HTTP_OPTIONS, allowCORS("GET"));
+  server.on("/update_layer_brightness", HTTP_POST, guardMutatingRoute(handleUpdateLayerBrightness));
+  server.on("/update_layer_brightness", HTTP_OPTIONS, allowCORS("POST"));
   server.on("/get_palette_colors", HTTP_GET, handleGetPaletteColors);
   server.on("/get_palette_colors", HTTP_OPTIONS, allowCORS("GET"));
-  server.on("/save_palette", HTTP_POST, handleSavePalette);
+  server.on("/save_palette", HTTP_POST, guardMutatingRoute(handleSavePalette));
   server.on("/save_palette", HTTP_OPTIONS, allowCORS("POST"));
-  server.on("/add_layer", HTTP_POST, handleAddLayer);
+  server.on("/add_layer", HTTP_POST, guardMutatingRoute(handleAddLayer));
   server.on("/add_layer", HTTP_OPTIONS, allowCORS("POST"));
-  server.on("/remove_layer", HTTP_POST, handleRemoveLayer);
+  server.on("/remove_layer", HTTP_POST, guardMutatingRoute(handleRemoveLayer));
   server.on("/remove_layer", HTTP_OPTIONS, allowCORS("POST"));
-  server.on("/update_blend_mode", HTTP_GET, handleUpdateBlendMode);
-  server.on("/update_speed", HTTP_GET, handleUpdateSpeed);
-  server.on("/update_speed", HTTP_OPTIONS, allowCORS("GET"));
-  server.on("/update_ease", HTTP_GET, handleUpdateEase);
-  server.on("/update_ease", HTTP_OPTIONS, allowCORS("GET"));
-  server.on("/update_fade_speed", HTTP_GET, handleUpdateFadeSpeed);
-  server.on("/update_fade_speed", HTTP_OPTIONS, allowCORS("GET"));
-  server.on("/update_behaviour_flags", HTTP_GET, handleUpdateBehaviourFlags);
-  server.on("/update_behaviour_flags", HTTP_OPTIONS, allowCORS("GET"));
-  server.on("/update_layer_offset", HTTP_GET, handleUpdateLayerOffset);
-  server.on("/update_layer_offset", HTTP_OPTIONS, allowCORS("GET"));
-  server.on("/reset_layer", HTTP_GET, handleResetLayer);
-  server.on("/reset_layer", HTTP_OPTIONS, allowCORS("GET"));
+  server.on("/update_blend_mode", HTTP_POST, guardMutatingRoute(handleUpdateBlendMode));
+  server.on("/update_speed", HTTP_POST, guardMutatingRoute(handleUpdateSpeed));
+  server.on("/update_speed", HTTP_OPTIONS, allowCORS("POST"));
+  server.on("/update_ease", HTTP_POST, guardMutatingRoute(handleUpdateEase));
+  server.on("/update_ease", HTTP_OPTIONS, allowCORS("POST"));
+  server.on("/update_fade_speed", HTTP_POST, guardMutatingRoute(handleUpdateFadeSpeed));
+  server.on("/update_fade_speed", HTTP_OPTIONS, allowCORS("POST"));
+  server.on("/update_behaviour_flags", HTTP_POST, guardMutatingRoute(handleUpdateBehaviourFlags));
+  server.on("/update_behaviour_flags", HTTP_OPTIONS, allowCORS("POST"));
+  server.on("/update_layer_offset", HTTP_POST, guardMutatingRoute(handleUpdateLayerOffset));
+  server.on("/update_layer_offset", HTTP_OPTIONS, allowCORS("POST"));
+  server.on("/reset_layer", HTTP_POST, guardMutatingRoute(handleResetLayer));
+  server.on("/reset_layer", HTTP_OPTIONS, allowCORS("POST"));
 
   // PALETTES
-  server.on("/delete_palette", HTTP_GET, handleDeletePalette);
-  server.on("/delete_palette", HTTP_OPTIONS, allowCORS("GET"));
-  server.on("/sync_palettes", HTTP_POST, handleSyncPalettes);
+  server.on("/delete_palette", HTTP_POST, guardMutatingRoute(handleDeletePalette));
+  server.on("/delete_palette", HTTP_OPTIONS, allowCORS("POST"));
+  server.on("/sync_palettes", HTTP_POST, guardMutatingRoute(handleSyncPalettes));
   server.on("/get_palettes", HTTP_GET, handleGetPalettes);
   server.on("/get_palettes", HTTP_OPTIONS, allowCORS("GET"));
 
   #ifdef WEBSERVER_EMITTER
   server.on("/emitter", HTTP_GET, handleEmitter);
-  server.on("/toggle_auto", HTTP_GET, handleToggleAuto);
-  server.on("/update_emitter_min_speed", HTTP_GET, handleUpdateEmitterMinSpeed);
-  server.on("/update_emitter_max_speed", HTTP_GET, handleUpdateEmitterMaxSpeed);
-  server.on("/update_emitter_min_dur", HTTP_GET, handleUpdateEmitterMinDuration);
-  server.on("/update_emitter_max_dur", HTTP_GET, handleUpdateEmitterMaxDuration);
-  server.on("/update_emitter_min_sat", HTTP_GET, handleUpdateEmitterMinSat);
-  server.on("/update_emitter_max_sat", HTTP_GET, handleUpdateEmitterMaxSat);
-  server.on("/update_emitter_min_val", HTTP_GET, handleUpdateEmitterMinVal);
-  server.on("/update_emitter_max_val", HTTP_GET, handleUpdateEmitterMaxVal);
-  server.on("/update_emitter_min_next", HTTP_GET, handleUpdateEmitterMinNext);
-  server.on("/update_emitter_max_next", HTTP_GET, handleUpdateEmitterMaxNext);
-  server.on("/update_emitter_from", HTTP_GET, handleUpdateEmitterFrom);
+  server.on("/toggle_auto", HTTP_POST, guardMutatingRoute(handleToggleAuto));
+  server.on("/update_emitter_min_speed", HTTP_POST, guardMutatingRoute(handleUpdateEmitterMinSpeed));
+  server.on("/update_emitter_max_speed", HTTP_POST, guardMutatingRoute(handleUpdateEmitterMaxSpeed));
+  server.on("/update_emitter_min_dur", HTTP_POST, guardMutatingRoute(handleUpdateEmitterMinDuration));
+  server.on("/update_emitter_max_dur", HTTP_POST, guardMutatingRoute(handleUpdateEmitterMaxDuration));
+  server.on("/update_emitter_min_sat", HTTP_POST, guardMutatingRoute(handleUpdateEmitterMinSat));
+  server.on("/update_emitter_max_sat", HTTP_POST, guardMutatingRoute(handleUpdateEmitterMaxSat));
+  server.on("/update_emitter_min_val", HTTP_POST, guardMutatingRoute(handleUpdateEmitterMinVal));
+  server.on("/update_emitter_max_val", HTTP_POST, guardMutatingRoute(handleUpdateEmitterMaxVal));
+  server.on("/update_emitter_min_next", HTTP_POST, guardMutatingRoute(handleUpdateEmitterMinNext));
+  server.on("/update_emitter_max_next", HTTP_POST, guardMutatingRoute(handleUpdateEmitterMaxNext));
+  server.on("/update_emitter_from", HTTP_POST, guardMutatingRoute(handleUpdateEmitterFrom));
   #endif
 
   server.on("/get_settings", HTTP_GET, handleGetSettings);
   server.on("/get_settings", HTTP_OPTIONS, allowCORS("GET"));
-  server.on("/update_settings", HTTP_POST, handleUpdateSettings);
+  server.on("/update_settings", HTTP_POST, guardMutatingRoute(handleUpdateSettings));
   server.on("/update_settings", HTTP_OPTIONS, allowCORS("POST"));
-  server.on("/restart", HTTP_GET, handleRestart);
-  server.on("/restart", HTTP_OPTIONS, allowCORS("GET"));
-  server.on("/update_wifi", HTTP_POST, handleUpdateWifi);
+  server.on("/restart", HTTP_POST, guardMutatingRoute(handleRestart));
+  server.on("/restart", HTTP_OPTIONS, allowCORS("POST"));
+  server.on("/update_wifi", HTTP_POST, guardMutatingRoute(handleUpdateWifi));
   server.on("/update_wifi", HTTP_OPTIONS, allowCORS("POST"));
-  server.on("/update_brightness", HTTP_GET, handleUpdateBrightness);
-  server.on("/update_brightness", HTTP_OPTIONS, allowCORS("GET"));
+  server.on("/update_brightness", HTTP_POST, guardMutatingRoute(handleUpdateBrightness));
+  server.on("/update_brightness", HTTP_OPTIONS, allowCORS("POST"));
 
   #ifdef CRASH_LOG_FILE
-  server.on("/trigger_crash", HTTP_GET, handleTriggerCrash);
+  server.on("/trigger_crash", HTTP_POST, guardMutatingRoute(handleTriggerCrash));
   #endif
 
   #ifdef DEBUGGER_ENABLED
@@ -1216,9 +1602,13 @@ void setupWebServer() {
   server.on("/get_colors", HTTP_OPTIONS, allowCORS("GET"));
   server.on("/get_model", HTTP_GET, handleGetModel);
   server.on("/get_model", HTTP_OPTIONS, allowCORS("GET"));
-  server.on("/add_intersection", HTTP_POST, handleAddIntersection);
+  server.on("/export_topology", HTTP_GET, handleExportTopology);
+  server.on("/export_topology", HTTP_OPTIONS, allowCORS("GET"));
+  server.on("/import_topology", HTTP_POST, guardMutatingRoute(handleImportTopology));
+  server.on("/import_topology", HTTP_OPTIONS, allowCORS("POST"));
+  server.on("/add_intersection", HTTP_POST, guardMutatingRoute(handleAddIntersection));
   server.on("/add_intersection", HTTP_OPTIONS, allowCORS("POST"));
-  server.on("/remove_intersection", HTTP_POST, handleRemoveIntersection);
+  server.on("/remove_intersection", HTTP_POST, guardMutatingRoute(handleRemoveIntersection));
   server.on("/remove_intersection", HTTP_OPTIONS, allowCORS("POST"));
   
   #ifdef SSDP_ENABLED

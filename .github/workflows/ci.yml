@@ -84,6 +84,67 @@ jobs:
       - name: Run strict warning tests
         run: ctest --test-dir packages/lightpath/build-warnings --output-on-failure
 
+  core-benchmark:
+    name: Core (Benchmark guardrail)
+    runs-on: ubuntu-latest
+    env:
+      LIGHTPATH_MIN_BENCHMARK_FPS: "1000"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Configure benchmark build
+        run: cmake -S packages/lightpath -B packages/lightpath/build-benchmark -DLIGHTPATH_CORE_BUILD_BENCHMARKS=ON -DLIGHTPATH_CORE_BUILD_TESTS=OFF -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build benchmark target
+        run: cmake --build packages/lightpath/build-benchmark --target lightpath_core_benchmark --parallel
+
+      - name: Enforce benchmark budget
+        run: packages/lightpath/scripts/check-benchmark.sh packages/lightpath/build-benchmark/lightpath_core_benchmark
+
+  core-packaging:
+    name: Core (Packaging smoke)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Validate packaging metadata
+        run: |
+          python -m py_compile packages/lightpath/conanfile.py
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          with Path("packages/lightpath/packaging/vcpkg/vcpkg.json").open("r", encoding="utf-8") as fh:
+              json.load(fh)
+          print("vcpkg.json is valid JSON")
+          PY
+
+      - name: Configure package smoke build
+        run: cmake -S packages/lightpath -B packages/lightpath/build-packaging -DLIGHTPATH_CORE_BUILD_TESTS=OFF -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build package smoke prerequisites
+        run: cmake --build packages/lightpath/build-packaging --parallel
+
+      - name: Run install + consumer smoke
+        run: |
+          cmake \
+            -Dcmake_command=cmake \
+            -Dmain_build_dir=packages/lightpath/build-packaging \
+            -Dsource_dir=packages/lightpath/tests/package_smoke \
+            -Dbinary_dir=packages/lightpath/build-packaging/tests/package_smoke/build \
+            -Dinstall_dir=packages/lightpath/build-packaging/tests/package_smoke/install \
+            -P packages/lightpath/tests/package_smoke/run.cmake
+
   web:
     name: Web (React)
     runs-on: ubuntu-latest

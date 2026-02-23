@@ -11,8 +11,17 @@ export const DeviceProvider = ({ children, selectedDevice }) => {
         // Ensure URL starts with /
         const cleanUrl = url.startsWith('/') ? url : `/${url}`;
         const fullUrl = `http://${selectedDevice}${cleanUrl}`;
-        
-        return fetch(fullUrl, options);
+
+        const headers = new Headers(options.headers || {});
+        const apiToken = localStorage.getItem('ledController_apiToken');
+        if (apiToken) {
+            headers.set('Authorization', `Bearer ${apiToken}`);
+        }
+
+        return fetch(fullUrl, {
+            ...options,
+            headers
+        });
     };
 
     const value = {

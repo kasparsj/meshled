@@ -87,6 +87,11 @@ void loadSettings() {
     }
   }
 
+  apiAuthEnabled = doc["api_auth_enabled"] | apiAuthEnabled;
+  if (doc.containsKey("api_auth_token")) {
+    apiAuthToken = doc["api_auth_token"].as<String>();
+  }
+
   LP_LOGLN("Settings loaded from SPIFFS using ArduinoJson");
 }
 
@@ -307,6 +312,8 @@ void saveSettings() {
   doc["emitter_enabled"] = emitterEnabled;
 
   doc["hostname"] = deviceHostname;
+  doc["api_auth_enabled"] = apiAuthEnabled;
+  doc["api_auth_token"] = apiAuthToken;
   
   // Open the file for writing
   File file = SPIFFS.open("/settings.json", "w");

@@ -223,6 +223,10 @@ void sendWLEDState() {
 }
 
 void handleWLEDPost() {
+  if (!requireApiAuth()) {
+    return;
+  }
+
   String body = server.arg("plain");
   DynamicJsonDocument doc(1024);
   DeserializationError error = deserializeJson(doc, body);
@@ -369,6 +373,9 @@ void handleWLEDState() {
 
 // WLED API: Simple on/off control
 void handleWLEDOn() {
+  if (!requireApiAuth()) {
+    return;
+  }
   turnOn();
 
   #ifdef SPIFFS_ENABLED
@@ -380,6 +387,9 @@ void handleWLEDOn() {
 }
 
 void handleWLEDOff() {
+  if (!requireApiAuth()) {
+    return;
+  }
   turnOff();
 
   #ifdef SPIFFS_ENABLED

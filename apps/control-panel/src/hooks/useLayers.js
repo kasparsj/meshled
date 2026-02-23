@@ -1,5 +1,6 @@
 import {useCallback, useEffect, useState} from "react";
 import {useDevice} from "../contexts/DeviceContext.jsx";
+import { parseLayersResponse } from "../models/apiModels";
 
 const useLayers = () => {
     const [layers, setLayers] = useState([]);
@@ -20,7 +21,7 @@ const useLayers = () => {
                 setLoading(true);
                 setError(null);
                 const response = await deviceFetch('/get_layers');
-                const data = await response.json();
+                const data = parseLayersResponse(await response.json());
                 setLayers(data);
             } catch (err) {
                 setError("Failed to fetch layers");
@@ -44,7 +45,13 @@ const useLayers = () => {
             )
         );
 
-        await deviceFetch(`/toggle_visible?layer=${layerId}&visible=${newVisibility}`);
+        const formData = new FormData();
+        formData.append('layer', layerId.toString());
+        formData.append('visible', newVisibility ? 'true' : 'false');
+        await deviceFetch('/toggle_visible', {
+            method: 'POST',
+            body: formData
+        });
     }, [deviceFetch, layers]);
 
     const updateLayerBrightness = useCallback(async (layerId, brightness) => {
@@ -54,7 +61,13 @@ const useLayers = () => {
             )
         );
 
-        await deviceFetch(`/update_layer_brightness?layer=${layerId}&value=${brightness}`);
+        const formData = new FormData();
+        formData.append('layer', layerId.toString());
+        formData.append('value', brightness.toString());
+        await deviceFetch('/update_layer_brightness', {
+            method: 'POST',
+            body: formData
+        });
     }, [deviceFetch]);
 
     const updateLayerSpeed = useCallback(async (layerId, speed) => {
@@ -64,7 +77,13 @@ const useLayers = () => {
             )
         );
 
-        await deviceFetch(`/update_speed?layer=${layerId}&value=${speed}`);
+        const formData = new FormData();
+        formData.append('layer', layerId.toString());
+        formData.append('value', speed.toString());
+        await deviceFetch('/update_speed', {
+            method: 'POST',
+            body: formData
+        });
     }, [deviceFetch]);
 
     const updateLayerOffset = useCallback(async (layerId, offset) => {
@@ -74,16 +93,22 @@ const useLayers = () => {
             )
         );
 
-        await deviceFetch(`/update_layer_offset?layer=${layerId}&offset=${offset}`);
+        const formData = new FormData();
+        formData.append('layer', layerId.toString());
+        formData.append('offset', offset.toString());
+        await deviceFetch('/update_layer_offset', {
+            method: 'POST',
+            body: formData
+        });
     }, [deviceFetch]);
 
     const removeLayer = useCallback(async (layerId) => {
         try {
-            await deviceFetch(`/remove_layer?layer=${layerId}`, {
+            const formData = new FormData();
+            formData.append('layer', layerId.toString());
+            await deviceFetch('/remove_layer', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                body: formData
             });
 
             // Remove layer from state after successful API call
@@ -244,7 +269,7 @@ const useLayers = () => {
                 console.log("Layer added successfully");
                 // Refresh the layers list to include the new layer
                 const layersResponse = await deviceFetch('/get_layers');
-                const data = await layersResponse.json();
+                const data = parseLayersResponse(await layersResponse.json());
                 setLayers(data);
             } else {
                 const errorText = await response.text();
@@ -390,11 +415,12 @@ const useLayers = () => {
 
     const updateEasing = useCallback(async (layerId, easing) => {
         try {
-            const response = await deviceFetch(`/update_ease?layer=${layerId}&ease=${easing}`, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+            const formData = new FormData();
+            formData.append('layer', layerId.toString());
+            formData.append('ease', easing.toString());
+            const response = await deviceFetch('/update_ease', {
+                method: 'POST',
+                body: formData,
             });
             
             if (response.ok) {
@@ -421,11 +447,12 @@ const useLayers = () => {
 
     const updateBehaviourFlags = useCallback(async (layerId, flags) => {
         try {
-            const response = await deviceFetch(`/update_behaviour_flags?layer=${layerId}&flags=${flags}`, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+            const formData = new FormData();
+            formData.append('layer', layerId.toString());
+            formData.append('flags', flags.toString());
+            const response = await deviceFetch('/update_behaviour_flags', {
+                method: 'POST',
+                body: formData,
             });
             
             if (response.ok) {
@@ -452,12 +479,17 @@ const useLayers = () => {
 
     const resetLayer = useCallback(async (layerId) => {
         try {
-            const response = await deviceFetch(`/reset_layer?layer=${layerId}`);
+            const formData = new FormData();
+            formData.append('layer', layerId.toString());
+            const response = await deviceFetch('/reset_layer', {
+                method: 'POST',
+                body: formData
+            });
             
             if (response.ok) {
                 // Refresh layers data to get the reset state
                 const layersResponse = await deviceFetch('/get_layers');
-                const data = await layersResponse.json();
+                const data = parseLayersResponse(await layersResponse.json());
                 setLayers(data);
                 console.log(`Layer ${layerId} reset successfully`);
             } else {

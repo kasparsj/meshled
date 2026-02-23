@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useDevice } from '../contexts/DeviceContext.jsx';
+import { parseColorsResponse } from '../models/apiModels';
 
 export const useColors = () => {
     const [colors, setColors] = useState([]);
@@ -14,12 +15,7 @@ export const useColors = () => {
         }
         try {
             const response = await deviceFetch('/get_colors');
-            const data = await response.json();
-            return {
-                colors: data.colors || [],
-                step: data.step || 1,
-                totalPixels: data.totalPixels || 0
-            };
+            return parseColorsResponse(await response.json());
         } catch (error) {
             console.error('Failed to fetch colors:', error);
             return { colors: [], step: 1, totalPixels: 0 };

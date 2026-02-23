@@ -34,6 +34,8 @@ const SettingsTab = () => {
         otaEnabled: true,
         otaPort: 3232,
         otaPassword: '',
+        apiAuthEnabled: false,
+        apiAuthToken: '',
         savedSSID: '',
         savedPassword: ''
     });
@@ -88,6 +90,11 @@ const SettingsTab = () => {
         
         try {
             await saveSettingsHook(settings);
+            if (settings.apiAuthEnabled && settings.apiAuthToken) {
+                localStorage.setItem('ledController_apiToken', settings.apiAuthToken);
+            } else if (!settings.apiAuthEnabled) {
+                localStorage.removeItem('ledController_apiToken');
+            }
             setSaveMessage('Settings saved successfully!');
             setTimeout(() => setSaveMessage(''), 3000);
         } catch (error) {
@@ -371,6 +378,30 @@ const SettingsTab = () => {
                                 />
                             </div>
                         </>
+                    )}
+                    <div>
+                        <label className="block text-sm text-zinc-300 mb-2">API Auth Enabled</label>
+                        <label className="flex items-center">
+                            <input
+                                type="checkbox"
+                                checked={settings.apiAuthEnabled}
+                                onChange={(e) => updateSetting('apiAuthEnabled', e.target.checked)}
+                                className="mr-2"
+                            />
+                            <span>Require token for mutating API routes</span>
+                        </label>
+                    </div>
+                    {settings.apiAuthEnabled && (
+                        <div>
+                            <label className="block text-sm text-zinc-300 mb-2">API Auth Token</label>
+                            <input
+                                type="password"
+                                value={settings.apiAuthToken}
+                                onChange={(e) => updateSetting('apiAuthToken', e.target.value)}
+                                className="w-full bg-zinc-600 border border-zinc-500 rounded px-3 py-2"
+                                placeholder="Bearer token"
+                            />
+                        </div>
                     )}
                 </div>
             </div>

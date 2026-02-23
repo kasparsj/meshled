@@ -7,7 +7,7 @@ void streamEmitter(WiFiClient &client) {
 
   // Auto emitter toggle
   client.println("<div style='margin: 20px 0; display: flex; gap: 10px; flex-wrap: wrap;'>");
-  client.printf("<a href='/toggle_auto' style='flex: 1; display: block; text-align: center; background: %s; color: white; text-decoration: none; padding: 10px 0; border-radius: 5px;'>",
+  client.printf("<a href='#' onclick=\"postForm('/toggle_auto').then(() => location.reload()); return false;\" style='flex: 1; display: block; text-align: center; background: %s; color: white; text-decoration: none; padding: 10px 0; border-radius: 5px;'>",
              state->autoEnabled ? "#0044cc" : "#0066ff");
   client.printf("%s</a>", state->autoEnabled ? "Disable Auto Emitter" : "Enable Auto Emitter");
   client.println("</div>");

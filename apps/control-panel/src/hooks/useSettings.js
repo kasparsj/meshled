@@ -28,7 +28,8 @@ const useSettings = () => {
         0: 'Heptagon919',
         1: 'Line',
         2: 'Triangle', 
-        3: 'Heptagon3024'
+        3: 'Heptagon3024',
+        4: 'Custom (Imported Topology)'
     };
 
     const getSettings = useCallback(async () => {
@@ -74,7 +75,9 @@ const useSettings = () => {
                 oscPort: 'osc_port',
                 otaEnabled: 'ota_enabled',
                 otaPort: 'ota_port',
-                otaPassword: 'ota_password'
+                otaPassword: 'ota_password',
+                apiAuthEnabled: 'api_auth_enabled',
+                apiAuthToken: 'api_auth_token'
             };
 
             Object.entries(settings).forEach(([key, value]) => {
@@ -132,7 +135,7 @@ const useSettings = () => {
     const restartDevice = useCallback(async () => {
         try {
             await deviceFetch('/restart', {
-                method: 'GET'
+                method: 'POST'
             });
             return true;
         } catch (err) {

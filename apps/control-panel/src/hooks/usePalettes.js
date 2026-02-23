@@ -52,11 +52,11 @@ const usePalettes = () => {
     // Delete a palette by index
     const deletePalette = useCallback(async (paletteIndex) => {
         try {
-            const response = await deviceFetch(`/delete_palette?index=${paletteIndex}`, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+            const formData = new FormData();
+            formData.append('index', paletteIndex.toString());
+            const response = await deviceFetch('/delete_palette', {
+                method: 'POST',
+                body: formData,
             });
             
             if (response.ok) {

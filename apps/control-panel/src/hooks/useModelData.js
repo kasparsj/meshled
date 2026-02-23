@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useDevice } from '../contexts/DeviceContext.jsx';
+import { parseModelDataResponse } from '../models/apiModels';
 
 export const useModelData = () => {
     const [modelData, setModelData] = useState(null);
@@ -13,7 +14,7 @@ export const useModelData = () => {
         }
         try {
             const response = await deviceFetch('/get_model');
-            const data = await response.json();
+            const data = parseModelDataResponse(await response.json());
             return data;
         } catch (error) {
             console.error('Failed to fetch model data:', error);

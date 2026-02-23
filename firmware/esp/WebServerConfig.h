@@ -9,6 +9,14 @@ void handleUpdateSettings() {
     }
   }
 
+  if (server.hasArg("api_auth_enabled")) {
+    apiAuthEnabled = server.arg("api_auth_enabled").toInt() == 1;
+  }
+
+  if (server.hasArg("api_auth_token")) {
+    apiAuthToken = server.arg("api_auth_token");
+  }
+
   #ifdef OSC_ENABLED
   if (server.hasArg("osc_enabled")) {
     oscEnabled = server.arg("osc_enabled").toInt() == 1;
@@ -100,7 +108,7 @@ void handleUpdateSettings() {
 
 // Handle restart
 void handleRestart() {
-  sendCORSHeaders("GET");
+  sendCORSHeaders("POST");
   
   server.send(200, "text/plain", "OK");
   LP_LOGLN("Restarting device...");
@@ -139,6 +147,8 @@ void handleGetSettings() {
   doc["objectType"] = objectType;
   doc["savedSSID"] = savedSSID;
   doc["savedPassword"] = savedPassword;
+  doc["apiAuthEnabled"] = apiAuthEnabled;
+  doc["apiAuthToken"] = apiAuthToken;
   
   #ifdef OSC_ENABLED
   doc["oscEnabled"] = oscEnabled;
@@ -169,7 +179,7 @@ void handleUpdateBrightness() {
       saveSettings();
       #endif
 
-      sendCORSHeaders("GET");
+      sendCORSHeaders("POST");
       server.send(200, "text/plain", "OK");
       return;
     }

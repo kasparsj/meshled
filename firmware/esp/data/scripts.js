@@ -1,7 +1,18 @@
 // General utility functions
+function postForm(path, params = {}) {
+  const formData = new FormData();
+  Object.entries(params).forEach(([key, value]) => {
+    formData.append(key, String(value));
+  });
+  return fetch(path, {
+    method: 'POST',
+    body: formData
+  });
+}
+
 function updateBrightness(value) {
   document.getElementById('brightness-value').textContent = value;
-  fetch('/update_brightness?value=' + value)
+  postForm('/update_brightness', { value })
     .then(response => {
       if (!response.ok) {
         console.error('Failed to update brightness');
@@ -12,7 +23,7 @@ function updateBrightness(value) {
 
 function updateLayerBrightness(layer, value) {
   document.getElementById('bg-brightness-value_' + layer).textContent = value;
-  fetch('/update_layer_brightness?layer=' + layer + '&value=' + value)
+  postForm('/update_layer_brightness', { layer, value })
     .then(response => {
       if (!response.ok) {
         console.error('Failed to update brightness');
@@ -24,7 +35,7 @@ function updateLayerBrightness(layer, value) {
 }
 
 function toggleLayerVisibility(layer, isVisible) {
-  fetch('/toggle_visible?layer=' + layer + '&visible=' + isVisible)
+  postForm('/toggle_visible', { layer, visible: isVisible })
     .then(response => {
       if (!response.ok) {
         console.error('Failed to toggle layer visibility');
@@ -476,9 +487,7 @@ function addLayer() {
 
 function removeLayer(layer) {
   if (confirm('Are you sure you want to remove Layer ' + (layer + 1) + '?')) {
-    fetch('/remove_layer?layer=' + layer, {
-      method: 'POST'
-    })
+    postForm('/remove_layer', { layer })
       .then(response => {
         if (response.ok) {
           // Reload the page to show the updated layers
@@ -592,7 +601,7 @@ function deletePalette() {
   }
   
   // Send delete request to server
-  fetch('/delete_palette?index=' + userPaletteIndex)
+  postForm('/delete_palette', { index: userPaletteIndex })
     .then(response => {
       if (response.ok) {
         return response.json();
@@ -804,7 +813,7 @@ function selectUserPalette(value) {
 // Emitter control functions from WebServerEmitter.h
 function updateemitterMinSpeed(value) {
   document.getElementById('min-speed-value').textContent = value;
-  fetch('/update_emitter_min_speed?value=' + value)
+  postForm('/update_emitter_min_speed', { value })
     .then(response => {
       if (!response.ok) {
         console.error('Failed to update min speed');
@@ -815,7 +824,7 @@ function updateemitterMinSpeed(value) {
 
 function updateMaxSpeed(value) {
   document.getElementById('max-speed-value').textContent = value;
-  fetch('/update_emitter_max_speed?value=' + value)
+  postForm('/update_emitter_max_speed', { value })
     .then(response => {
       if (!response.ok) {
         console.error('Failed to update max speed');
@@ -826,47 +835,47 @@ function updateMaxSpeed(value) {
 
 function updateMinDuration(value) {
   document.getElementById('min-duration-value').textContent = value;
-  fetch('/update_emitter_min_dur?value=' + value);
+  postForm('/update_emitter_min_dur', { value });
 }
 
 function updateMaxDuration(value) {
   document.getElementById('max-duration-value').textContent = value;
-  fetch('/update_emitter_max_dur?value=' + value);
+  postForm('/update_emitter_max_dur', { value });
 }
 
 function updateEmitterMinSat(value) {
   document.getElementById('emitter-min-sat-value').textContent = value;
-  fetch('/update_emitter_min_sat?value=' + value);
+  postForm('/update_emitter_min_sat', { value });
 }
 
 function updateEmitterMaxSat(value) {
   document.getElementById('emitter-max-sat-value').textContent = value;
-  fetch('/update_emitter_max_sat?value=' + value);
+  postForm('/update_emitter_max_sat', { value });
 }
 
 function updateEmitterMinVal(value) {
   document.getElementById('emitter-min-val-value').textContent = value;
-  fetch('/update_emitter_min_val?value=' + value);
+  postForm('/update_emitter_min_val', { value });
 }
 
 function updateEmitterMaxVal(value) {
   document.getElementById('emitter-max-val-value').textContent = value;
-  fetch('/update_emitter_max_val?value=' + value);
+  postForm('/update_emitter_max_val', { value });
 }
 
 function updateMinNext(value) {
   document.getElementById('min-next-value').textContent = value;
-  fetch('/update_emitter_min_next?value=' + value);
+  postForm('/update_emitter_min_next', { value });
 }
 
 function updateMaxNext(value) {
   document.getElementById('max-next-value').textContent = value;
-  fetch('/update_emitter_max_next?value=' + value);
+  postForm('/update_emitter_max_next', { value });
 }
 
 function updateEmitterFrom(value) {
   document.getElementById('emitter-from-value').textContent = value;
-  fetch('/update_emitter_from?value=' + value);
+  postForm('/update_emitter_from', { value });
 }
 
 // Initialize event listeners when document is loaded
@@ -1002,7 +1011,7 @@ document.addEventListener('DOMContentLoaded', function() {
   document.querySelectorAll('.blend-mode').forEach(select => {
     select.addEventListener('change', function() {
       const layerId = this.getAttribute('data-layer');
-      fetch('/update_blend_mode?layer=' + layerId + '&mode=' + this.value)
+      postForm('/update_blend_mode', { layer: layerId, mode: this.value })
         .then(response => {
           if (!response.ok) {
             console.error('Failed to update blend mode');
@@ -1018,7 +1027,7 @@ document.addEventListener('DOMContentLoaded', function() {
   document.querySelectorAll('.behaviour-flags').forEach(select => {
     select.addEventListener('change', function() {
       const layerId = this.getAttribute('data-layer');
-      fetch('/update_behaviour_flags?layer=' + layerId + '&flags=' + this.value)
+      postForm('/update_behaviour_flags', { layer: layerId, flags: this.value })
         .then(response => {
           if (!response.ok) {
             console.error('Failed to update behaviour flags');
@@ -1066,7 +1075,7 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // Function to update layer speed
 function updateLayerSpeed(layer, value) {
-  fetch('/update_speed?layer=' + layer + '&value=' + value)
+  postForm('/update_speed', { layer, value })
     .then(response => {
       if (!response.ok) {
         console.error('Failed to update speed');
@@ -1079,7 +1088,7 @@ function updateLayerSpeed(layer, value) {
 
 // Function to update layer easing
 function updateLayerEase(layer, value) {
-  fetch('/update_ease?layer=' + layer + '&ease=' + value)
+  postForm('/update_ease', { layer, ease: value })
     .then(response => {
       if (!response.ok) {
         console.error('Failed to update easing');
@@ -1092,7 +1101,7 @@ function updateLayerEase(layer, value) {
 
 // Function to update layer fade speed
 function updateLayerFadeSpeed(layer, value) {
-  fetch('/update_fade_speed?layer=' + layer + '&value=' + value)
+  postForm('/update_fade_speed', { layer, value })
     .then(response => {
       if (!response.ok) {
         console.error('Failed to update fade speed');

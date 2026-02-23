@@ -1,27 +1,27 @@
-# MeshLED Firmware HTTP API (Draft v0)
+# MeshLED Firmware HTTP API
 
-Date: 2026-02-22  
-Applies to: `firmware/esp` firmware in `meshled` (`main`)
+Date: 2026-02-23  
+Applies to: `firmware/esp` in this repository
 
-## Scope
-
-This document defines the HTTP contract currently used by the `apps/control-panel` UI and model editor.
-
-Base URL:
+## Base URL
 
 - `http://<device-ip>`
 - Default port: `80`
 
-Transport and behavior:
+## Transport + auth
 
-- No authentication.
-- CORS headers are enabled (`Access-Control-Allow-Origin: *`) on API routes.
-- Many mutation endpoints are implemented as `GET` for historical reasons.
-- Response bodies are a mix of JSON and plain text.
+- CORS is enabled for API routes (`Access-Control-Allow-Origin: *`).
+- Read routes are `GET`.
+- Mutation routes are `POST`.
+- Optional token auth for mutating routes:
+  - Enable in settings: `api_auth_enabled=1`.
+  - Set token: `api_auth_token=<token>`.
+  - Send token as `Authorization: Bearer <token>` (preferred), `X-API-Token: <token>`, or `token` query arg.
+- If auth is enabled and token is missing/invalid, route returns `401 {"error":"Unauthorized"}`.
 
-## Data Shapes
+## Common response shapes
 
-### Layer object (`GET /get_layers`)
+### Layer (`GET /get_layers`)
 
 ```json
 {
@@ -45,21 +45,7 @@ Transport and behavior:
 }
 ```
 
-### Palette object (user palette)
-
-```json
-{
-  "name": "My Palette",
-  "colors": ["#FF0000", "#00FF00"],
-  "positions": [0.0, 1.0],
-  "colorRule": -1,
-  "interMode": 1,
-  "wrapMode": 0,
-  "segmentation": 0.0
-}
-```
-
-### Colors response (`GET /get_colors`)
+### Colors (`GET /get_colors`)
 
 ```json
 {
@@ -69,198 +55,153 @@ Transport and behavior:
 }
 ```
 
-## Endpoint Contract
-
-## Device and settings
+## Device + settings
 
 ### `GET /device_info`
 
-- Alias of WLED info endpoint.
-- Returns WLED-like JSON object.
-- Common keys used by UI:
-  - `wifi.ssid`
-  - `ip`
-  - `leds.pwr`
+- WLED-style info payload.
+- Common keys: `wifi.ssid`, `ip`, `leds.pwr`.
 
 ### `GET /get_settings`
 
-- Returns current runtime settings as JSON.
-- Keys include:
-  - `maxBrightness`, `deviceHostname`
-  - `pixelCount1`, `pixelCount2`, `pixelPin1`, `pixelPin2`
-  - `pixelDensity`, `ledType`, `colorOrder`, `ledLibrary`, `objectType`
-  - `savedSSID`, `savedPassword`
-  - optional (if compiled): `oscEnabled`, `oscPort`, `otaEnabled`, `otaPort`, `otaPassword`
+- Returns runtime settings JSON.
+- Includes:
+  - LED/object config (`pixelCount*`, `pixelPin*`, `ledType`, `colorOrder`, `ledLibrary`, `objectType`)
+  - network/runtime (`maxBrightness`, `deviceHostname`, WiFi saved credentials)
+  - optional runtime toggles (OSC/OTA)
+  - API auth config (`apiAuthEnabled`, `apiAuthToken`)
 
 ### `POST /update_settings`
 
-- Input: form arguments (`multipart/form-data` from UI).
-- Supported args:
-  - `hostname`
+- Input: form args (`multipart/form-data`).
+- Notable args:
+  - `max_brightness`, `hostname`
+  - `pixel_count1`, `pixel_count2`, `pixel_pin1`, `pixel_pin2`, `pixel_density`
+  - `led_type`, `color_order`, `led_library`, `object_type`
   - `osc_enabled`, `osc_port`
-  - `led_type`, `color_order`, `pixel_count1`, `pixel_count2`, `pixel_pin1`, `pixel_pin2`, `pixel_density`, `led_library`, `object_type`
   - `ota_enabled`, `ota_port`, `ota_password`
+  - `api_auth_enabled`, `api_auth_token`
 - Success: `200 text/plain` with `OK`.
 
 ### `POST /update_wifi`
 
-- Input: form args `ssid`, `password`.
-- On success, credentials are stored and device restarts.
-- Important: restart may close connection before a normal response is observed by client.
+- Input: `ssid`, `password`.
+- Saves credentials and restarts device.
 
-### `GET /restart`
+### `POST /restart`
 
-- Returns `200 text/plain` with `OK`, then restarts device.
+- Returns `200 text/plain` with `OK`, then restarts.
+
+### `POST /update_brightness`
+
+- Input: `value` (`1..255`).
 
 ## Layers
 
 ### `GET /get_layers`
 
-- Returns array of editable layers.
-- Note: non-editable/internal layers are omitted.
+- Returns editable layers.
 
-### `GET /toggle_visible?layer=<id>&visible=<true|false>`
+### Mutation endpoints (all `POST`)
 
-- Toggles layer visibility.
-- Success behavior: HTTP redirect (`302`) to `/` (historical web UI behavior).
+- `/toggle_visible` args: `layer`, `visible`
+- `/update_layer_brightness` args: `layer`, `value`
+- `/update_speed` args: `layer`, `value`
+- `/update_ease` args: `layer`, `ease`
+- `/update_fade_speed` args: `layer`, `value`
+- `/update_behaviour_flags` args: `layer`, `flags`
+- `/update_layer_offset` args: `layer`, `offset`
+- `/update_blend_mode` args: `layer`, `mode`
+- `/reset_layer` args: `layer`
+- `/add_layer`
+- `/remove_layer` args: `layer`
 
-### `GET /update_layer_brightness?layer=<id>&value=<1..255>`
+### Palette update for layer
 
-- Success: `200 text/plain`.
-- Errors: `400` for missing/invalid params.
+#### `POST /update_palette`
 
-### `GET /update_speed?layer=<id>&value=<-10.0..10.0>`
-
-- Success: `200 text/plain`.
-
-### `GET /update_ease?layer=<id>&ease=<0..33>`
-
-- Easing enum range from `EASE_NONE` to `EASE_ELASTIC_INOUT`.
-
-### `GET /update_behaviour_flags?layer=<id>&flags=<uint16>`
-
-- Sets `Behaviour.flags` bitmask for a layer.
-
-### `GET /update_layer_offset?layer=<id>&offset=<float>`
-
-- Sets layer offset.
-
-### `GET /reset_layer?layer=<id>`
-
-- Resets layer to defaults.
-
-### `POST /add_layer`
-
-- Adds first available editable layer slot.
-- Success: `200 text/plain`.
-
-### `POST /remove_layer?layer=<id>`
-
-- Removes editable layer.
-- Layer `0` cannot be removed.
-
-### `HTTP_ANY /update_palette`
-
-- Required arg: `layer`.
+- Required arg: `layer`
 - Optional args:
-  - `colorRule` (`-1..7`)
-  - `interMode` (`-1..2`)
-  - `wrapMode` (`-1..3`)
-  - `segmentation` (`>=0`)
-  - `colors` (JSON array of hex strings, example: `["#FF0000","#00FF00"]`)
-  - `positions` (JSON array of floats, `0..1`)
-- UI uses `POST` with `FormData`.
-- Success: `200 text/plain` with `OK`.
+  - `colorRule`, `interMode`, `wrapMode`, `segmentation`
+  - `colors` (JSON array string of hex values)
+  - `positions` (JSON array string of float positions)
 
-### `GET /get_palette_colors?index=<N|uN>&layer=<id>`
+### `GET /get_palette_colors`
 
-- Returns palette details as JSON:
-  - `colors`, `positions`, `colorRule`, `interMode`, `wrapMode`, `segmentation`
-- `index=N`: built-in palette index.
-- `index=uN`: user palette index.
+- Args: `index=<N|uN>`, `layer=<id>`
+- Returns layer-compatible palette payload.
 
 ## Palette library
 
 ### `GET /get_palettes[?v=true][&name=<paletteName>]`
 
-- Default response (no `v`): names only.
-- With `v=true`: full palette objects.
-- With `name=<...>`: returns specific palette (full details).
+- Names-only by default.
+- `v=true` returns full palette objects.
 
 ### `POST /save_palette`
 
-- Input: JSON palette object (must include `name` and at least one color).
-- Success: `{"success":true,"message":"Palette saved successfully"}`.
+- Input: JSON palette object.
 
-### `GET /delete_palette?index=<userPaletteIndex>`
+### `POST /delete_palette`
 
-- Deletes user palette by index.
-- Success: JSON with `success` and `message`.
+- Arg: `index=<userPaletteIndex>`.
 
 ### `POST /sync_palettes?push=true|false&pull=true|false`
 
-- Input: JSON array of palettes.
-- `push=true`: add unknown client palettes on device.
-- `pull=true`: return device palettes missing in client payload.
+- Input: JSON array of palette objects.
 
-## Model and visualization
-
-### `GET /get_colors[?maxColors=<int>][&layer=<id>]`
-
-- Returns sampled LED color stream:
-  - `colors` array of `{r,g,b,w}`
-  - `step`
-  - `totalPixels`
-- Optional `layer` isolates one layer during sampling.
+## Model + topology
 
 ### `GET /get_model`
 
-- Returns model topology as JSON:
-  - `pixelCount`, `realPixelCount`, `modelCount`, `gapCount`
-  - `intersections[]`, `connections[]`, `models[]`, `gaps[]`
+- Returns model/editor payload used by control-panel.
 
-### `POST /add_intersection`
+### `GET /get_colors[?maxColors=<int>][&layer=<id>]`
 
-- Input JSON:
+- Returns sampled LED stream for visualization.
+
+### Intersection editing (`POST`)
+
+- `/add_intersection` body JSON:
   - required: `numPorts` (`2` or `4`), `topPixel`, `group`
   - optional: `bottomPixel`
-- Success: `{"success":true,"id":<newId>}`.
+  - `group` must be a single valid group bit.
+- `/remove_intersection` body JSON:
+  - `{"id":<intersectionId>,"group":<groupIndex>}`
 
-### `POST /remove_intersection`
+### Declarative topology schema (JSON)
 
-- Input JSON: `{"id":<intersectionId>,"group":<group>}`.
-- Success: `{"success":true}`.
+#### `GET /export_topology`
 
-## WLED compatibility endpoints
+- Exports normalized topology schema:
+  - `schemaVersion`, `pixelCount`
+  - `intersections[]`
+  - `connections[]`
+  - `models[]` (including routing strategy and conditional weights)
+  - `ports[]` (port-id to intersection/slot mapping)
+  - `gaps[]`
 
-- `GET|POST /json`
-- `GET /json/info`
-- `GET /device_info` (same handler as `/json/info`)
-- `GET|POST /json/state`
-- `GET /json/si`
-- `GET /on`
-- `GET /off`
-- `GET /version`
-- `GET /win`
+#### `POST /import_topology`
 
-## Errors and status codes
+- Input JSON must match exported schema.
+- Replaces current topology in-memory and rebuilds runtime `State`.
+- Success response:
 
-General patterns:
+```json
+{"success":true,"intersectionCount":12,"connectionCount":11}
+```
 
-- `200`: success.
-- `302`: redirect (notably `/toggle_visible`).
-- `400`: invalid or missing params.
-- `404`: missing resource/model/layer.
-- `500`: internal failure (for example failed palette persistence).
+## WLED compatibility routes
 
-Error body format is not uniform:
+- `/json`, `/json/info`, `/json/state`, `/json/si`
+- `/device_info`, `/on`, `/off`, `/version`, `/win`
+- Note: when API auth is enabled, mutating WLED routes (`POST /json`, `/on`, `/off`) require token auth.
 
-- Some routes return plain text.
-- Some routes return JSON with `{"error":"..."}`.
+## Errors/status
 
-## Known contract quirks
+- `200`: success
+- `400`: invalid/missing params or invalid topology schema
+- `401`: unauthorized mutation while API auth enabled
+- `404`: missing model/resource
+- `500`: internal failure
 
-- Mutation-by-GET exists on several endpoints (`/update_*`, `/toggle_visible`, `/reset_layer`).
-- `/update_wifi` may reboot before the client reads a response body.
-- `/get_layers` includes only editable layers.
-- `/update_palette` is registered as `HTTP_ANY`, but the React UI uses `POST` form args.

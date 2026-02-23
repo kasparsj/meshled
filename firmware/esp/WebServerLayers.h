@@ -1,7 +1,5 @@
 #pragma once
 
-#include <lightpath/integration/rendering.hpp>
-
 // Get the name of a palette by index
 String getPaletteName(uint8_t index) {
     static const char* paletteNames[] = {

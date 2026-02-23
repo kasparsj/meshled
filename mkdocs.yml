@@ -65,7 +65,6 @@ nav:
   - Architecture:
       - Core Architecture Primer: core-architecture.md
       - Core Build and Reproducibility: core-build.md
-      - Lightpath Integration Notes: CORE_AUDIT_REPORT.md
       - Lightpath API Inventory: lightpath-api-inventory.md
       - Third-Party Licenses: third-party-licenses.md
   - Firmware and Runtime Contracts:
