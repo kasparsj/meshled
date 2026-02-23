@@ -1,7 +1,4 @@
 #include "ofApp.h"
-#include "Globals.h"
-#include "LightList.h"
-#include "LPRandom.h"
 
 //--------------------------------------------------------------
 LPObject* ofApp::createObject(ObjectType type, uint16_t pixelCount) {

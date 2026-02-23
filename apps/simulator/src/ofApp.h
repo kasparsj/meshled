@@ -2,12 +2,7 @@
 
 #include "ofMain.h"
 #include "ofxOsc.h"
-#include "Heptagon919.h"
-#include "Heptagon3024.h"
-#include "Line.h"
-#include "Cross.h"
-#include "Triangle.h"
-#include "LPDebugger.h"
+#include "lightpath/lightpath.hpp"
 #define OSC_PORT 54321
 #define MAX_BRIGHTNESS 255
 

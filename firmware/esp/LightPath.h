@@ -16,11 +16,4 @@
 #define OBJ_HEPTAGON3024 3
 
 #include "ColorOrder.h"
-
-#include "src/objects/Heptagon919.h"
-#include "src/objects/Heptagon3024.h"
-#include "src/objects/Line.h"
-#include "src/objects/Triangle.h"
-#include "src/Globals.h"
-#include "src/LightList.h"
-#include "src/LPRandom.h"
+#include <lightpath/lightpath.hpp>

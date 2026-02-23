@@ -108,6 +108,7 @@ OF_ROOT ?= ../../../../openframeworks
 #   Note: Leave a leading space when adding list items with the += operator
 ################################################################################
 # PROJECT_CFLAGS = 
+PROJECT_CFLAGS += -I../../packages/lightpath/include
 
 ################################################################################
 # PROJECT OPTIMIZATION CFLAGS
