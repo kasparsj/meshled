@@ -12,6 +12,8 @@ git submodule update --init --recursive
 
 `ofxColorTheory` is required at `./vendor/ofxColorTheory`.
 
+Core-specific reproducibility notes live in `docs/core-build.md`.
+
 Optional helper:
 
 ```bash

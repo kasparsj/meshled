@@ -74,10 +74,10 @@ OF_ROOT=/path/to/openframeworks make -n
 ## Key Docs
 
 - Build/setup: `docs/build.md`
+- Core build/repro guide: `docs/core-build.md`
 - Firmware HTTP API: `docs/firmware-api.md`
 - OSC contract: `docs/osc-contract.md`
 - UI/firmware compatibility: `docs/ui-firmware-compat.md`
-- Reorg plan and phase tracking: `docs/CODEX_REORG_REPORT.md`
 
 ## Project Policies
 
