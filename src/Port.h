@@ -24,6 +24,7 @@ class Port {
     static Port* findById(uint8_t id);
     static void addToPool(Port* port);
     static void removeFromPool(Port* port);
+    static uint8_t poolCount() { return poolSize; }
     
   protected:
     

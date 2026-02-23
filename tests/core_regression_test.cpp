@@ -8,6 +8,7 @@
 #include "../src/EmitParams.h"
 #include "../src/Globals.h"
 #include "../src/Palette.h"
+#include "../src/Port.h"
 #include "../src/State.h"
 #include "../src/objects/Cross.h"
 #include "../src/objects/Line.h"
@@ -285,6 +286,10 @@ int main() {
         if (state.totalLightLists != 1) {
             return fail("Expected only background light list after stopAll drain");
         }
+    }
+
+    if (Port::poolCount() != 0) {
+        return fail("Port pool should be empty after scoped object teardown");
     }
 
     return 0;

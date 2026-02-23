@@ -50,6 +50,17 @@ Connection::Connection(Intersection *from, Intersection *to, uint8_t group, int1
   }
 }
 
+Connection::~Connection() {
+  if (fromPort != nullptr) {
+    delete fromPort;
+    fromPort = nullptr;
+  }
+  if (toPort != nullptr) {
+    delete toPort;
+    toPort = nullptr;
+  }
+}
+
 void Connection::emit(LPLight* const light) const {
     light->setOutPort(fromPort, from->id);
     add(light);
