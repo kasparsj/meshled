@@ -33,10 +33,10 @@ class Triangle : public LPObject {
         setup();
     }
     
-    virtual ~Triangle() {}
+    ~Triangle() override = default;
     
-    bool isMirrorSupported() { return true; }
-    uint16_t* getMirroredPixels(uint16_t pixel, LPOwner* mirrorFlipEmitter, bool mirrorRotate);
+    bool isMirrorSupported() override { return true; }
+    uint16_t* getMirroredPixels(uint16_t pixel, LPOwner* mirrorFlipEmitter, bool mirrorRotate) override;
     
     // Methods for mapping between pixels and segment progress
     float getProgressOnSegment(uint16_t pixel, uint8_t segment) const;

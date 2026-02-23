@@ -5,6 +5,14 @@
 #include <stdio.h>
 #include <vector>
 
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdelete-non-abstract-non-virtual-dtor"
+#pragma clang diagnostic ignored "-Woverloaded-virtual"
+#pragma clang diagnostic ignored "-Wreorder-ctor"
+#pragma clang diagnostic ignored "-Wundefined-var-template"
+#endif
+
 #include "../../../vendor/ofxColorTheory/src/Rules/Analogous.h"
 #include "../../../vendor/ofxColorTheory/src/Rules/Complementary.h"
 #include "../../../vendor/ofxColorTheory/src/Rules/Compound.h"
@@ -29,6 +37,10 @@ template class Triad_<ColorRGB>;
 template<>
 const std::vector<std::shared_ptr<ColorWheelScheme_<ColorRGB>>> ColorWheelSchemes_<ColorRGB>::SCHEMES = ColorWheelSchemes_<ColorRGB>::createColorSchemes();
 }
+
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
 
 uint16_t LightList::nextId = 0;
 
@@ -177,6 +189,8 @@ void LightList::initBri(uint16_t i, LPLight* const light) const {
       break;
     case LIST_ORDER_NOISE:
       light->bri = gPerlinNoise.GetValue(id * 10, i * 100) * FULL_BRIGHTNESS;
+      break;
+    default:
       break;
   }
 }

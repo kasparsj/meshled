@@ -27,7 +27,7 @@ uint16_t Line::getPixelOnLine(float perc) const {
     return round(perc * (pixelCount - 1));
 }
 
-uint16_t* Line::getMirroredPixels(uint16_t pixel, LPOwner* mirrorFlipEmitter, bool mirrorRotate) {
+uint16_t* Line::getMirroredPixels(uint16_t pixel, LPOwner* /*mirrorFlipEmitter*/, bool mirrorRotate) {
     float progress = getProgressOnLine(pixel);
     mirrorPixels[0] = 0;
     

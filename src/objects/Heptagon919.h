@@ -14,6 +14,6 @@ public:
     }
     
 private:
-  virtual void setup();
+  void setup() override;
     
 };

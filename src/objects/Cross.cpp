@@ -63,7 +63,7 @@ uint16_t Cross::getPixelOnLine(float perc, bool isVertical) const {
     }
 }
 
-uint16_t* Cross::getMirroredPixels(uint16_t pixel, LPOwner* mirrorFlipEmitter, bool mirrorRotate) {
+uint16_t* Cross::getMirroredPixels(uint16_t pixel, LPOwner* /*mirrorFlipEmitter*/, bool mirrorRotate) {
     mirrorPixels[0] = 0;
     
     // Determine if pixel is on vertical or horizontal line

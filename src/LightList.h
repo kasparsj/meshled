@@ -3,12 +3,12 @@
 #include "Config.h"
 #include "ofxEasing.h"
 #include "Behaviour.h"
+#include "LPLight.h"
 #include <vector>
 #include "Palette.h"
 
 class Model;
 class Light;
-class LPLight;
 class LPOwner;
 
 typedef struct {
@@ -109,7 +109,7 @@ class LightList {
         reset();
     }
 
-    ~LightList() {
+    virtual ~LightList() {
       if (lights != NULL) {
         for (uint16_t i = 0; i < numLights; i++) {
           delete lights[i];
@@ -165,7 +165,7 @@ class LightList {
     void split();
     float getPosition(LPLight* const light) const;
     uint16_t getBri(const LPLight* light) const;
-    virtual ColorRGB getColor(int16_t pixel = -1) const {
+    virtual ColorRGB getColor(int16_t /*pixel*/ = -1) const {
         throw std::runtime_error("LightList::getColor not implemented");
     }
     virtual const ColorRGB& getLightColor(uint32_t i) const {

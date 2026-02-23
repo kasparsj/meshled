@@ -154,7 +154,7 @@ uint16_t Triangle::getPixelOnSegment(float perc, uint8_t segment) const {
     }
 }
 
-uint16_t* Triangle::getMirroredPixels(uint16_t pixel, LPOwner* mirrorFlipEmitter, bool mirrorRotate) {
+uint16_t* Triangle::getMirroredPixels(uint16_t pixel, LPOwner* /*mirrorFlipEmitter*/, bool mirrorRotate) {
     mirrorPixels[0] = 0;
     
     if (mirrorRotate) {

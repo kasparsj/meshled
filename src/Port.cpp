@@ -70,7 +70,7 @@ void Port::handleColorChange(LPLight* const light) const {
     }
 }
 
-void InternalPort::sendOut(LPLight* const light, bool sendList) {
+void InternalPort::sendOut(LPLight* const light, bool /*sendList*/) {
     handleColorChange(light);
     connection->add(light);
 }

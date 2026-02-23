@@ -24,14 +24,14 @@ class Intersection : public LPOwner {
 
     }
   
-    ~Intersection() {
+    ~Intersection() override {
       delete[] ports;
     }
     
-    uint8_t getType() { return TYPE_INTERSECTION; };
+    uint8_t getType() override { return TYPE_INTERSECTION; };
     void addPort(Port *p);
-    void emit(LPLight* const light) const;
-    void update(LPLight* const light) const;
+    void emit(LPLight* const light) const override;
+    void update(LPLight* const light) const override;
 
   private:
 
