@@ -2,7 +2,9 @@
 
 #include "ofMain.h"
 #include "ofxOsc.h"
-#include "lightpath/lightpath.hpp"
+#include "lightpath/debug.hpp"
+#include "lightpath/objects.hpp"
+#include "lightpath/runtime.hpp"
 #define OSC_PORT 54321
 #define MAX_BRIGHTNESS 255
 
