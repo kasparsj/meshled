@@ -495,7 +495,7 @@ Validation after Phase 1:
 - `State` now deletes owned `LightList` instances on destruction.
 - `Model` now deletes owned `Weight` instances on destruction.
 - Added long-run lifecycle regression coverage:
-- `packages/core/tests/core_regression_test.cpp` now verifies bounded repeated emit/update/stop cycles and post-`stopAll` drain behavior over a full `Line` traversal window.
+- `packages/core/tests/core_regression_test.cpp` now verifies bounded repeated emit/update/stop cycles and post-`stopAll` drain behavior over a full `Line` traversal window, including background-slot (`lightLists[0]`) and `totalLightLists` invariants.
 - Fixed list counter underflow during repeated expired background updates:
 - `State::update` now keeps slot `0` allocated/non-visible without decrementing `totalLightLists` on every frame.
 - Updated docs:

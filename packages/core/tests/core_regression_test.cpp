@@ -279,6 +279,12 @@ int main() {
                         ", totalLightLists=" + std::to_string(state.totalLightLists) +
                         ", nonNullLists=" + std::to_string(activeLists) + ")");
         }
+        if (state.lightLists[0] == nullptr) {
+            return fail("Background slot should remain allocated after stopAll drain");
+        }
+        if (state.totalLightLists != 1) {
+            return fail("Expected only background light list after stopAll drain");
+        }
     }
 
     return 0;
