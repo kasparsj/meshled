@@ -84,6 +84,7 @@ OF_ROOT=/path/to/openframeworks make -n
 - Build/setup: `docs/build.md`
 - Core build/repro guide: `docs/core-build.md`
 - Core architecture primer: `docs/core-architecture.md`
+- Third-party licenses/provenance: `docs/third-party-licenses.md`
 - Firmware HTTP API: `docs/firmware-api.md`
 - OSC contract: `docs/osc-contract.md`
 - UI/firmware compatibility: `docs/ui-firmware-compat.md`

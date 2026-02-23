@@ -14,6 +14,7 @@ git submodule update --init --recursive
 
 Core-specific reproducibility notes live in `docs/core-build.md`.
 Core architecture notes live in `docs/core-architecture.md`.
+Third-party dependency licensing/provenance notes live in `docs/third-party-licenses.md`.
 
 Optional helper:
 

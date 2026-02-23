@@ -440,8 +440,9 @@ Dependencies: 3.1.
 - firmware `compiledb` smoke command
 - simulator `OF_ROOT` dry-run guidance
 - Added `docs/core-architecture.md` with a concise module map, runtime flow, ownership/lifecycle notes, and adapter boundary contract.
+- Added `docs/third-party-licenses.md` to track confirmed licenses and unresolved provenance follow-ups (`ofxEasing`, palette attribution).
 - Updated `docs/build.md` to point to `docs/core-build.md`.
-- Updated `README.md` key docs list to include `docs/core-build.md` and `docs/core-architecture.md`.
+- Updated `README.md` key docs list to include `docs/core-build.md`, `docs/core-architecture.md`, and `docs/third-party-licenses.md`.
 
 ### Phase 1 safe runtime fixes (implemented)
 
