@@ -1,6 +1,6 @@
 #pragma once
 
-#include <lightpath/rendering.hpp>
+#include <lightpath/legacy/rendering.hpp>
 
 // Get the name of a palette by index
 String getPaletteName(uint8_t index) {
