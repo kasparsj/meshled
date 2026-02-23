@@ -256,8 +256,8 @@ Outputs
 - palette repeat-wrap behavior.
 - emit/update/stop lifecycle checks on `Line`, including `stopNote`, `stopAll`, and `findListById` checks.
 - same-note list reuse behavior.
-- deterministic blend-mode checks for representative modes (`BLEND_NORMAL`, `BLEND_ADD`, `BLEND_REPLACE`, `BLEND_SUBTRACT`) via stacked `BgLight` layers.
-- Coverage remains limited for long-running animation invariants.
+- deterministic blend-mode checks across all documented blend modes (`BLEND_NORMAL` through `BLEND_PIN_LIGHT`) via stacked `BgLight` layers.
+- Coverage now includes a bounded long-run lifecycle stress check on `Line` (repeated emit/stop cycles + post-`stopAll` drain), but broader multi-topology stress coverage is still limited.
 
 ### Likely performance hotspots
 
@@ -280,7 +280,7 @@ Resolved in Phase 1:
 Remaining high-signal risks:
 - Core still relies on macro-heavy platform indirection (`Config.h` + `ofMain`/Arduino shims).
 - Warning-gated CI is now in place for core host builds, but it currently relies on targeted suppression for legacy `ofxEasing` sequencing diagnostics.
-- No lifecycle/regression tests around `State::update` rendering behavior and blend mode correctness.
+- Long-run lifecycle coverage is still narrow (currently focused on `Line`); complex-topology long-run invariants are not yet covered.
 
 ## 7) Open Source Readiness Assessment
 
@@ -395,7 +395,7 @@ Files/modules: test sources around `State`, `LPObject`, `LightList`, `Palette`.
 Acceptance criteria: tests cover emit/update expiry, model routing, palette interpolation, and edge cases (empty emit groups).
 Complexity: M.
 Dependencies: 2.1.
-Status: largely complete baseline (regression tests added for lifecycle/model-wrap/palette wrap + edge-case guards, plus deterministic full blend-mode matrix coverage; long-run coverage still pending).
+Status: complete baseline (regression tests added for lifecycle/model-wrap/palette wrap + edge-case guards, deterministic full blend-mode matrix coverage, and bounded long-run lifecycle stress coverage on `Line`).
 
 ### Task 2.3
 Goal: add sanitizer/strict-warning CI lane for core host target.
@@ -491,6 +491,10 @@ Validation after Phase 1:
 - Improved teardown cleanup in core:
 - `State` now deletes owned `LightList` instances on destruction.
 - `Model` now deletes owned `Weight` instances on destruction.
+- Added long-run lifecycle regression coverage:
+- `packages/core/tests/core_regression_test.cpp` now verifies bounded repeated emit/update/stop cycles and post-`stopAll` drain behavior over a full `Line` traversal window.
+- Fixed list counter underflow during repeated expired background updates:
+- `State::update` now keeps slot `0` allocated/non-visible without decrementing `totalLightLists` on every frame.
 - Updated docs:
 - `README.md`
 - `docs/core-build.md`
