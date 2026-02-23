@@ -29,7 +29,7 @@ class Line : public LPObject {
     uint16_t getPixelOnLine(float perc) const;
     
     EmitParams* getModelParams(int model) override {
-        EmitParams* params = new EmitParams(model % LineModel::L_LAST, LPRandom::randomSpeed());
+        EmitParams* params = new EmitParams(model % (LineModel::L_LAST + 1), LPRandom::randomSpeed());
         return params;
     }
 

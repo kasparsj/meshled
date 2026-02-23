@@ -404,7 +404,9 @@ Dependencies: 3.1.
 
 ---
 
-## Changes made (Phase 0 docs-only)
+## Changes made
+
+### Phase 0 docs-only
 
 - Added `docs/core-build.md` with explicit shared-core verification steps:
 - submodule init
@@ -413,7 +415,23 @@ Dependencies: 3.1.
 - simulator `OF_ROOT` dry-run guidance
 - Updated `docs/build.md` to point to `docs/core-build.md`.
 - Updated `README.md` key docs list to include `docs/core-build.md`.
-- No runtime behavior changes were made.
+
+### Phase 1 safe runtime fixes (implemented)
+
+- Fixed `LightList::addLightFromMsg` missing return and `LightList::setDuration` wrong self-assignment.
+- Removed `uint8_t` truncation risk in `LightList::doEmit` loop counters.
+- Added emit-time guard for invalid model IDs in `State::emit`.
+- Fixed `LP_OSC_REPLY` index variable usage (`index` instead of undefined `i`).
+- Prevented `Behaviour` leak on early max-light rejection in `State::setupListFrom`.
+- Added zero-candidate guards in `State::getEmitter` to avoid modulo/division by zero.
+- Fixed null-dereference path in `Intersection::update` when no port is chosen.
+- Added bounds clipping in `LPLight` segment/link pixel packing to prevent writes past `pixels`.
+- Fixed off-by-one model modulo in `Line`, `Cross`, `Triangle` `getModelParams`.
+- Fixed recursive const access bug in `HashMap::operator[]` and made lookup helpers const.
+
+Validation after Phase 1:
+- `pio run -e esp32dev -t compiledb` succeeded in `firmware/esp`.
+- `make -n` in `packages/simulator` still fails only due missing local openFrameworks path (`../../../../openframeworks`), unchanged from pre-fix state.
 
 ## Appendix A: Search-driven findings
 
