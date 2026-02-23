@@ -16,7 +16,7 @@ This document tracks third-party code used by MeshLED and where license text/pro
 | Dependency/material | Location | Current status | Follow-up |
 |---|---|---|---|
 | ofxEasing | `packages/lightpath/src/ofxEasing.h` | No explicit license header in vendored file | Confirm upstream source + license and add attribution/copy to repo docs |
-| FastLED/cpt-city derived palette data | `packages/lightpath/src/Palettes.h`, `packages/lightpath/src/Palettes.cpp` | Source comment mentions derivation, but attribution text is incomplete | Add explicit attribution + license compatibility note for reused palette data |
+| FastLED/cpt-city derived palette data | `packages/lightpath/src/rendering/Palettes.h`, `packages/lightpath/src/rendering/Palettes.cpp` | Source comment mentions derivation, but attribution text is incomplete | Add explicit attribution + license compatibility note for reused palette data |
 
 ## Operational Notes
 

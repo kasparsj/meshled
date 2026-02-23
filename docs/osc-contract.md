@@ -166,7 +166,7 @@ Pair-based endpoints (`/emit`, `/note_on`, `/notes_set`) use numeric parameter I
 | `EMIT_OFFSET` | `21` |
 | `COLOR_CHANGE_GROUPS` | `22` |
 
-Source of truth: `packages/lightpath/src/EmitParams.h`.
+Source of truth: `packages/lightpath/src/runtime/EmitParams.h`.
 
 ## Shared enums and flags
 

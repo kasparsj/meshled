@@ -52,7 +52,8 @@ Submodule: `/Users/kasparsj/Work2/meshled/packages/lightpath`
 
 ## Current API Map (de-facto public surface)
 
-All symbols are currently exposed from `packages/lightpath/src/*` headers (no dedicated `include/` boundary yet).
+Public symbols are exposed via `packages/lightpath/include/lightpath/*` headers.
+Internal definitions live under module-scoped `packages/lightpath/src/*` folders.
 
 ### Core config/types
 
@@ -61,7 +62,7 @@ All symbols are currently exposed from `packages/lightpath/src/*` headers (no de
   - `Groups`, `BehaviourFlags`, `ListOrder`, `ListHead`, `BlendMode`, `Ease`
   - global compile-time constants/macros (e.g. `MAX_GROUPS`, `MAX_LIGHT_LISTS`, `RANDOM_COLOR`, `INFINITE_DURATION`)
 
-- `packages/lightpath/src/EmitParams.h`
+- `packages/lightpath/src/runtime/EmitParams.h`
   - `EmitParam`
   - `EmitParams`
 
@@ -73,61 +74,61 @@ All symbols are currently exposed from `packages/lightpath/src/*` headers (no de
 
 ### Topology/routing
 
-- `packages/lightpath/src/LPOwner.h`
+- `packages/lightpath/src/topology/LPOwner.h`
   - `LPOwner`
 
-- `packages/lightpath/src/Port.h`
+- `packages/lightpath/src/topology/Port.h`
   - `Port`, `InternalPort`, `ExternalPort`
   - `sendLightViaESPNow` hook
 
-- `packages/lightpath/src/Intersection.h`
+- `packages/lightpath/src/topology/Intersection.h`
   - `Intersection`
 
-- `packages/lightpath/src/Connection.h`
+- `packages/lightpath/src/topology/Connection.h`
   - `Connection`
 
-- `packages/lightpath/src/Weight.h`
+- `packages/lightpath/src/topology/Weight.h`
   - `Weight`
 
-- `packages/lightpath/src/Model.h`
+- `packages/lightpath/src/topology/Model.h`
   - `Model`
 
-- `packages/lightpath/src/LPObject.h`
+- `packages/lightpath/src/topology/LPObject.h`
   - `LPObject`, `PixelGap`
 
 ### Runtime/state
 
-- `packages/lightpath/src/LPLight.h`
+- `packages/lightpath/src/runtime/LPLight.h`
   - `LPLight`
 
-- `packages/lightpath/src/Light.h`
+- `packages/lightpath/src/runtime/Light.h`
   - `Light`
 
-- `packages/lightpath/src/Behaviour.h`
+- `packages/lightpath/src/runtime/Behaviour.h`
   - `Behaviour`
 
-- `packages/lightpath/src/LightList.h`
+- `packages/lightpath/src/runtime/LightList.h`
   - `LightList`, `LightMessage`
 
-- `packages/lightpath/src/BgLight.h`
+- `packages/lightpath/src/runtime/BgLight.h`
   - `BgLight`
 
-- `packages/lightpath/src/State.h`
+- `packages/lightpath/src/runtime/State.h`
   - `State` (+ static `State::autoParams`)
 
 ### Palette/rendering
 
-- `packages/lightpath/src/Palette.h`
+- `packages/lightpath/src/rendering/Palette.h`
   - `Palette`
   - wrap mode macros/constants (`WRAP_*`)
 
-- `packages/lightpath/src/Palettes.h`
+- `packages/lightpath/src/rendering/Palettes.h`
   - predefined palette factories
   - `getPaletteCount()`, `getPalette()`
 
 ### Debug/utilities
 
-- `packages/lightpath/src/LPDebugger.h`
+- `packages/lightpath/src/debug/LPDebugger.h`
   - `LPDebugger`
 
 - `packages/lightpath/src/HashMap.h`
@@ -161,19 +162,19 @@ All symbols are currently exposed from `packages/lightpath/src/*` headers (no de
 ### Include-level dependencies
 
 - `apps/simulator/src/ofApp.h`
-  - direct includes: `Heptagon919.h`, `Heptagon3024.h`, `Line.h`, `Cross.h`, `Triangle.h`, `LPDebugger.h`
+  - direct include: `lightpath/lightpath.hpp`
 
 - `apps/simulator/src/ofApp.cpp`
-  - direct includes: `Globals.h`, `LightList.h`, `LPRandom.h`
+  - uses `lightpath` symbols via `ofApp.h`
 
 - `firmware/esp/LightPath.h`
-  - direct includes: `src/objects/Heptagon919.h`, `src/objects/Heptagon3024.h`, `src/objects/Line.h`, `src/objects/Triangle.h`, `src/Globals.h`, `src/LightList.h`, `src/LPRandom.h`
+  - direct include: `lightpath/lightpath.hpp`
 
 - `firmware/esp/homo_deus.ino`
-  - optional direct include: `src/LPDebugger.h` (under `DEBUGGER_ENABLED`)
+  - includes `LightPath.h` (which includes `lightpath/lightpath.hpp`)
 
 - `firmware/esp/WebServerLayers.h`
-  - direct include: `src/Palettes.h`
+  - direct include: `lightpath/rendering.hpp`
 
 - `firmware/esp/ofxColorTheoryCompat.cpp`
   - direct include of vendor `.cpp` files from `packages/lightpath/vendor/ofxColorTheory/src/*`
