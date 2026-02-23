@@ -20,7 +20,7 @@ class Connection : public LPOwner {
     uint16_t toPixel;
     
     Connection(Intersection *from, Intersection *to, uint8_t group, int16_t numLeds = -1);
-    ~Connection() override = default;
+    ~Connection() override;
     
     uint8_t getType() override { return TYPE_CONNECTION; };
     inline void add(LPLight* const light) const {

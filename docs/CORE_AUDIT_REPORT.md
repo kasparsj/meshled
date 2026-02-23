@@ -494,8 +494,11 @@ Validation after Phase 1:
 - Improved teardown cleanup in core:
 - `State` now deletes owned `LightList` instances on destruction.
 - `Model` now deletes owned `Weight` instances on destruction.
+- `Connection` now deletes owned `Port` instances, and `LPObject` now destroys connections before intersections to keep port cleanup order safe.
 - Added long-run lifecycle regression coverage:
 - `packages/core/tests/core_regression_test.cpp` now verifies bounded repeated emit/update/stop cycles and post-`stopAll` drain behavior over a full `Line` traversal window, including background-slot (`lightLists[0]`) and `totalLightLists` invariants.
+- Added teardown regression check:
+- `packages/core/tests/core_regression_test.cpp` now asserts the global `Port` pool is empty after scoped object teardown.
 - Fixed list counter underflow during repeated expired background updates:
 - `State::update` now keeps slot `0` allocated/non-visible without decrementing `totalLightLists` on every frame.
 - Updated docs:

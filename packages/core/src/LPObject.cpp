@@ -9,20 +9,20 @@ LPObject::LPObject(uint16_t pixelCount) : pixelCount(pixelCount), realPixelCount
 }
 
 LPObject::~LPObject() {
-    // Clean up intersections
-    for (uint8_t i = 0; i < MAX_GROUPS; i++) {
-        for (Intersection* intersection : inter[i]) {
-            delete intersection;
-        }
-        inter[i].clear();
-    }
-    
-    // Clean up connections
+    // Clean up connections first (owns Port instances).
     for (uint8_t i = 0; i < MAX_GROUPS; i++) {
         for (Connection* connection : conn[i]) {
             delete connection;
         }
         conn[i].clear();
+    }
+
+    // Then clean up intersections.
+    for (uint8_t i = 0; i < MAX_GROUPS; i++) {
+        for (Intersection* intersection : inter[i]) {
+            delete intersection;
+        }
+        inter[i].clear();
     }
     
     // Clean up models
