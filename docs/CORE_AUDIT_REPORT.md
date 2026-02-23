@@ -257,7 +257,7 @@ Outputs
 - emit/update/stop lifecycle checks on `Line`, including `stopNote`, `stopAll`, and `findListById` checks.
 - same-note list reuse behavior.
 - deterministic blend-mode checks for representative modes (`BLEND_NORMAL`, `BLEND_ADD`, `BLEND_REPLACE`, `BLEND_SUBTRACT`) via stacked `BgLight` layers.
-- Coverage remains limited for long-running animation invariants and full blend-mode matrix validation.
+- Coverage remains limited for long-running animation invariants.
 
 ### Likely performance hotspots
 
@@ -395,7 +395,7 @@ Files/modules: test sources around `State`, `LPObject`, `LightList`, `Palette`.
 Acceptance criteria: tests cover emit/update expiry, model routing, palette interpolation, and edge cases (empty emit groups).
 Complexity: M.
 Dependencies: 2.1.
-Status: largely complete baseline (regression tests added for lifecycle/model-wrap/palette wrap + edge-case guards, plus deterministic representative blend-mode coverage; long-run/full-matrix coverage still pending).
+Status: largely complete baseline (regression tests added for lifecycle/model-wrap/palette wrap + edge-case guards, plus deterministic full blend-mode matrix coverage; long-run coverage still pending).
 
 ### Task 2.3
 Goal: add sanitizer/strict-warning CI lane for core host target.
@@ -470,7 +470,7 @@ Validation after Phase 1:
 - Added regression tests:
 - `packages/core/tests/core_regression_test.cpp`
 - Expanded regression coverage:
-- deterministic blend-mode compositing checks (`BLEND_NORMAL`, `BLEND_ADD`, `BLEND_REPLACE`, `BLEND_SUBTRACT`) using stacked `BgLight` layers.
+- deterministic blend-mode compositing checks across all documented blend modes (`BLEND_NORMAL` through `BLEND_PIN_LIGHT`) using stacked `BgLight` layers.
 - lifecycle assertions for `stopNote` and `findListById` behavior.
 - Added CI job for core host build + tests:
 - `.github/workflows/ci.yml` (`Core (host build + tests)`)

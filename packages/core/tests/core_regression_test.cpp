@@ -188,28 +188,42 @@ int main() {
         }
     }
 
-    // Blend-mode regressions: deterministic 1-pixel compositing.
+    // Blend-mode regressions: deterministic 1-pixel compositing across all modes.
     {
-        const ColorRGB normal = sampleBlendResult(BLEND_NORMAL);
-        if (!isApproxColor(normal, 150, 75, 50)) {
-            return fail("BLEND_NORMAL did not average base and overlay as expected");
-        }
+        struct BlendExpectation {
+            BlendMode mode;
+            uint8_t r;
+            uint8_t g;
+            uint8_t b;
+            const char* name;
+        };
 
-        const ColorRGB add = sampleBlendResult(BLEND_ADD);
-        if (!isApproxColor(add, 255, 150, 100)) {
-            return fail("BLEND_ADD did not accumulate with expected clamp behavior");
-        }
+        // Golden values for base(100,100,100) + overlay(200,50,0) stacked BgLight blend.
+        const std::vector<BlendExpectation> expectations = {
+            {BLEND_NORMAL, 150, 75, 50, "BLEND_NORMAL"},
+            {BLEND_ADD, 255, 150, 100, "BLEND_ADD"},
+            {BLEND_MULTIPLY, 78, 19, 0, "BLEND_MULTIPLY"},
+            {BLEND_SCREEN, 221, 130, 99, "BLEND_SCREEN"},
+            {BLEND_OVERLAY, 156, 39, 0, "BLEND_OVERLAY"},
+            {BLEND_REPLACE, 200, 50, 0, "BLEND_REPLACE"},
+            {BLEND_SUBTRACT, 0, 50, 100, "BLEND_SUBTRACT"},
+            {BLEND_DIFFERENCE, 100, 50, 100, "BLEND_DIFFERENCE"},
+            {BLEND_EXCLUSION, 143, 110, 100, "BLEND_EXCLUSION"},
+            {BLEND_DODGE, 255, 124, 100, "BLEND_DODGE"},
+            {BLEND_BURN, 57, 0, 0, "BLEND_BURN"},
+            {BLEND_HARD_LIGHT, 188, 39, 0, "BLEND_HARD_LIGHT"},
+            {BLEND_SOFT_LIGHT, 133, 63, 39, "BLEND_SOFT_LIGHT"},
+            {BLEND_LINEAR_LIGHT, 244, 0, 0, "BLEND_LINEAR_LIGHT"},
+            {BLEND_VIVID_LIGHT, 231, 0, 0, "BLEND_VIVID_LIGHT"},
+            {BLEND_PIN_LIGHT, 145, 100, 0, "BLEND_PIN_LIGHT"},
+        };
 
-        const ColorRGB replace = sampleBlendResult(BLEND_REPLACE);
-        if (!isApproxColor(replace, 200, 50, 0)) {
-            return fail("BLEND_REPLACE did not overwrite existing pixel color");
+        for (const BlendExpectation& expected : expectations) {
+            const ColorRGB actual = sampleBlendResult(expected.mode);
+            if (!isApproxColor(actual, expected.r, expected.g, expected.b, 2)) {
+                return fail(std::string(expected.name) + " produced unexpected blended color");
+            }
         }
-
-        const ColorRGB subtract = sampleBlendResult(BLEND_SUBTRACT);
-        if (!isApproxColor(subtract, 0, 50, 100)) {
-            return fail("BLEND_SUBTRACT did not apply expected per-channel subtraction");
-        }
-
     }
 
     return 0;
