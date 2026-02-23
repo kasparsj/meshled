@@ -107,6 +107,13 @@ cmake --build packages/core/build
 ctest --test-dir packages/core/build --output-on-failure
 ```
 
+Script helper:
+
+```bash
+./scripts/build-core.sh default
+./scripts/build-core.sh all
+```
+
 ## CI coverage
 
 GitHub Actions workflow: `.github/workflows/ci.yml`
@@ -128,6 +135,7 @@ Note:
 ## Root helper scripts
 
 ```bash
+./scripts/build-core.sh all
 ./scripts/build-control-panel.sh
 ./scripts/build-firmware.sh esp32dev compiledb
 ```

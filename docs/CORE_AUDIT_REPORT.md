@@ -441,6 +441,7 @@ Dependencies: 3.1.
 - simulator `OF_ROOT` dry-run guidance
 - Added `docs/core-architecture.md` with a concise module map, runtime flow, ownership/lifecycle notes, and adapter boundary contract.
 - Added `docs/third-party-licenses.md` to track confirmed licenses and unresolved provenance follow-ups (`ofxEasing`, palette attribution).
+- Added `scripts/build-core.sh` (`default|asan|ubsan|warnings|all`) for reproducible host core verification from repo root.
 - Updated `docs/build.md` to point to `docs/core-build.md`.
 - Updated `README.md` key docs list to include `docs/core-build.md`, `docs/core-architecture.md`, and `docs/third-party-licenses.md`.
 

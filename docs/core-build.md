@@ -74,6 +74,16 @@ cmake --build packages/core/build-warnings
 ctest --test-dir packages/core/build-warnings --output-on-failure
 ```
 
+Optional script helper (runs one profile or all):
+
+```bash
+./scripts/build-core.sh default
+./scripts/build-core.sh asan
+./scripts/build-core.sh ubsan
+./scripts/build-core.sh warnings
+./scripts/build-core.sh all
+```
+
 ## 3) Verify firmware wiring to shared core
 
 The firmware consumes core sources through a symlink:

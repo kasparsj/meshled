@@ -55,6 +55,7 @@ OF_ROOT=/path/to/openframeworks make -n
 ### 6) Optional root helper scripts
 
 ```bash
+./scripts/build-core.sh all
 ./scripts/build-control-panel.sh
 ./scripts/build-firmware.sh esp32dev compiledb
 ```
