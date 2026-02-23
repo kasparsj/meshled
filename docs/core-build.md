@@ -13,6 +13,8 @@ The core is the shared C++ light engine used by:
 
 The host build is intended for reproducible compile/test checks in CI without requiring openFrameworks or Arduino SDKs.
 
+For architecture details (module responsibilities, update loop, ownership), see `docs/core-architecture.md`.
+
 ## Prerequisites
 
 - Git submodules initialized (required for `vendor/ofxColorTheory`)

@@ -439,8 +439,9 @@ Dependencies: 3.1.
 - firmware symlink check
 - firmware `compiledb` smoke command
 - simulator `OF_ROOT` dry-run guidance
+- Added `docs/core-architecture.md` with a concise module map, runtime flow, ownership/lifecycle notes, and adapter boundary contract.
 - Updated `docs/build.md` to point to `docs/core-build.md`.
-- Updated `README.md` key docs list to include `docs/core-build.md`.
+- Updated `README.md` key docs list to include `docs/core-build.md` and `docs/core-architecture.md`.
 
 ### Phase 1 safe runtime fixes (implemented)
 
