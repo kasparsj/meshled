@@ -21,3 +21,7 @@ packages/lightpath/build-asan/
 packages/lightpath/build-ubsan/
 packages/lightpath/build-warnings/
 packages/lightpath/build-warnscan/
+
+# Docs local artifacts
+site/
+.venv-docs/

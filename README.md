@@ -67,15 +67,15 @@ OF_ROOT=/path/to/openframeworks make -n
 ```text
 .
 ├── apps/
-│   └── control-panel/     # React + Vite control UI
+│   ├── control-panel/     # React + Vite control UI
+│   └── simulator/         # openFrameworks desktop simulator
 ├── firmware/
 │   └── esp/               # ESP32/ESP32-S3 firmware (PlatformIO + Arduino)
 ├── packages/
-│   ├── core/              # git submodule: github.com/kasparsj/lightpath
-│   │   ├── src/           # shared C++ core model/engine
-│   │   └── vendor/
-│   │       └── ofxColorTheory/  # nested submodule used by core
-│   └── simulator/         # openFrameworks desktop simulator
+│   └── lightpath/         # git submodule: github.com/kasparsj/lightpath
+│       ├── src/           # shared C++ core model/engine
+│       └── vendor/
+│           └── ofxColorTheory/  # nested submodule used by lightpath
 ├── tools/
 │   └── esp-stacktrace-decoder/
 ├── docs/                  # build/API/contract docs
@@ -91,6 +91,20 @@ OF_ROOT=/path/to/openframeworks make -n
 - Firmware HTTP API: `docs/firmware-api.md`
 - OSC contract: `docs/osc-contract.md`
 - UI/firmware compatibility: `docs/ui-firmware-compat.md`
+
+## Documentation Site (GitHub Pages)
+
+This repository can publish docs with MkDocs + Material:
+
+```bash
+python3 -m venv .venv-docs
+source .venv-docs/bin/activate
+pip install mkdocs-material
+mkdocs serve
+```
+
+Configuration: `mkdocs.yml`  
+Pages workflow: `.github/workflows/docs-pages.yml`
 
 ## Project Policies
 
