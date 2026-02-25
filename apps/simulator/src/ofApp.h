@@ -2,7 +2,7 @@
 
 #include "ofMain.h"
 #include "ofxOsc.h"
-#include "lightpath/integration.hpp"
+#include "lightgraph/integration.hpp"
 #define OSC_PORT 54321
 #define MAX_BRIGHTNESS 255
 
@@ -19,9 +19,9 @@ public:
         OBJ_HEPTAGON3024 = 4
     };
     
-    lightpath::integration::Object *object;
-    lightpath::integration::RuntimeState *state;
-    lightpath::integration::Debugger *debugger;
+    lightgraph::integration::Object *object;
+    lightgraph::integration::RuntimeState *state;
+    lightgraph::integration::Debugger *debugger;
     ObjectType currentObjectType;
 
     void setup();
@@ -47,13 +47,13 @@ public:
     void onNoteOff(const ofxOscMessage& m);
     void onNotesSet(const ofxOscMessage& m);
     void onAuto(const ofxOscMessage& m);
-    void parseParams(lightpath::integration::EmitParams &p, const ofxOscMessage &m);
-    void parseParam(lightpath::integration::EmitParams &p, const ofxOscMessage &m, lightpath::integration::EmitParam &param, uint8_t j);
+    void parseParams(lightgraph::integration::EmitParams &p, const ofxOscMessage &m);
+    void parseParam(lightgraph::integration::EmitParams &p, const ofxOscMessage &m, lightgraph::integration::EmitParam &param, uint8_t j);
     void doCommand(char command);
-    glm::vec2 intersectionPos(lightpath::integration::Intersection* intersection, int8_t j = -1);
-    lightpath::integration::Object* createObject(ObjectType type, uint16_t pixelCount);
+    glm::vec2 intersectionPos(lightgraph::integration::Intersection* intersection, int8_t j = -1);
+    lightgraph::integration::Object* createObject(ObjectType type, uint16_t pixelCount);
     ofColor getColor(uint16_t i);
-    void doEmit(lightpath::integration::EmitParams &params);
+    void doEmit(lightgraph::integration::EmitParams &params);
 
     ofxOscReceiver receiver;
     uint8_t showModel = 0;

@@ -1,7 +1,7 @@
 # Core Architecture Primer
 
 Date: 2026-02-23
-Scope: `packages/lightpath/src`
+Scope: `packages/lightgraph/src`
 
 ## Purpose
 
@@ -96,7 +96,7 @@ Adapters map incoming controls to:
 ## Quick Verification
 
 ```bash
-cmake -S packages/lightpath -B packages/lightpath/build -DLIGHTPATH_CORE_BUILD_TESTS=ON
-cmake --build packages/lightpath/build
-ctest --test-dir packages/lightpath/build --output-on-failure
+cmake -S packages/lightgraph -B packages/lightgraph/build -DLIGHTGRAPH_CORE_BUILD_TESTS=ON
+cmake --build packages/lightgraph/build
+ctest --test-dir packages/lightgraph/build --output-on-failure
 ```

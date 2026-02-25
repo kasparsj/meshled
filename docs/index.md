@@ -1,6 +1,6 @@
 # MeshLED Documentation
 
-MeshLED is a networked light platform built around a shared C++ engine (`lightpath`), ESP32 firmware, and a browser control panel.
+MeshLED is a networked light platform built around a shared C++ engine (`lightgraph`), ESP32 firmware, and a browser control panel.
 
 <div class="meshled-hero">
   <div class="meshled-hero__title">From node graph to photons in one stack</div>
@@ -20,7 +20,7 @@ MeshLED is a networked light platform built around a shared C++ engine (`lightpa
 
 | Surface | Path | Role |
 | --- | --- | --- |
-| Core engine | `packages/lightpath` | topology-aware light runtime and rendering |
+| Core engine | `packages/lightgraph` | topology-aware light runtime and rendering |
 | Firmware | `firmware/esp` | device runtime + OSC/HTTP endpoints |
 | Control panel | `apps/control-panel` | browser UI for model and layer control |
 

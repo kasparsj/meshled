@@ -6,7 +6,7 @@ Security reports are welcome for:
 
 - Firmware (`firmware/esp`)
 - Control panel (`apps/control-panel`)
-- Shared core and simulator integration (`packages/lightpath`, `apps/simulator`)
+- Shared core and simulator integration (`packages/lightgraph`, `apps/simulator`)
 
 ## Reporting a Vulnerability
 

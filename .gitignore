@@ -16,11 +16,11 @@ apps/simulator/bin/
 apps/simulator/obj/
 
 # Core host build outputs
-packages/lightpath/build/
-packages/lightpath/build-asan/
-packages/lightpath/build-ubsan/
-packages/lightpath/build-warnings/
-packages/lightpath/build-warnscan/
+packages/lightgraph/build/
+packages/lightgraph/build-asan/
+packages/lightgraph/build-ubsan/
+packages/lightgraph/build-warnings/
+packages/lightgraph/build-warnscan/
 
 # Docs local artifacts
 site/

@@ -51,7 +51,7 @@ String savedPassword = WIFI_PASS;
 #include "esp_bt.h"
 #endif
 
-#include "LightPath.h"
+#include "LightGraph.h"
 
 // Web configuration variables
 String deviceHostname = DEFAULT_HOSTNAME; // Device hostname for both WiFi and OTA
@@ -144,7 +144,7 @@ bool updateUserPalette(const UserPalette& palette) {
 }
 
 #ifdef DEBUGGER_ENABLED
-#include <lightpath/integration/debug.hpp>
+#include <lightgraph/integration/debug.hpp>
 Debugger *debugger;
 #endif
 

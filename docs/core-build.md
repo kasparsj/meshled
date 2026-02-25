@@ -1,7 +1,7 @@
 # Core Build and Reproducibility Guide
 
 Date: 2026-02-23
-Scope: shared engine in `packages/lightpath/src`
+Scope: shared engine in `packages/lightgraph/src`
 
 ## What “core” means in this repo
 
@@ -9,9 +9,9 @@ The core is the shared C++ light engine used by:
 
 - firmware (`firmware/esp`)
 - simulator (`apps/simulator`)
-- standalone host build (`packages/lightpath/CMakeLists.txt`)
+- standalone host build (`packages/lightgraph/CMakeLists.txt`)
 
-In this monorepo, `packages/lightpath` is a git submodule sourced from `git@github.com:kasparsj/lightpath.git`.
+In this monorepo, `packages/lightgraph` is a git submodule sourced from `git@github.com:kasparsj/lightgraph.git`.
 
 The host build is intended for reproducible compile/test checks in CI without requiring openFrameworks or Arduino SDKs.
 
@@ -19,7 +19,7 @@ For architecture details (module responsibilities, update loop, ownership), see 
 
 ## Prerequisites
 
-- Git submodules initialized (required for `packages/lightpath/vendor/ofxColorTheory`)
+- Git submodules initialized (required for `packages/lightgraph/vendor/ofxColorTheory`)
 - For firmware-path verification:
 - Python 3
 - PlatformIO
@@ -37,14 +37,14 @@ git submodule update --init --recursive
 
 Expected:
 
-- `packages/lightpath/vendor/ofxColorTheory` exists and has content.
+- `packages/lightgraph/vendor/ofxColorTheory` exists and has content.
 
 ## 2) Build and test core on host (standalone)
 
 ```bash
-cmake -S packages/lightpath -B packages/lightpath/build -DLIGHTPATH_CORE_BUILD_TESTS=ON
-cmake --build packages/lightpath/build
-ctest --test-dir packages/lightpath/build --output-on-failure
+cmake -S packages/lightgraph -B packages/lightgraph/build -DLIGHTGRAPH_CORE_BUILD_TESTS=ON
+cmake --build packages/lightgraph/build
+ctest --test-dir packages/lightgraph/build --output-on-failure
 ```
 
 Expected:
@@ -55,25 +55,25 @@ Expected:
 Optional ASan run:
 
 ```bash
-CC=clang CXX=clang++ cmake -S packages/lightpath -B packages/lightpath/build-asan -DLIGHTPATH_CORE_BUILD_TESTS=ON -DLIGHTPATH_CORE_ENABLE_ASAN=ON
-cmake --build packages/lightpath/build-asan
-ASAN_OPTIONS=detect_leaks=0 ctest --test-dir packages/lightpath/build-asan --output-on-failure
+CC=clang CXX=clang++ cmake -S packages/lightgraph -B packages/lightgraph/build-asan -DLIGHTGRAPH_CORE_BUILD_TESTS=ON -DLIGHTGRAPH_CORE_ENABLE_ASAN=ON
+cmake --build packages/lightgraph/build-asan
+ASAN_OPTIONS=detect_leaks=0 ctest --test-dir packages/lightgraph/build-asan --output-on-failure
 ```
 
 Optional UBSan run:
 
 ```bash
-CC=clang CXX=clang++ cmake -S packages/lightpath -B packages/lightpath/build-ubsan -DLIGHTPATH_CORE_BUILD_TESTS=ON -DLIGHTPATH_CORE_ENABLE_UBSAN=ON
-cmake --build packages/lightpath/build-ubsan
-ctest --test-dir packages/lightpath/build-ubsan --output-on-failure
+CC=clang CXX=clang++ cmake -S packages/lightgraph -B packages/lightgraph/build-ubsan -DLIGHTGRAPH_CORE_BUILD_TESTS=ON -DLIGHTGRAPH_CORE_ENABLE_UBSAN=ON
+cmake --build packages/lightgraph/build-ubsan
+ctest --test-dir packages/lightgraph/build-ubsan --output-on-failure
 ```
 
 Optional strict warnings run:
 
 ```bash
-CC=clang CXX=clang++ cmake -S packages/lightpath -B packages/lightpath/build-warnings -DLIGHTPATH_CORE_BUILD_TESTS=ON -DLIGHTPATH_CORE_ENABLE_STRICT_WARNINGS=ON
-cmake --build packages/lightpath/build-warnings
-ctest --test-dir packages/lightpath/build-warnings --output-on-failure
+CC=clang CXX=clang++ cmake -S packages/lightgraph -B packages/lightgraph/build-warnings -DLIGHTGRAPH_CORE_BUILD_TESTS=ON -DLIGHTGRAPH_CORE_ENABLE_STRICT_WARNINGS=ON
+cmake --build packages/lightgraph/build-warnings
+ctest --test-dir packages/lightgraph/build-warnings --output-on-failure
 ```
 
 Optional script helper (runs one profile or all):
@@ -96,7 +96,7 @@ ls -l firmware/esp/src
 
 Expected:
 
-- `firmware/esp/src -> ../../packages/lightpath/src`
+- `firmware/esp/src -> ../../packages/lightgraph/src`
 
 ## 4) Core compile smoke through firmware toolchain
 
@@ -131,13 +131,13 @@ Missing OF checkout:
 
 Missing submodule:
 
-- Symptom: include errors under `packages/lightpath/vendor/ofxColorTheory`
+- Symptom: include errors under `packages/lightgraph/vendor/ofxColorTheory`
 - Fix: run submodule init/update command
 
 Broken symlink on clone:
 
 - Symptom: firmware cannot include `src/...` shared headers
-- Fix: recreate `firmware/esp/src` symlink to `../../packages/lightpath/src`
+- Fix: recreate `firmware/esp/src` symlink to `../../packages/lightgraph/src`
 
 ## Repro checklist for contributors
 

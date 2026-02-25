@@ -19,7 +19,7 @@ MeshLED targets users who already run WLED-class LED systems and want topology-a
 
 ## What Is New
 
-- Shared C++ engine (`lightpath`) reused by firmware and simulator.
+- Shared C++ engine (`lightgraph`) reused by firmware and simulator.
 - Topology-aware emit routing via intersections/connections/models.
 - OSC contract designed for live performance tooling.
 

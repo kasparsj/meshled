@@ -166,14 +166,14 @@ Pair-based endpoints (`/emit`, `/note_on`, `/notes_set`) use numeric parameter I
 | `EMIT_OFFSET` | `21` |
 | `COLOR_CHANGE_GROUPS` | `22` |
 
-Source of truth: `packages/lightpath/src/runtime/EmitParams.h`.
+Source of truth: `packages/lightgraph/src/runtime/EmitParams.h`.
 
 ## Shared enums and flags
 
 ## Easing
 
 - Valid `EASE` range: `0..33`
-- Matches `packages/lightpath/src/core/Types.h` (`EASE_NONE` to `EASE_ELASTIC_INOUT`)
+- Matches `packages/lightgraph/src/core/Types.h` (`EASE_NONE` to `EASE_ELASTIC_INOUT`)
 
 ## Behaviour flags (bitmask)
 
@@ -190,7 +190,7 @@ Source of truth: `packages/lightpath/src/runtime/EmitParams.h`.
 - `1024` `MIRROR_ROTATE`
 - `2048` `SMOOTH_CHANGES`
 
-Source: `packages/lightpath/src/core/Types.h`.
+Source: `packages/lightgraph/src/core/Types.h`.
 
 ## Compatibility and caveats
 

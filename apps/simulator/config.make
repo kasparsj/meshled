@@ -108,13 +108,13 @@ OF_ROOT ?= ../../../../openframeworks
 #   Note: Leave a leading space when adding list items with the += operator
 ################################################################################
 # PROJECT_CFLAGS =
-LIGHTPATH_ROOT ?= ../../packages/lightpath
-LIGHTPATH_BUILD_DIR ?= $(LIGHTPATH_ROOT)/build-simulator
-LIGHTPATH_LIB ?= $(LIGHTPATH_BUILD_DIR)/liblightpath.a
+LIGHTGRAPH_ROOT ?= ../../packages/lightgraph
+LIGHTGRAPH_BUILD_DIR ?= $(LIGHTGRAPH_ROOT)/build-simulator
+LIGHTGRAPH_LIB ?= $(LIGHTGRAPH_BUILD_DIR)/liblightgraph.a
 
-PROJECT_CFLAGS += -I$(LIGHTPATH_ROOT)/include
-PROJECT_CFLAGS += -I$(LIGHTPATH_ROOT)/src
-PROJECT_LDFLAGS += $(LIGHTPATH_LIB)
+PROJECT_CFLAGS += -I$(LIGHTGRAPH_ROOT)/include
+PROJECT_CFLAGS += -I$(LIGHTGRAPH_ROOT)/src
+PROJECT_LDFLAGS += $(LIGHTGRAPH_LIB)
 
 ################################################################################
 # PROJECT OPTIMIZATION CFLAGS

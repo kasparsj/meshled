@@ -10,7 +10,7 @@ MeshLED is a networked light system with three runnable surfaces: a shared C++ c
 git submodule update --init --recursive
 ```
 
-This initializes `packages/lightpath` from [lightpath](https://github.com/kasparsj/lightpath) and its nested `ofxColorTheory` submodule.
+This initializes `packages/lightgraph` from [lightgraph](https://github.com/kasparsj/lightgraph) and its nested `ofxColorTheory` submodule.
 
 ### 2) Control panel (`apps/control-panel`)
 
@@ -33,12 +33,12 @@ Alternative board:
 pio run -e esp32-s3-devkitc-1
 ```
 
-### 4) Core host smoke (`packages/lightpath`)
+### 4) Core host smoke (`packages/lightgraph`)
 
 ```bash
-cmake -S packages/lightpath -B packages/lightpath/build -DLIGHTPATH_CORE_BUILD_TESTS=ON
-cmake --build packages/lightpath/build
-ctest --test-dir packages/lightpath/build --output-on-failure
+cmake -S packages/lightgraph -B packages/lightgraph/build -DLIGHTGRAPH_CORE_BUILD_TESTS=ON
+cmake --build packages/lightgraph/build
+ctest --test-dir packages/lightgraph/build --output-on-failure
 ```
 
 ### 5) Simulator / core smoke (`apps/simulator`)
@@ -68,14 +68,14 @@ OF_ROOT=/path/to/openframeworks make -n
 
 ```text
 Inputs
-  -> Stable API caller (lightpath::Engine)
+  -> Stable API caller (lightgraph::Engine)
   -> Simulator OSC (/emit, /note_on, /command, ...)
   -> Firmware OSC + HTTP + WLED API (+ React control panel over HTTP)
 
 Ingress adapters
   -> EmitParams / EmitCommand + runtime mutations (layer visibility, palette, flags, offsets)
 
-Core engine (packages/lightpath/src)
+Core engine (packages/lightgraph/src)
   -> TopologyObject graph (Intersection <-> Connection via Port)
   -> Model/Weight rules choose where lights go at intersections
   -> State owns active LightLists (layers)
@@ -89,8 +89,8 @@ Outputs
 ```
 
 Primary sources:
-- `packages/lightpath/src/runtime/State.cpp`
-- `packages/lightpath/src/topology/Intersection.cpp`
+- `packages/lightgraph/src/runtime/State.cpp`
+- `packages/lightgraph/src/topology/Intersection.cpp`
 - `firmware/esp/LEDLib.h`
 - `apps/simulator/src/ofApp.cpp`
 
@@ -98,18 +98,18 @@ Primary sources:
 
 | Concept | What it means here | Defined in |
 | --- | --- | --- |
-| `TopologyObject` | The full graph for one fixture layout. Holds intersections, connections, models, gaps, pixel counts. | `packages/lightpath/src/topology/TopologyObject.h` |
-| `Intersection` | Graph node where routing decisions happen (weighted/random port choice). | `packages/lightpath/src/topology/Intersection.h` |
-| `Connection` | Directed segment between intersections; maps motion position to LED indices. | `packages/lightpath/src/topology/Connection.h` |
-| `Port` | Endpoint metadata linking intersections and connections; can be internal or external. | `packages/lightpath/src/topology/Port.h` |
-| `Model` / `Weight` | Routing weight table used when choosing outgoing ports at intersections. | `packages/lightpath/src/topology/Model.h`, `packages/lightpath/src/topology/Weight.h` |
-| `EmitParams` | Legacy integration command schema (speed, length, palette, flags, groups, source). | `packages/lightpath/src/runtime/EmitParams.h` |
-| `State` | Frame orchestrator; owns active lists and pixel accumulators. | `packages/lightpath/src/runtime/State.h` |
-| `LightList` | One animation layer/list (speed/ease/fade/palette/blend/behavior + light instances). | `packages/lightpath/src/runtime/LightList.h` |
-| `RuntimeLight` / `Light` | Per-light runtime state advanced each frame. | `packages/lightpath/src/runtime/RuntimeLight.h`, `packages/lightpath/src/runtime/Light.h` |
-| `Palette` | Color list + positions + interpolation/wrap/rule metadata. | `packages/lightpath/src/rendering/Palette.h` |
-| `Groups` | Bitmask buckets (`GROUP1..GROUP8`) used for emit scopes and routing domains. | `packages/lightpath/src/core/Types.h` |
-| `Gaps` | Logical pixel ranges excluded from real output mapping (e.g. non-LED spans). | `packages/lightpath/src/topology/TopologyObject.cpp` |
+| `TopologyObject` | The full graph for one fixture layout. Holds intersections, connections, models, gaps, pixel counts. | `packages/lightgraph/src/topology/TopologyObject.h` |
+| `Intersection` | Graph node where routing decisions happen (weighted/random port choice). | `packages/lightgraph/src/topology/Intersection.h` |
+| `Connection` | Directed segment between intersections; maps motion position to LED indices. | `packages/lightgraph/src/topology/Connection.h` |
+| `Port` | Endpoint metadata linking intersections and connections; can be internal or external. | `packages/lightgraph/src/topology/Port.h` |
+| `Model` / `Weight` | Routing weight table used when choosing outgoing ports at intersections. | `packages/lightgraph/src/topology/Model.h`, `packages/lightgraph/src/topology/Weight.h` |
+| `EmitParams` | Legacy integration command schema (speed, length, palette, flags, groups, source). | `packages/lightgraph/src/runtime/EmitParams.h` |
+| `State` | Frame orchestrator; owns active lists and pixel accumulators. | `packages/lightgraph/src/runtime/State.h` |
+| `LightList` | One animation layer/list (speed/ease/fade/palette/blend/behavior + light instances). | `packages/lightgraph/src/runtime/LightList.h` |
+| `RuntimeLight` / `Light` | Per-light runtime state advanced each frame. | `packages/lightgraph/src/runtime/RuntimeLight.h`, `packages/lightgraph/src/runtime/Light.h` |
+| `Palette` | Color list + positions + interpolation/wrap/rule metadata. | `packages/lightgraph/src/rendering/Palette.h` |
+| `Groups` | Bitmask buckets (`GROUP1..GROUP8`) used for emit scopes and routing domains. | `packages/lightgraph/src/core/Types.h` |
+| `Gaps` | Logical pixel ranges excluded from real output mapping (e.g. non-LED spans). | `packages/lightgraph/src/topology/TopologyObject.cpp` |
 
 ### Data model: how objects connect
 
@@ -120,21 +120,21 @@ Primary sources:
 5. On each update, owner logic advances position/routing; state blends resulting pixel colors.
 
 Primary sources:
-- `packages/lightpath/src/objects/Line.cpp`
-- `packages/lightpath/src/runtime/State.cpp`
-- `packages/lightpath/src/runtime/LightList.cpp`
-- `packages/lightpath/src/topology/Owner.cpp`
+- `packages/lightgraph/src/objects/Line.cpp`
+- `packages/lightgraph/src/runtime/State.cpp`
+- `packages/lightgraph/src/runtime/LightList.cpp`
+- `packages/lightgraph/src/topology/Owner.cpp`
 
 ### Pipeline: input to output
 
 There are three practical pipelines in this repo.
 
-1. Stable host API pipeline (`lightpath::Engine`)
+1. Stable host API pipeline (`lightgraph::Engine`)
 - Caller constructs `EngineConfig` + `EmitCommand`.
 - `Engine::emit` validates command, maps into `EmitParams`, then calls `State::emit`.
 - `Engine::tick` / `Engine::update` sets `gMillis`, calls `State::autoEmit`, `State::update`.
 - Caller reads pixels with `Engine::pixel`.
-- Source: `packages/lightpath/src/api/Engine.cpp`.
+- Source: `packages/lightgraph/src/api/Engine.cpp`.
 
 2. Simulator pipeline (desktop)
 - `apps/simulator/src/main.cpp` starts `ofApp`.
@@ -162,9 +162,9 @@ Routing is local and per-step:
 4. The chosen port sends the light into the next connection/intersection.
 
 Source:
-- `packages/lightpath/src/topology/Intersection.cpp`
-- `packages/lightpath/src/topology/Model.h`
-- `packages/lightpath/src/topology/Weight.cpp`
+- `packages/lightgraph/src/topology/Intersection.cpp`
+- `packages/lightgraph/src/topology/Model.h`
+- `packages/lightgraph/src/topology/Weight.cpp`
 
 Complexity notes:
 - Per intersection decision is proportional to port count (`O(numPorts)`), with small constant factors because ports are usually 2-4.
@@ -187,23 +187,23 @@ Runtime characteristics:
 - Core internals are single-threaded; only the high-level `Engine` facade adds a mutex for thread safety.
 
 Source:
-- `packages/lightpath/src/core/Limits.h`
-- `packages/lightpath/src/runtime/EmitParams.cpp`
-- `packages/lightpath/src/runtime/State.cpp`
-- `packages/lightpath/src/api/Engine.cpp`
+- `packages/lightgraph/src/core/Limits.h`
+- `packages/lightgraph/src/runtime/EmitParams.cpp`
+- `packages/lightgraph/src/runtime/State.cpp`
+- `packages/lightgraph/src/api/Engine.cpp`
 
 ### Extending the system
 
 1. Add a new geometry source/object:
-- Create a new `TopologyObject` subclass in `packages/lightpath/src/objects/`.
+- Create a new `TopologyObject` subclass in `packages/lightgraph/src/objects/`.
 - Implement `setup`, `getMirroredPixels`, `getModelParams`.
-- Optionally expose through `lightpath::Engine` object enum and integration factory.
-- Files to update: `packages/lightpath/src/objects/*`, `packages/lightpath/src/api/Engine.cpp`, `packages/lightpath/include/lightpath/types.hpp`, `packages/lightpath/include/lightpath/integration/factory.hpp`.
+- Optionally expose through `lightgraph::Engine` object enum and integration factory.
+- Files to update: `packages/lightgraph/src/objects/*`, `packages/lightgraph/src/api/Engine.cpp`, `packages/lightgraph/include/lightgraph/types.hpp`, `packages/lightgraph/include/lightgraph/integration/factory.hpp`.
 
 2. Add a new routing/path strategy:
 - Extend `Model`/`Weight` semantics or introduce a strategy layer used by `Intersection::choosePort`.
 - Keep default behavior unchanged for compatibility.
-- Files to update: `packages/lightpath/src/topology/Intersection.cpp`, `packages/lightpath/src/topology/Model.h`, `packages/lightpath/src/topology/Weight.h`.
+- Files to update: `packages/lightgraph/src/topology/Intersection.cpp`, `packages/lightgraph/src/topology/Model.h`, `packages/lightgraph/src/topology/Weight.h`.
 
 3. Add a new exporter/output adapter:
 - Reuse `State::getPixel` in a new adapter loop (same pattern as simulator draw and firmware LED backends).
@@ -215,9 +215,9 @@ Source:
 
 ## Repository tour
 
-- `packages/lightpath/src/`: core engine internals (topology, runtime, rendering, objects).
-- `packages/lightpath/include/lightpath/`: stable API + source-integration headers.
-- `packages/lightpath/src/api/Engine.cpp`: stable `lightpath::Engine` facade implementation.
+- `packages/lightgraph/src/`: core engine internals (topology, runtime, rendering, objects).
+- `packages/lightgraph/include/lightgraph/`: stable API + source-integration headers.
+- `packages/lightgraph/src/api/Engine.cpp`: stable `lightgraph::Engine` facade implementation.
 - `apps/simulator/src/main.cpp`: simulator process entry point.
 - `apps/simulator/src/ofApp.cpp`: simulator runtime loop + OSC ingress + rendering.
 - `firmware/esp/homo_deus.ino`: firmware process entry point (`setup`/`loop`).
@@ -235,9 +235,9 @@ This is the smallest verified runnable path in this repository: build and run th
 
 ```bash
 git submodule update --init --recursive
-cmake -S packages/lightpath -B packages/lightpath/build-readme -DLIGHTPATH_CORE_BUILD_TESTS=ON -DLIGHTPATH_CORE_BUILD_EXAMPLES=ON
-cmake --build packages/lightpath/build-readme --target lightpath_core_minimal_example --parallel
-./packages/lightpath/build-readme/lightpath_core_minimal_example
+cmake -S packages/lightgraph -B packages/lightgraph/build-readme -DLIGHTGRAPH_CORE_BUILD_TESTS=ON -DLIGHTGRAPH_CORE_BUILD_EXAMPLES=ON
+cmake --build packages/lightgraph/build-readme --target lightgraph_core_minimal_example --parallel
+./packages/lightgraph/build-readme/lightgraph_core_minimal_example
 ```
 
 Expected output pattern (verified locally): `Pixel(0): <r>,<g>,<b>`
@@ -245,8 +245,8 @@ Expected output pattern (verified locally): `Pixel(0): <r>,<g>,<b>`
 Optional verified follow-up:
 
 ```bash
-cmake --build packages/lightpath/build-readme --parallel
-ctest --test-dir packages/lightpath/build-readme --output-on-failure
+cmake --build packages/lightgraph/build-readme --parallel
+ctest --test-dir packages/lightgraph/build-readme --output-on-failure
 ```
 
 What is not runnable as-is in a clean environment:
@@ -257,18 +257,18 @@ What is not runnable as-is in a clean environment:
 <details>
 <summary>Investigation log (files inspected and conclusions)</summary>
 
-- `README.md`, `docs/core-architecture.md`, `docs/core-build.md`, `docs/lightpath-api-inventory.md`: existing docs are good on build and broad architecture, but they do not provide one contributor-focused end-to-end internals walkthrough in root README.
-- `packages/lightpath/src/runtime/State.cpp`, `LightList.cpp`, `RuntimeLight.cpp`, `Light.cpp`: verified update lifecycle, layer ownership, blend pipeline, and frame flow.
-- `packages/lightpath/src/topology/Intersection.cpp`, `Connection.cpp`, `Model.h`, `Weight.cpp`: verified routing is local (weighted-random or deterministic), with no global shortest-path preprocessing.
-- `packages/lightpath/src/objects/*.cpp`: verified geometry is code-defined through built-in object constructors and model weights.
-- `packages/lightpath/src/api/Engine.cpp`, `include/lightpath/*`: verified stable API facade and source-integration split.
+- `README.md`, `docs/core-architecture.md`, `docs/core-build.md`, `docs/lightgraph-api-inventory.md`: existing docs are good on build and broad architecture, but they do not provide one contributor-focused end-to-end internals walkthrough in root README.
+- `packages/lightgraph/src/runtime/State.cpp`, `LightList.cpp`, `RuntimeLight.cpp`, `Light.cpp`: verified update lifecycle, layer ownership, blend pipeline, and frame flow.
+- `packages/lightgraph/src/topology/Intersection.cpp`, `Connection.cpp`, `Model.h`, `Weight.cpp`: verified routing is local (weighted-random or deterministic), with no global shortest-path preprocessing.
+- `packages/lightgraph/src/objects/*.cpp`: verified geometry is code-defined through built-in object constructors and model weights.
+- `packages/lightgraph/src/api/Engine.cpp`, `include/lightgraph/*`: verified stable API facade and source-integration split.
 - `apps/simulator/src/ofApp.cpp`: verified simulator OSC ingress and draw loop are direct core adapters.
 - `firmware/esp/homo_deus.ino`, `LEDLib.h`, `OSCLib.h`, `WebServerSetup.h`, `WebServerLayers.h`, `WLEDApiLib.h`, `FSLib.h`: verified firmware runtime loop, transport adapters, persistence formats, and model/palette/layer endpoints.
 - `apps/control-panel/src/*`: verified UI reads `/get_layers`, `/get_model`, `/get_colors` and writes layer/palette/settings mutations to firmware HTTP endpoints.
 - Verified commands in this environment:
-  - Built and ran `lightpath_core_minimal_example`.
-  - Built and ran `lightpath_core_integration_example`.
-  - Full `ctest` pass on `packages/lightpath/build-readme` after full build.
+  - Built and ran `lightgraph_core_minimal_example`.
+  - Built and ran `lightgraph_core_integration_example`.
+  - Full `ctest` pass on `packages/lightgraph/build-readme` after full build.
   - `apps/simulator make -n` fails without openFrameworks checkout (`OF_ROOT` dependency).
 
 </details>
@@ -283,10 +283,10 @@ What is not runnable as-is in a clean environment:
 ├── firmware/
 │   └── esp/               # ESP32/ESP32-S3 firmware (PlatformIO + Arduino)
 ├── packages/
-│   └── lightpath/         # git submodule: github.com/kasparsj/lightpath
+│   └── lightgraph/         # git submodule: github.com/kasparsj/lightgraph
 │       ├── src/           # shared C++ core model/engine
 │       └── vendor/
-│           └── ofxColorTheory/  # nested submodule used by lightpath
+│           └── ofxColorTheory/  # nested submodule used by lightgraph
 ├── tools/
 │   └── esp-stacktrace-decoder/
 ├── docs/                  # build/API/contract docs

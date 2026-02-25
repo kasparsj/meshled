@@ -1,5 +1,5 @@
 site_name: MeshLED Docs
-site_description: MeshLED firmware, control panel, and Lightpath integration documentation
+site_description: MeshLED firmware, control panel, and Lightgraph integration documentation
 repo_url: https://github.com/kasparsj/meshled
 repo_name: kasparsj/meshled
 edit_uri: edit/main/docs/
@@ -65,7 +65,7 @@ nav:
   - Architecture:
       - Core Architecture Primer: core-architecture.md
       - Core Build and Reproducibility: core-build.md
-      - Lightpath API Inventory: lightpath-api-inventory.md
+      - Lightgraph API Inventory: lightgraph-api-inventory.md
       - Third-Party Licenses: third-party-licenses.md
   - Firmware and Runtime Contracts:
       - Firmware HTTP API: firmware-api.md

@@ -12,15 +12,15 @@ endif
 # call the project makefile!
 include $(OF_ROOT)/libs/openFrameworksCompiled/project/makefileCommon/compile.project.mk
 
-# Build and refresh the shared lightpath core before linking simulator targets.
-.PHONY: lightpath_core
-lightpath_core:
-	+cmake -S $(LIGHTPATH_ROOT) -B $(LIGHTPATH_BUILD_DIR) \
-		-DLIGHTPATH_CORE_BUILD_TESTS=OFF \
-		-DLIGHTPATH_CORE_BUILD_EXAMPLES=OFF \
-		-DLIGHTPATH_CORE_BUILD_BENCHMARKS=OFF \
+# Build and refresh the shared lightgraph core before linking simulator targets.
+.PHONY: lightgraph_core
+lightgraph_core:
+	+cmake -S $(LIGHTGRAPH_ROOT) -B $(LIGHTGRAPH_BUILD_DIR) \
+		-DLIGHTGRAPH_CORE_BUILD_TESTS=OFF \
+		-DLIGHTGRAPH_CORE_BUILD_EXAMPLES=OFF \
+		-DLIGHTGRAPH_CORE_BUILD_BENCHMARKS=OFF \
 		-DCMAKE_OSX_DEPLOYMENT_TARGET=10.15
-	+cmake --build $(LIGHTPATH_BUILD_DIR) --target lightpath --parallel
+	+cmake --build $(LIGHTGRAPH_BUILD_DIR) --target lightgraph --parallel
 
-bin/simulator: lightpath_core
-bin/simulator_debug: lightpath_core
+bin/simulator: lightgraph_core
+bin/simulator_debug: lightgraph_core

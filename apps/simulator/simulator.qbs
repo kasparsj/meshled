@@ -19,7 +19,7 @@ Project{
 
         of.addons: [
             'ofxOsc',
-            '../../packages/lightpath/src'
+            '../../packages/lightgraph/src'
         ]
 
         // additional flags for the project. the of module sets some
