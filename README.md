@@ -66,97 +66,44 @@ meshled is intended to evolve as:
 
 ---
 
-## Getting Started (Technical)
+## Quick Start (Recommended)
 
-### 1) Bootstrap dependencies
+If you want the fastest verification path, run the shared core smoke first:
 
 ```bash
 git submodule update --init --recursive
-```
-
-This initializes [packages/lightgraph](packages/lightgraph) from [LightGraph](https://github.com/kasparsj/lightgraph) and its nested `ofxColorTheory` submodule.
-
-### 2) Control panel (`apps/control-panel`)
-
-```bash
-cd apps/control-panel
-npm ci --legacy-peer-deps
-npm run dev
-```
-
-### 3) Firmware (`firmware/esp`)
-
-```bash
-cd firmware/esp
-pio run -e esp32dev
-```
-
-Alternative board:
-
-```bash
-pio run -e esp32-s3-devkitc-1
-```
-
-### 4) [LightGraph](https://github.com/kasparsj/lightgraph) core smoke (`packages/lightgraph`)
-
-```bash
 cmake -S packages/lightgraph -B packages/lightgraph/build -DLIGHTGRAPH_CORE_BUILD_TESTS=ON
-cmake --build packages/lightgraph/build
+cmake --build packages/lightgraph/build --parallel
 ctest --test-dir packages/lightgraph/build --output-on-failure
 ```
 
-### 5) Simulator smoke (`apps/simulator`)
+Expected result: `ctest` completes without failures.
 
-```bash
-cd apps/simulator
-make -n
-```
+## Choose Your Workflow
 
-If openFrameworks is not in the default location:
-
-```bash
-OF_ROOT=/path/to/openframeworks make -n
-```
-
-### 6) Optional root helper scripts
-
-```bash
-./scripts/build-core.sh all
-./scripts/build-control-panel.sh
-./scripts/build-firmware.sh esp32dev compiledb
-```
-
-## Repository Structure
-
-```text
-.
-├── apps/
-│   ├── control-panel/     # Web UI
-│   └── simulator/         # openFrameworks simulator (runs core engine)
-├── firmware/
-│   └── esp/               # ESP32 firmware (runs core engine)
-├── packages/
-│   └── lightgraph/        # Core engine submodule
-├── tools/
-│   └── esp-stacktrace-decoder/
-├── docs/                  # Build/API/contract documentation
-└── .github/workflows/
-```
-
-## Key Docs
-
-- Build/setup: [docs/build.md](docs/build.md)
-- Core build/repro guide: [docs/core-build.md](docs/core-build.md)
-- Core architecture primer: [docs/core-architecture.md](docs/core-architecture.md)
-- Third-party licenses/provenance: [docs/third-party-licenses.md](docs/third-party-licenses.md)
-- Firmware HTTP API: [docs/firmware-api.md](docs/firmware-api.md)
+- Full repository build and verification (firmware + control panel + simulator + core): [docs/build.md](docs/build.md)
+- Core engine reproducibility and sanitizer profiles: [docs/core-build.md](docs/core-build.md)
+- Core architecture deep dive: [docs/core-architecture.md](docs/core-architecture.md)
+- Firmware HTTP API contract: [docs/firmware-api.md](docs/firmware-api.md)
 - OSC contract: [docs/osc-contract.md](docs/osc-contract.md)
-- UI/firmware compatibility: [docs/ui-firmware-compat.md](docs/ui-firmware-compat.md)
-- [LightGraph](https://github.com/kasparsj/lightgraph) API inventory snapshot: [docs/lightgraph-api-inventory.md](docs/lightgraph-api-inventory.md)
+- UI/firmware compatibility notes: [docs/ui-firmware-compat.md](docs/ui-firmware-compat.md)
+- Third-party licenses and provenance: [docs/third-party-licenses.md](docs/third-party-licenses.md)
+- [LightGraph](https://github.com/kasparsj/lightgraph) API inventory snapshot in this repo: [docs/lightgraph-api-inventory.md](docs/lightgraph-api-inventory.md)
+
+## Repository Surfaces
+
+- Firmware: [firmware/esp](firmware/esp)
+- Control panel: [apps/control-panel](apps/control-panel)
+- Simulator: [apps/simulator](apps/simulator)
+- Core engine submodule: [packages/lightgraph](packages/lightgraph) ([LightGraph repo](https://github.com/kasparsj/lightgraph))
 
 ## Documentation Site (GitHub Pages)
 
-This repository can publish docs with MkDocs + Material:
+- Docs index: [docs/index.md](docs/index.md)
+- Config: [mkdocs.yml](mkdocs.yml)
+- Pages workflow: [.github/workflows/docs-pages.yml](.github/workflows/docs-pages.yml)
+
+Local docs preview:
 
 ```bash
 python3 -m venv .venv-docs
@@ -164,9 +111,6 @@ source .venv-docs/bin/activate
 pip install mkdocs-material
 mkdocs serve
 ```
-
-- Config: [mkdocs.yml](mkdocs.yml)
-- Pages workflow: [.github/workflows/docs-pages.yml](.github/workflows/docs-pages.yml)
 
 ## Project Policies
 
