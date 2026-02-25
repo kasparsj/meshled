@@ -14,7 +14,7 @@ meshled combines hardware, software, and simulation into one workflow so you can
 
 The firmware runs on ESP32-based hardware nodes.
 
-It executes the LightGraph engine in real time, drives LED output, and receives configuration/control data over network interfaces.
+It executes the [LightGraph](https://github.com/kasparsj/lightgraph) engine in real time, drives LED output, and receives configuration/control data over network interfaces.
 
 ### 2. Control Panel
 
@@ -24,16 +24,18 @@ It is used to configure geometry, effects, and routing behavior, connect to hard
 
 ### 3. Simulator
 
-The simulator runs the same LightGraph engine used by firmware.
+The simulator runs the same [LightGraph](https://github.com/kasparsj/lightgraph) engine used by firmware.
 
 It lets you test behavior without hardware, mirror firmware behavior during development, and plan/debug installations before deployment.
 
-Firmware and simulator both run on top of LightGraph.
+Firmware and simulator both run on top of [LightGraph](https://github.com/kasparsj/lightgraph).
 
 ## System Architecture
 
+Core engine in this flow is [LightGraph](https://github.com/kasparsj/lightgraph).
+
 ```text
-User -> Control Panel -> LightGraph Engine -> Firmware Nodes -> LEDs
+User -> Control Panel -> Core Engine -> Firmware Nodes -> LEDs
                            \-> Simulator (same engine)
 ```
 
@@ -41,14 +43,14 @@ User -> Control Panel -> LightGraph Engine -> Firmware Nodes -> LEDs
 
 Most LED tooling assumes linear strips and channel-based control.
 
-meshled, powered by LightGraph, supports arbitrary graph/mesh geometries where routing and movement are part of the composition itself. The same core logic runs in simulation and on real hardware, so installation-scale systems can be developed as programmable infrastructure instead of one-off wiring logic.
+meshled, powered by [LightGraph](https://github.com/kasparsj/lightgraph), supports arbitrary graph/mesh geometries where routing and movement are part of the composition itself. The same core logic runs in simulation and on real hardware, so installation-scale systems can be developed as programmable infrastructure instead of one-off wiring logic.
 
-## How It Relates to LightGraph
+## How It Relates to [LightGraph](https://github.com/kasparsj/lightgraph)
 
-- LightGraph is the core engine.
+- [LightGraph](https://github.com/kasparsj/lightgraph) is the core engine.
 - meshled is the full-stack system built around that engine.
-- Firmware executes LightGraph for live hardware output.
-- Simulator executes the same LightGraph engine for development/testing.
+- Firmware executes [LightGraph](https://github.com/kasparsj/lightgraph) for live hardware output.
+- Simulator executes the same [LightGraph](https://github.com/kasparsj/lightgraph) engine for development/testing.
 - Control panel configures and orchestrates the engine across devices.
 
 LightGraph repository: [kasparsj/lightgraph](https://github.com/kasparsj/lightgraph)
@@ -72,7 +74,7 @@ meshled is intended to evolve as:
 git submodule update --init --recursive
 ```
 
-This initializes [packages/lightgraph](packages/lightgraph) and its nested `ofxColorTheory` submodule.
+This initializes [packages/lightgraph](packages/lightgraph) from [LightGraph](https://github.com/kasparsj/lightgraph) and its nested `ofxColorTheory` submodule.
 
 ### 2) Control panel (`apps/control-panel`)
 
@@ -95,7 +97,7 @@ Alternative board:
 pio run -e esp32-s3-devkitc-1
 ```
 
-### 4) LightGraph core smoke (`packages/lightgraph`)
+### 4) [LightGraph](https://github.com/kasparsj/lightgraph) core smoke (`packages/lightgraph`)
 
 ```bash
 cmake -S packages/lightgraph -B packages/lightgraph/build -DLIGHTGRAPH_CORE_BUILD_TESTS=ON
@@ -130,9 +132,9 @@ OF_ROOT=/path/to/openframeworks make -n
 .
 ├── apps/
 │   ├── control-panel/     # Web UI
-│   └── simulator/         # openFrameworks simulator (runs LightGraph)
+│   └── simulator/         # openFrameworks simulator (runs core engine)
 ├── firmware/
-│   └── esp/               # ESP32 firmware (runs LightGraph)
+│   └── esp/               # ESP32 firmware (runs core engine)
 ├── packages/
 │   └── lightgraph/        # Core engine submodule
 ├── tools/
@@ -150,7 +152,7 @@ OF_ROOT=/path/to/openframeworks make -n
 - Firmware HTTP API: [docs/firmware-api.md](docs/firmware-api.md)
 - OSC contract: [docs/osc-contract.md](docs/osc-contract.md)
 - UI/firmware compatibility: [docs/ui-firmware-compat.md](docs/ui-firmware-compat.md)
-- LightGraph API inventory snapshot: [docs/lightgraph-api-inventory.md](docs/lightgraph-api-inventory.md)
+- [LightGraph](https://github.com/kasparsj/lightgraph) API inventory snapshot: [docs/lightgraph-api-inventory.md](docs/lightgraph-api-inventory.md)
 
 ## Documentation Site (GitHub Pages)
 
