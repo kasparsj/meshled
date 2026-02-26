@@ -6,67 +6,81 @@
 NeoGamma<NeoGammaTableMethod> colorGamma;
 #endif
 
+// ESP32 Arduino core v3 can mix RMT legacy/new drivers when multiple libs touch RMT.
+// On classic ESP32, use I2S methods to avoid RMT driver conflicts.
+#if defined(CONFIG_IDF_TARGET_ESP32)
+#define NPB_METHOD_STRIP1_WS2812X NeoEsp32I2s0Ws2812xMethod
+#define NPB_METHOD_STRIP2_WS2812X NeoEsp32I2s1Ws2812xMethod
+#define NPB_METHOD_STRIP1_WS2811 NeoEsp32I2s0400KbpsMethod
+#define NPB_METHOD_STRIP2_WS2811 NeoEsp32I2s1400KbpsMethod
+#else
+#define NPB_METHOD_STRIP1_WS2812X NeoEsp32Rmt0Ws2812xMethod
+#define NPB_METHOD_STRIP2_WS2812X NeoEsp32Rmt1Ws2812xMethod
+#define NPB_METHOD_STRIP1_WS2811 NeoEsp32Rmt0Ws2811Method
+#define NPB_METHOD_STRIP2_WS2811 NeoEsp32Rmt1Ws2811Method
+#endif
+
 NeoPixelBusStrip* createNeoPixelBusStrip(uint8_t ledType, uint8_t colorOrder, uint16_t pixelCount, uint8_t pixelPin) {
   static uint8_t i = 0;
   i++;
 
-  // Determine which RMT channel to use based on which strip is being created
+  // Determine which transport instance to use based on which strip is being created
   if (ledType == LED_WS2812) {
     // WS2812 LED type
     if (i == 1) {
-      // First strip uses RMT channel 0
+      // First strip
       switch (colorOrder) {
         case CO_GRBW:
-          return new NeoPixelBusGrbwStrip<NeoEsp32Rmt0Ws2812xMethod>(pixelCount, pixelPin);
+          return new NeoPixelBusGrbwStrip<NPB_METHOD_STRIP1_WS2812X>(pixelCount, pixelPin);
         case CO_RGBW:
-          return new NeoPixelBusRgbwStrip<NeoEsp32Rmt0Ws2812xMethod>(pixelCount, pixelPin);
+          return new NeoPixelBusRgbwStrip<NPB_METHOD_STRIP1_WS2812X>(pixelCount, pixelPin);
         case CO_RGB:
-          return new NeoPixelBusRgbStrip<NeoEsp32Rmt0Ws2812xMethod>(pixelCount, pixelPin);
+          return new NeoPixelBusRgbStrip<NPB_METHOD_STRIP1_WS2812X>(pixelCount, pixelPin);
         default:
         case CO_GRB:
-          return new NeoPixelBusGrbStrip<NeoEsp32Rmt0Ws2812xMethod>(pixelCount, pixelPin);
+          return new NeoPixelBusGrbStrip<NPB_METHOD_STRIP1_WS2812X>(pixelCount, pixelPin);
       }
     } else {
-      // Second strip uses RMT channel 1
+      // Second strip
       switch (colorOrder) {
         case CO_GRBW:
-          return new NeoPixelBusGrbwStrip<NeoEsp32Rmt1Ws2812xMethod>(pixelCount, pixelPin);
+          return new NeoPixelBusGrbwStrip<NPB_METHOD_STRIP2_WS2812X>(pixelCount, pixelPin);
         case CO_RGBW:
-          return new NeoPixelBusRgbwStrip<NeoEsp32Rmt1Ws2812xMethod>(pixelCount, pixelPin);
+          return new NeoPixelBusRgbwStrip<NPB_METHOD_STRIP2_WS2812X>(pixelCount, pixelPin);
         case CO_RGB:
-          return new NeoPixelBusRgbStrip<NeoEsp32Rmt1Ws2812xMethod>(pixelCount, pixelPin);
+          return new NeoPixelBusRgbStrip<NPB_METHOD_STRIP2_WS2812X>(pixelCount, pixelPin);
         default:
         case CO_GRB:
-          return new NeoPixelBusGrbStrip<NeoEsp32Rmt1Ws2812xMethod>(pixelCount, pixelPin);
+          return new NeoPixelBusGrbStrip<NPB_METHOD_STRIP2_WS2812X>(pixelCount, pixelPin);
       }
     }
   } else {
     // WS2811 LED type
     if (i == 1) {
-      // First strip uses RMT channel 0
+      // First strip
       switch (colorOrder) {
         case CO_GRBW:
-          return new NeoPixelBusGrbwStrip<NeoEsp32Rmt0Ws2811Method>(pixelCount, pixelPin);
+          return new NeoPixelBusGrbwStrip<NPB_METHOD_STRIP1_WS2811>(pixelCount, pixelPin);
         case CO_RGBW:
-          return new NeoPixelBusRgbwStrip<NeoEsp32Rmt0Ws2811Method>(pixelCount, pixelPin);
+          return new NeoPixelBusRgbwStrip<NPB_METHOD_STRIP1_WS2811>(pixelCount, pixelPin);
         case CO_RGB:
-          return new NeoPixelBusRgbStrip<NeoEsp32Rmt0Ws2811Method>(pixelCount, pixelPin);
+          return new NeoPixelBusRgbStrip<NPB_METHOD_STRIP1_WS2811>(pixelCount, pixelPin);
         default:
         case CO_GRB:
-          return new NeoPixelBusGrbStrip<NeoEsp32Rmt0Ws2811Method>(pixelCount, pixelPin);
+          return new NeoPixelBusGrbStrip<NPB_METHOD_STRIP1_WS2811>(pixelCount, pixelPin);
       }
     } else {
-      // Second strip uses RMT channel 1
+      // Second strip
       switch (colorOrder) {
         case CO_GRBW:
-          return new NeoPixelBusGrbwStrip<NeoEsp32Rmt1Ws2811Method>(pixelCount, pixelPin);
+          return new NeoPixelBusGrbwStrip<NPB_METHOD_STRIP2_WS2811>(pixelCount, pixelPin);
         case CO_RGBW:
-          return new NeoPixelBusRgbwStrip<NeoEsp32Rmt1Ws2811Method>(pixelCount, pixelPin);
+          return new NeoPixelBusRgbwStrip<NPB_METHOD_STRIP2_WS2811>(pixelCount, pixelPin);
         case CO_RGB:
-          return new NeoPixelBusRgbStrip<NeoEsp32Rmt1Ws2811Method>(pixelCount, pixelPin);
+          return new NeoPixelBusRgbStrip<NPB_METHOD_STRIP2_WS2811>(pixelCount, pixelPin);
         default:
         case CO_GRB:
-          return new NeoPixelBusGrbStrip<NeoEsp32Rmt1Ws2811Method>(pixelCount, pixelPin);
+          return new NeoPixelBusGrbStrip<NPB_METHOD_STRIP2_WS2811>(pixelCount, pixelPin);
       }
     }
   }

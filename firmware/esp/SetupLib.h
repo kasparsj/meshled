@@ -44,6 +44,7 @@ void setupWiFi() {
     if (WiFi.status() == WL_CONNECTED) {
       wifiConnected = true;
       apMode = false;
+      activeApSSID = "";
       LP_LOGLN("WiFi connected, IP = " + WiFi.localIP().toString());
       WiFi.setAutoReconnect(true);
       WiFi.persistent(true);

@@ -60,14 +60,16 @@ Applies to: `firmware/esp` in this repository
 ### `GET /device_info`
 
 - WLED-style info payload.
-- Common keys: `wifi.ssid`, `ip`, `leds.pwr`.
+- Common keys: `wifi.ssid`, `wifi.mode`, `ip`, `leds.pwr`.
+- `wifi.ssid` is the active network SSID (`AP` SSID in AP mode, STA SSID in station mode).
+- `wifi.mode` is `"ap"` or `"sta"`.
 
 ### `GET /get_settings`
 
 - Returns runtime settings JSON.
 - Includes:
   - LED/object config (`pixelCount*`, `pixelPin*`, `ledType`, `colorOrder`, `ledLibrary`, `objectType`)
-  - network/runtime (`maxBrightness`, `deviceHostname`, WiFi saved credentials)
+  - network/runtime (`maxBrightness`, `deviceHostname`, WiFi saved credentials, `activeSSID`, `apMode`)
   - optional runtime toggles (OSC/OTA)
   - API auth config (`apiAuthEnabled`, `apiAuthToken`)
 
@@ -204,4 +206,3 @@ Applies to: `firmware/esp` in this repository
 - `401`: unauthorized mutation while API auth enabled
 - `404`: missing model/resource
 - `500`: internal failure
-

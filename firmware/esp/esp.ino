@@ -16,7 +16,6 @@
 // #define SERIAL_ENABLED   // Serial commands
 // #define DEBUGGER_ENABLED // Debugging features
 #define NEOPIXELBUS_ENABLED
-// todo: FastLED is crashing on esp32-dev, but working on esp32-s3
 // #define FASTLED_ENABLED
 #define WLEDAPI_ENABLED
 // #define SSDP_ENABLED
@@ -44,7 +43,37 @@ bool apMode = false;
 unsigned long apStartTime = 0;
 String savedSSID = WIFI_SSID;
 String savedPassword = WIFI_PASS;
+String activeApSSID = "";
 #endif
+
+struct UserPalette;
+
+String getActiveNetworkSSID() {
+#ifdef WIFI_ENABLED
+  if (apMode) {
+    String ssid = WiFi.softAPSSID();
+    if (ssid.length() > 0) {
+      return ssid;
+    }
+    if (activeApSSID.length() > 0) {
+      return activeApSSID;
+    }
+    #ifdef AP_MODE_ENABLED
+    return String(AP_SSID);
+    #endif
+    return "";
+  }
+
+  String ssid = WiFi.SSID();
+  if (ssid.length() > 0) {
+    return ssid;
+  }
+  if (savedSSID.length() > 0) {
+    return savedSSID;
+  }
+#endif
+  return "";
+}
 
 #ifdef BLUETOOTH_ENABLED
 #include "BluetoothSerial.h"

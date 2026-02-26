@@ -11,6 +11,7 @@ void startAPMode() {
   
   // Use the last 6 characters of the chip ID to keep it short
   String uniqueSSID = String(AP_SSID) + "_" + uniqueId.substring(uniqueId.length() - 6);
+  activeApSSID = uniqueSSID;
   
   LP_LOGLN("Starting AP mode with SSID: " + uniqueSSID);
 

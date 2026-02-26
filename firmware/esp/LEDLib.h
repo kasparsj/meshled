@@ -3,6 +3,10 @@
 #include <optional>
 
 #ifdef FASTLED_ENABLED
+// Use I2S backend on ESP32 to avoid RMT legacy/new-driver conflicts at runtime.
+#if defined(ARDUINO_ARCH_ESP32) && !defined(FASTLED_ESP32_I2S)
+#define FASTLED_ESP32_I2S 1
+#endif
 #include <FastLED.h>
 CRGB* leds1;
 CRGB* leds2;

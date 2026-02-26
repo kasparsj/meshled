@@ -157,7 +157,8 @@ void getWLEDInfo(JsonObject& info) {
   mainmap["id"] = 0;
 
   JsonObject wifi = info.createNestedObject("wifi");
-  wifi["ssid"] = savedSSID;
+  wifi["ssid"] = getActiveNetworkSSID();
+  wifi["mode"] = apMode ? "ap" : "sta";
   wifi["bssid"] = WiFi.BSSIDstr();
   wifi["rssi"] = WiFi.RSSI();
   //wifi["signal"] = xxx;

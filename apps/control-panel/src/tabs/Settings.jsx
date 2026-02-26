@@ -37,7 +37,9 @@ const SettingsTab = () => {
         apiAuthEnabled: false,
         apiAuthToken: '',
         savedSSID: '',
-        savedPassword: ''
+        savedPassword: '',
+        activeSSID: '',
+        apMode: false
     });
     
     const [saveMessage, setSaveMessage] = useState('');
@@ -118,6 +120,8 @@ const SettingsTab = () => {
     const storagePercent = (storageUsedKB !== null && storageTotalKB && storageTotalKB > 0)
         ? Math.max(0, Math.min(100, (storageUsedKB / storageTotalKB) * 100))
         : 0;
+    const isApMode = deviceInfo?.wifi?.mode === 'ap' || settings.apMode === true;
+    const displayedSSID = deviceInfo?.wifi?.ssid || settings.activeSSID || settings.savedSSID || 'N/A';
 
     return (
         <div className="space-y-6">
@@ -131,8 +135,8 @@ const SettingsTab = () => {
                     <div className="bg-zinc-700 p-4 rounded-lg">
                         <h3 className="text-lg font-semibold mb-4">Device Info</h3>
                         <div className="space-y-2">
-                            <p><span className="text-zinc-300">WiFi SSID:</span> <span
-                                className="text-sky-400">{deviceInfo?.wifi?.ssid ?? 'N/A'}</span></p>
+                            <p><span className="text-zinc-300">{isApMode ? 'AP SSID:' : 'WiFi SSID:'}</span> <span
+                                className="text-sky-400">{displayedSSID}</span></p>
                             <p><span className="text-zinc-300">IP Address:</span> <span
                                 className="text-sky-400">{deviceInfo?.ip ?? 'N/A'}</span></p>
                             <p><span className="text-zinc-300">Total Consumption:</span> <span

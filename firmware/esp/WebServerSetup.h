@@ -133,11 +133,13 @@ void streamConfigDisplay(WiFiClient &client) {
   // Only yield periodically to prevent watchdog reset but minimize lag
   unsigned long lastYield = millis();
   #define YIELD_IF_NEEDED() if (millis() - lastYield > 20) { yield(); lastYield = millis(); }
+  const String activeSSID = getActiveNetworkSSID();
+  const bool isApMode = apMode;
 
   client.print("<div>");
 
-  client.print("<p>WiFi SSID: <span class='value'>");
-  client.print(savedSSID);
+  client.print(isApMode ? "<p>AP SSID: <span class='value'>" : "<p>WiFi SSID: <span class='value'>");
+  client.print(activeSSID);
   client.print("</span></p>");
   YIELD_IF_NEEDED();
 
@@ -194,7 +196,7 @@ void streamConfigDisplay(WiFiClient &client) {
 
   if (apMode) {
     client.print("<p><strong>Device is in Access Point mode.</strong> Connect to WiFi network: <span class='value'>");
-    client.print(String(AP_SSID));
+    client.print(activeSSID);
     client.print("</span></p>");
     unsigned long timeLeft = (AP_TIMEOUT - (millis() - apStartTime)) / 1000;
     client.print("<p>The device will restart in <span class='value'>");
@@ -771,6 +773,7 @@ void handleGetColors() {
       }
     }
   }
+  #endif
 
   #ifdef FASTLED_ENABLED
   if (ledLibrary == LIB_FASTLED && leds1 != NULL) {
@@ -1334,8 +1337,6 @@ void handleImportTopology() {
       "{\"success\":true,\"intersectionCount\":" + String(snapshot.intersections.size()) +
           ",\"connectionCount\":" + String(snapshot.connections.size()) + "}");
 }
-#endif
-
 #ifdef DEBUGGER_ENABLED
 // Handler for State::debug()
 void handleStateDebug() {

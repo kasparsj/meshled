@@ -151,6 +151,8 @@ void handleGetSettings() {
   doc["objectType"] = objectType;
   doc["savedSSID"] = savedSSID;
   doc["savedPassword"] = savedPassword;
+  doc["activeSSID"] = getActiveNetworkSSID();
+  doc["apMode"] = apMode;
   doc["apiAuthEnabled"] = apiAuthEnabled;
   doc["apiAuthToken"] = apiAuthToken;
   
