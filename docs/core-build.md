@@ -88,15 +88,19 @@ Optional script helper (runs one profile or all):
 
 ## 3) Verify firmware wiring to shared core
 
-The firmware consumes core sources through a symlink:
+The firmware consumes core sources and vendored dependencies through symlinks:
 
 ```bash
 ls -l firmware/esp/src
+ls -l firmware/esp/vendor
+ls -l firmware/esp/lightgraph
 ```
 
 Expected:
 
 - `firmware/esp/src -> ../../packages/lightgraph/src`
+- `firmware/esp/vendor -> ../../packages/lightgraph/vendor`
+- `firmware/esp/lightgraph -> ../../packages/lightgraph/include/lightgraph`
 
 ## 4) Core compile smoke through firmware toolchain
 
@@ -139,10 +143,25 @@ Broken symlink on clone:
 - Symptom: firmware cannot include `src/...` shared headers
 - Fix: recreate `firmware/esp/src` symlink to `../../packages/lightgraph/src`
 
+Missing vendor symlink on clone:
+
+- Symptom: Arduino IDE/CLI include failures for `../../vendor/ofxColorTheory/...`
+- Fix: recreate `firmware/esp/vendor` symlink to `../../packages/lightgraph/vendor`
+
+Missing lightgraph include symlink on clone:
+
+- Symptom: Arduino IDE/CLI include failures for `<lightgraph/...>`
+- Fix: recreate `firmware/esp/lightgraph` symlink to `../../packages/lightgraph/include/lightgraph`
+
+Sketch too large for ESP32-C3 default partition:
+
+- Symptom: `Sketch too big` / `text section exceeds available space in board`
+- Fix: select a larger partition scheme (for example `PartitionScheme=min_spiffs` or `PartitionScheme=huge_app`)
+
 ## Repro checklist for contributors
 
 - submodules initialized
 - host build + tests pass
-- firmware symlink present
+- firmware symlinks present (`src`, `vendor`, and `lightgraph`)
 - `pio run -e esp32dev -t compiledb` passes
 - simulator dry-run works when `OF_ROOT` is valid

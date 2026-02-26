@@ -58,7 +58,7 @@ void sendSSDPNotify() {
     "LOCATION: http://%s/description.xml\r\n"
     "NT: urn:schemas-upnp-org:device:wled:1\r\n"
     "NTS: ssdp:alive\r\n"
-    "SERVER: Arduino/1.0 UPnP/1.1 HomoDeus/1.0\r\n"
+    "SERVER: Arduino/1.0 UPnP/1.1 MeshLED/1.0\r\n"
     "USN: uuid:%s::urn:schemas-upnp-org:device:wled:1\r\n"
     "\r\n",
     WiFi.localIP().toString().c_str(),
@@ -206,10 +206,10 @@ void handleDescriptionXML() {
   client.print("<friendlyName>"); 
   client.print(deviceHostname); 
   client.println("</friendlyName>");
-  client.println("<manufacturer>HomoDeus</manufacturer>");
+  client.println("<manufacturer>MeshLED</manufacturer>");
   client.println("<manufacturerURL>https://github.com/kasparsj</manufacturerURL>");
   client.println("<modelDescription>WS2812 LED Controller</modelDescription>");
-  client.println("<modelName>HomoDeus</modelName>");
+  client.println("<modelName>MeshLED</modelName>");
   client.println("<modelNumber>1.0</modelNumber>");
   client.println("<modelURL>https://github.com/kasparsj/meshled</modelURL>");
   client.print("<serialNumber>"); 

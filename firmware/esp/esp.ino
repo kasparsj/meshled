@@ -1,14 +1,14 @@
 #define DEV_ENABLED
-#define DEFAULT_HOSTNAME "homo-deus"
+#define DEFAULT_HOSTNAME "meshled"
 // #define BUTTON_PIN 25
-#define SPIFFS_ENABLED
+// #define SPIFFS_ENABLED
 #define WIFI_ENABLED // comment out WIFI_ENABLED to disable WiFi completely
 // #define WIFI_REQUIRED // Comment this out to enable AP mode when station mode fails
 #define WIFI_SSID ""
 #define WIFI_PASS ""
 #define AP_MODE_ENABLED // Enable AP mode when station mode fails
-#define AP_SSID "HomoDeus_AP" // SSID for AP mode
-#define AP_PASS "homodeus123" // Password for AP mode (minimum 8 characters)
+#define AP_SSID "MeshLED_AP" // SSID for AP mode
+#define AP_PASS "meshled123" // Password for AP mode (minimum 8 characters)
 #define AP_TIMEOUT 300000     // Time in AP mode before rebooting (ms) - 5 minutes
 #define OSC_ENABLED // OSC support (requires WiFi)
 #define WEB_ENABLED // Web interface (requires WiFi)
@@ -21,7 +21,7 @@
 #define WLEDAPI_ENABLED
 // #define SSDP_ENABLED
 #define MDNS_ENABLED
-#define ESPNOW_ENABLED
+// #define ESPNOW_ENABLED
 // todo: logs crashed the esp once
 // #define LOG_FILE "/log.txt"
 // #define CRASH_LOG_FILE "/crash_log.txt" // Path to store crash logs
@@ -68,7 +68,7 @@ bool oscEnabled = true;
 uint16_t oscPort = 54321;
 bool otaEnabled = true; // OTA updates enabled by default
 uint16_t otaPort = 3232;
-String otaPassword = "homodeus";
+String otaPassword = "meshled";
 bool apiAuthEnabled = false;
 String apiAuthToken = "";
 
@@ -194,7 +194,7 @@ WebServer server(80);
 
 void setup() {
   Serial.begin(115200);
-  LP_LOGLN("HomoDeus starting up...");
+  LP_LOGLN("MeshLED starting up...");
 
   #ifdef SPIFFS_ENABLED
   // Setup file system and load settings
@@ -224,8 +224,10 @@ void setup() {
 
   // Initialize state
   setupState();
+  #ifdef SPIFFS_ENABLED
   loadLayers();
   loadUserPalettes();
+  #endif
 
   #ifdef DEBUGGER_ENABLED
   debugger = new Debugger(*object);

@@ -175,7 +175,7 @@ Internal definitions live under module-scoped `packages/lightgraph/src/*` folder
 - `firmware/esp/LightGraph.h`
   - direct include: `lightgraph/lightgraph.hpp`
 
-- `firmware/esp/homo_deus.ino`
+- `firmware/esp/esp.ino`
   - includes `LightGraph.h` (which includes `lightgraph/lightgraph.hpp`)
 
 - `firmware/esp/WebServerLayers.h`

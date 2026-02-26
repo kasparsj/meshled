@@ -4,6 +4,7 @@
 // This allows discovery of the device via mDNS with standard WLED service names
 
 #include <ESPmDNS.h>
+#include <esp_arduino_version.h>
 #include <vector>
 
 #define MDNS_XLED_SERVICE "_xled"
@@ -86,7 +87,11 @@ std::vector<IPAddress> discoverMDNSDevices(String service, String proto) {
   
   for (int i = 0; i < n; i++) {
     String hostname = MDNS.hostname(i);
+#if ESP_ARDUINO_VERSION >= ESP_ARDUINO_VERSION_VAL(3, 0, 0)
+    IPAddress ip = MDNS.address(i);
+#else
     IPAddress ip = MDNS.IP(i);
+#endif
     LP_LOGF("Found device: %s at %s\n", hostname.c_str(), ip.toString().c_str());
 
     deviceIPs.push_back(ip);

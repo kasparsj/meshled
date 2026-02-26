@@ -91,7 +91,9 @@ void handleUpdateSettings() {
 
   // Save credentials when any OTA setting changes
   if (otaSettingsChanged) {
+    #ifdef SPIFFS_ENABLED
     saveCredentials();
+    #endif
   }
   #endif
 
@@ -122,7 +124,9 @@ void handleUpdateWifi() {
     savedPassword = server.arg("password");
 
     // Save credentials to separate file
+    #ifdef SPIFFS_ENABLED
     saveCredentials();
+    #endif
 
     ESP.restart();
   } else {

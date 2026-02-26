@@ -402,7 +402,7 @@ void handleWLEDOff() {
 
 // WLED API: Get version info
 void handleWLEDVersion() {
-  server.send(200, "text/plain", "HomoDeus WLED Compatible API v1.0.0");
+  server.send(200, "text/plain", "MeshLED WLED Compatible API v1.0.0");
 }
 
 // Generate the WLED /win XML response
