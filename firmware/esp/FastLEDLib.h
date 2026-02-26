@@ -3,6 +3,55 @@
 // todo: enable legacy conditionally
 //#define RMT_LEGACY_SUPPORT
 
+#define FASTLED_ADD_PIN(CHIPSET, PIN, ORDER, LEDS, COUNT, COLOR_ORDER)    \
+  do {                                                                      \
+    auto& _fastledController = FastLED.addLeds<CHIPSET, PIN, ORDER>(LEDS, COUNT); \
+    if (HAS_WHITE(COLOR_ORDER)) {                                           \
+      _fastledController.setRgbw();                                         \
+    }                                                                       \
+  } while (0)
+
+#if defined(CONFIG_IDF_TARGET_ESP32C3)
+#define FASTLED_ADD_PIN_CASES(CHIPSET, ORDER, LEDS, COUNT)           \
+  case 0: FASTLED_ADD_PIN(CHIPSET, 0, ORDER, LEDS, COUNT, colorOrder); break;    \
+  case 1: FASTLED_ADD_PIN(CHIPSET, 1, ORDER, LEDS, COUNT, colorOrder); break;    \
+  case 2: FASTLED_ADD_PIN(CHIPSET, 2, ORDER, LEDS, COUNT, colorOrder); break;    \
+  case 3: FASTLED_ADD_PIN(CHIPSET, 3, ORDER, LEDS, COUNT, colorOrder); break;    \
+  case 4: FASTLED_ADD_PIN(CHIPSET, 4, ORDER, LEDS, COUNT, colorOrder); break;    \
+  case 5: FASTLED_ADD_PIN(CHIPSET, 5, ORDER, LEDS, COUNT, colorOrder); break;    \
+  case 6: FASTLED_ADD_PIN(CHIPSET, 6, ORDER, LEDS, COUNT, colorOrder); break;    \
+  case 7: FASTLED_ADD_PIN(CHIPSET, 7, ORDER, LEDS, COUNT, colorOrder); break;    \
+  case 8: FASTLED_ADD_PIN(CHIPSET, 8, ORDER, LEDS, COUNT, colorOrder); break;    \
+  case 9: FASTLED_ADD_PIN(CHIPSET, 9, ORDER, LEDS, COUNT, colorOrder); break;    \
+  case 10: FASTLED_ADD_PIN(CHIPSET, 10, ORDER, LEDS, COUNT, colorOrder); break;  \
+  case 18: FASTLED_ADD_PIN(CHIPSET, 18, ORDER, LEDS, COUNT, colorOrder); break;  \
+  case 19: FASTLED_ADD_PIN(CHIPSET, 19, ORDER, LEDS, COUNT, colorOrder); break;  \
+  case 20: FASTLED_ADD_PIN(CHIPSET, 20, ORDER, LEDS, COUNT, colorOrder); break;  \
+  case 21: FASTLED_ADD_PIN(CHIPSET, 21, ORDER, LEDS, COUNT, colorOrder); break;
+#define FASTLED_DEFAULT_PIN 2
+#else
+#define FASTLED_ADD_PIN_CASES(CHIPSET, ORDER, LEDS, COUNT)           \
+  case 2: FASTLED_ADD_PIN(CHIPSET, 2, ORDER, LEDS, COUNT, colorOrder); break;    \
+  case 4: FASTLED_ADD_PIN(CHIPSET, 4, ORDER, LEDS, COUNT, colorOrder); break;    \
+  case 5: FASTLED_ADD_PIN(CHIPSET, 5, ORDER, LEDS, COUNT, colorOrder); break;    \
+  case 12: FASTLED_ADD_PIN(CHIPSET, 12, ORDER, LEDS, COUNT, colorOrder); break;  \
+  case 13: FASTLED_ADD_PIN(CHIPSET, 13, ORDER, LEDS, COUNT, colorOrder); break;  \
+  case 14: FASTLED_ADD_PIN(CHIPSET, 14, ORDER, LEDS, COUNT, colorOrder); break;  \
+  case 15: FASTLED_ADD_PIN(CHIPSET, 15, ORDER, LEDS, COUNT, colorOrder); break;  \
+  case 16: FASTLED_ADD_PIN(CHIPSET, 16, ORDER, LEDS, COUNT, colorOrder); break;  \
+  case 18: FASTLED_ADD_PIN(CHIPSET, 18, ORDER, LEDS, COUNT, colorOrder); break;  \
+  case 19: FASTLED_ADD_PIN(CHIPSET, 19, ORDER, LEDS, COUNT, colorOrder); break;  \
+  case 21: FASTLED_ADD_PIN(CHIPSET, 21, ORDER, LEDS, COUNT, colorOrder); break;  \
+  case 22: FASTLED_ADD_PIN(CHIPSET, 22, ORDER, LEDS, COUNT, colorOrder); break;  \
+  case 23: FASTLED_ADD_PIN(CHIPSET, 23, ORDER, LEDS, COUNT, colorOrder); break;  \
+  case 25: FASTLED_ADD_PIN(CHIPSET, 25, ORDER, LEDS, COUNT, colorOrder); break;  \
+  case 26: FASTLED_ADD_PIN(CHIPSET, 26, ORDER, LEDS, COUNT, colorOrder); break;  \
+  case 27: FASTLED_ADD_PIN(CHIPSET, 27, ORDER, LEDS, COUNT, colorOrder); break;  \
+  case 32: FASTLED_ADD_PIN(CHIPSET, 32, ORDER, LEDS, COUNT, colorOrder); break;  \
+  case 33: FASTLED_ADD_PIN(CHIPSET, 33, ORDER, LEDS, COUNT, colorOrder); break;
+#define FASTLED_DEFAULT_PIN 14
+#endif
+
 void setupFastLED() {
   if (ledLibrary != LIB_FASTLED) return;
 
@@ -15,49 +64,15 @@ void setupFastLED() {
       if (IS_RGB(colorOrder)) {
         // WS2812 with RGB color order
         switch(pin) {
-          case 2: FastLED.addLeds<WS2812, 2, RGB>(leds, count); break;
-          case 4: FastLED.addLeds<WS2812, 4, RGB>(leds, count); break;
-          case 5: FastLED.addLeds<WS2812, 5, RGB>(leds, count); break;
-          case 12: FastLED.addLeds<WS2812, 12, RGB>(leds, count); break;
-          case 13: FastLED.addLeds<WS2812, 13, RGB>(leds, count); break;
-          case 14: FastLED.addLeds<WS2812, 14, RGB>(leds, count); break;
-          case 15: FastLED.addLeds<WS2812, 15, RGB>(leds, count); break;
-          case 16: FastLED.addLeds<WS2812, 16, RGB>(leds, count); break;
-          case 18: FastLED.addLeds<WS2812, 18, RGB>(leds, count); break;
-          case 19: FastLED.addLeds<WS2812, 19, RGB>(leds, count); break;
-          case 21: FastLED.addLeds<WS2812, 21, RGB>(leds, count); break;
-          case 22: FastLED.addLeds<WS2812, 22, RGB>(leds, count); break;
-          case 23: FastLED.addLeds<WS2812, 23, RGB>(leds, count); break;
-          case 25: FastLED.addLeds<WS2812, 25, RGB>(leds, count); break;
-          case 26: FastLED.addLeds<WS2812, 26, RGB>(leds, count); break;
-          case 27: FastLED.addLeds<WS2812, 27, RGB>(leds, count); break;
-          case 32: FastLED.addLeds<WS2812, 32, RGB>(leds, count); break;
-          case 33: FastLED.addLeds<WS2812, 33, RGB>(leds, count); break;
-          default: FastLED.addLeds<WS2812, 14, RGB>(leds, count); break;
+          FASTLED_ADD_PIN_CASES(WS2812, RGB, leds, count)
+          default: FASTLED_ADD_PIN(WS2812, FASTLED_DEFAULT_PIN, RGB, leds, count, colorOrder); break;
         }
       }
       else { //  if (IS_GRB(colorOrder))
         // WS2812 with GRB color order
         switch(pin) {
-          case 2: FastLED.addLeds<WS2812, 2, GRB>(leds, count); break;
-          case 4: FastLED.addLeds<WS2812, 4, GRB>(leds, count); break;
-          case 5: FastLED.addLeds<WS2812, 5, GRB>(leds, count); break;
-          case 12: FastLED.addLeds<WS2812, 12, GRB>(leds, count); break;
-          case 13: FastLED.addLeds<WS2812, 13, GRB>(leds, count); break;
-          case 14: FastLED.addLeds<WS2812, 14, GRB>(leds, count); break;
-          case 15: FastLED.addLeds<WS2812, 15, GRB>(leds, count); break;
-          case 16: FastLED.addLeds<WS2812, 16, GRB>(leds, count); break;
-          case 18: FastLED.addLeds<WS2812, 18, GRB>(leds, count); break;
-          case 19: FastLED.addLeds<WS2812, 19, GRB>(leds, count); break;
-          case 21: FastLED.addLeds<WS2812, 21, GRB>(leds, count); break;
-          case 22: FastLED.addLeds<WS2812, 22, GRB>(leds, count); break;
-          case 23: FastLED.addLeds<WS2812, 23, GRB>(leds, count); break;
-          case 25: FastLED.addLeds<WS2812, 25, GRB>(leds, count); break;
-          case 26: FastLED.addLeds<WS2812, 26, GRB>(leds, count); break;
-          case 27: FastLED.addLeds<WS2812, 27, GRB>(leds, count); break;
-          case 32: FastLED.addLeds<WS2812, 32, GRB>(leds, count); break;
-          case 33: FastLED.addLeds<WS2812, 33, GRB>(leds, count); break;
-          default: FastLED.addLeds<WS2812, 14, GRB>(leds, count); break;
+          FASTLED_ADD_PIN_CASES(WS2812, GRB, leds, count)
+          default: FASTLED_ADD_PIN(WS2812, FASTLED_DEFAULT_PIN, GRB, leds, count, colorOrder); break;
         }
       }
     } else {
@@ -65,54 +80,17 @@ void setupFastLED() {
       if (IS_RGB(colorOrder)) {
         // WS2811 with RGB color order
         switch(pin) {
-          case 2: FastLED.addLeds<WS2811, 2, RGB>(leds, count); break;
-          case 4: FastLED.addLeds<WS2811, 4, RGB>(leds, count); break;
-          case 5: FastLED.addLeds<WS2811, 5, RGB>(leds, count); break;
-          case 12: FastLED.addLeds<WS2811, 12, RGB>(leds, count); break;
-          case 13: FastLED.addLeds<WS2811, 13, RGB>(leds, count); break;
-          case 14: FastLED.addLeds<WS2811, 14, RGB>(leds, count); break;
-          case 15: FastLED.addLeds<WS2811, 15, RGB>(leds, count); break;
-          case 16: FastLED.addLeds<WS2811, 16, RGB>(leds, count); break;
-          case 18: FastLED.addLeds<WS2811, 18, RGB>(leds, count); break;
-          case 19: FastLED.addLeds<WS2811, 19, RGB>(leds, count); break;
-          case 21: FastLED.addLeds<WS2811, 21, RGB>(leds, count); break;
-          case 22: FastLED.addLeds<WS2811, 22, RGB>(leds, count); break;
-          case 23: FastLED.addLeds<WS2811, 23, RGB>(leds, count); break;
-          case 25: FastLED.addLeds<WS2811, 25, RGB>(leds, count); break;
-          case 26: FastLED.addLeds<WS2811, 26, RGB>(leds, count); break;
-          case 27: FastLED.addLeds<WS2811, 27, RGB>(leds, count); break;
-          case 32: FastLED.addLeds<WS2811, 32, RGB>(leds, count); break;
-          case 33: FastLED.addLeds<WS2811, 33, RGB>(leds, count); break;
-          default: FastLED.addLeds<WS2811, 14, RGB>(leds, count); break;
+          FASTLED_ADD_PIN_CASES(WS2811, RGB, leds, count)
+          default: FASTLED_ADD_PIN(WS2811, FASTLED_DEFAULT_PIN, RGB, leds, count, colorOrder); break;
         }
       }
       else {
         // WS2811 with GRB color order
         switch(pin) {
-          case 2: FastLED.addLeds<WS2811, 2, GRB>(leds, count); break;
-          case 4: FastLED.addLeds<WS2811, 4, GRB>(leds, count); break;
-          case 5: FastLED.addLeds<WS2811, 5, GRB>(leds, count); break;
-          case 12: FastLED.addLeds<WS2811, 12, GRB>(leds, count); break;
-          case 13: FastLED.addLeds<WS2811, 13, GRB>(leds, count); break;
-          case 14: FastLED.addLeds<WS2811, 14, GRB>(leds, count); break;
-          case 15: FastLED.addLeds<WS2811, 15, GRB>(leds, count); break;
-          case 16: FastLED.addLeds<WS2811, 16, GRB>(leds, count); break;
-          case 18: FastLED.addLeds<WS2811, 18, GRB>(leds, count); break;
-          case 19: FastLED.addLeds<WS2811, 19, GRB>(leds, count); break;
-          case 21: FastLED.addLeds<WS2811, 21, GRB>(leds, count); break;
-          case 22: FastLED.addLeds<WS2811, 22, GRB>(leds, count); break;
-          case 23: FastLED.addLeds<WS2811, 23, GRB>(leds, count); break;
-          case 25: FastLED.addLeds<WS2811, 25, GRB>(leds, count); break;
-          case 26: FastLED.addLeds<WS2811, 26, GRB>(leds, count); break;
-          case 27: FastLED.addLeds<WS2811, 27, GRB>(leds, count); break;
-          case 32: FastLED.addLeds<WS2811, 32, GRB>(leds, count); break;
-          case 33: FastLED.addLeds<WS2811, 33, GRB>(leds, count); break;
-          default: FastLED.addLeds<WS2811, 14, GRB>(leds, count); break;
+          FASTLED_ADD_PIN_CASES(WS2811, GRB, leds, count)
+          default: FASTLED_ADD_PIN(WS2811, FASTLED_DEFAULT_PIN, GRB, leds, count, colorOrder); break;
         }
       }
-    }
-    if (HAS_WHITE(colorOrder)) {
-      c.setRgbw(RgbwDefault());
     }
   };
 
