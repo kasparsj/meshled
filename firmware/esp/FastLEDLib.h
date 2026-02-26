@@ -29,6 +29,49 @@
   case 20: FASTLED_ADD_PIN(CHIPSET, 20, ORDER, LEDS, COUNT, colorOrder); break;  \
   case 21: FASTLED_ADD_PIN(CHIPSET, 21, ORDER, LEDS, COUNT, colorOrder); break;
 #define FASTLED_DEFAULT_PIN 2
+#elif defined(CONFIG_IDF_TARGET_ESP32S3)
+// ESP32-S3 valid output pins exclude 22-25 and 27-32 in FastLED's pin map.
+#define FASTLED_ADD_PIN_CASES(CHIPSET, ORDER, LEDS, COUNT)           \
+  case 0: FASTLED_ADD_PIN(CHIPSET, 0, ORDER, LEDS, COUNT, colorOrder); break;    \
+  case 1: FASTLED_ADD_PIN(CHIPSET, 1, ORDER, LEDS, COUNT, colorOrder); break;    \
+  case 2: FASTLED_ADD_PIN(CHIPSET, 2, ORDER, LEDS, COUNT, colorOrder); break;    \
+  case 3: FASTLED_ADD_PIN(CHIPSET, 3, ORDER, LEDS, COUNT, colorOrder); break;    \
+  case 4: FASTLED_ADD_PIN(CHIPSET, 4, ORDER, LEDS, COUNT, colorOrder); break;    \
+  case 5: FASTLED_ADD_PIN(CHIPSET, 5, ORDER, LEDS, COUNT, colorOrder); break;    \
+  case 6: FASTLED_ADD_PIN(CHIPSET, 6, ORDER, LEDS, COUNT, colorOrder); break;    \
+  case 7: FASTLED_ADD_PIN(CHIPSET, 7, ORDER, LEDS, COUNT, colorOrder); break;    \
+  case 8: FASTLED_ADD_PIN(CHIPSET, 8, ORDER, LEDS, COUNT, colorOrder); break;    \
+  case 9: FASTLED_ADD_PIN(CHIPSET, 9, ORDER, LEDS, COUNT, colorOrder); break;    \
+  case 10: FASTLED_ADD_PIN(CHIPSET, 10, ORDER, LEDS, COUNT, colorOrder); break;  \
+  case 11: FASTLED_ADD_PIN(CHIPSET, 11, ORDER, LEDS, COUNT, colorOrder); break;  \
+  case 12: FASTLED_ADD_PIN(CHIPSET, 12, ORDER, LEDS, COUNT, colorOrder); break;  \
+  case 13: FASTLED_ADD_PIN(CHIPSET, 13, ORDER, LEDS, COUNT, colorOrder); break;  \
+  case 14: FASTLED_ADD_PIN(CHIPSET, 14, ORDER, LEDS, COUNT, colorOrder); break;  \
+  case 15: FASTLED_ADD_PIN(CHIPSET, 15, ORDER, LEDS, COUNT, colorOrder); break;  \
+  case 16: FASTLED_ADD_PIN(CHIPSET, 16, ORDER, LEDS, COUNT, colorOrder); break;  \
+  case 17: FASTLED_ADD_PIN(CHIPSET, 17, ORDER, LEDS, COUNT, colorOrder); break;  \
+  case 18: FASTLED_ADD_PIN(CHIPSET, 18, ORDER, LEDS, COUNT, colorOrder); break;  \
+  case 19: FASTLED_ADD_PIN(CHIPSET, 19, ORDER, LEDS, COUNT, colorOrder); break;  \
+  case 20: FASTLED_ADD_PIN(CHIPSET, 20, ORDER, LEDS, COUNT, colorOrder); break;  \
+  case 21: FASTLED_ADD_PIN(CHIPSET, 21, ORDER, LEDS, COUNT, colorOrder); break;  \
+  case 26: FASTLED_ADD_PIN(CHIPSET, 26, ORDER, LEDS, COUNT, colorOrder); break;  \
+  case 33: FASTLED_ADD_PIN(CHIPSET, 33, ORDER, LEDS, COUNT, colorOrder); break;  \
+  case 34: FASTLED_ADD_PIN(CHIPSET, 34, ORDER, LEDS, COUNT, colorOrder); break;  \
+  case 35: FASTLED_ADD_PIN(CHIPSET, 35, ORDER, LEDS, COUNT, colorOrder); break;  \
+  case 36: FASTLED_ADD_PIN(CHIPSET, 36, ORDER, LEDS, COUNT, colorOrder); break;  \
+  case 37: FASTLED_ADD_PIN(CHIPSET, 37, ORDER, LEDS, COUNT, colorOrder); break;  \
+  case 38: FASTLED_ADD_PIN(CHIPSET, 38, ORDER, LEDS, COUNT, colorOrder); break;  \
+  case 39: FASTLED_ADD_PIN(CHIPSET, 39, ORDER, LEDS, COUNT, colorOrder); break;  \
+  case 40: FASTLED_ADD_PIN(CHIPSET, 40, ORDER, LEDS, COUNT, colorOrder); break;  \
+  case 41: FASTLED_ADD_PIN(CHIPSET, 41, ORDER, LEDS, COUNT, colorOrder); break;  \
+  case 42: FASTLED_ADD_PIN(CHIPSET, 42, ORDER, LEDS, COUNT, colorOrder); break;  \
+  case 43: FASTLED_ADD_PIN(CHIPSET, 43, ORDER, LEDS, COUNT, colorOrder); break;  \
+  case 44: FASTLED_ADD_PIN(CHIPSET, 44, ORDER, LEDS, COUNT, colorOrder); break;  \
+  case 45: FASTLED_ADD_PIN(CHIPSET, 45, ORDER, LEDS, COUNT, colorOrder); break;  \
+  case 46: FASTLED_ADD_PIN(CHIPSET, 46, ORDER, LEDS, COUNT, colorOrder); break;  \
+  case 47: FASTLED_ADD_PIN(CHIPSET, 47, ORDER, LEDS, COUNT, colorOrder); break;  \
+  case 48: FASTLED_ADD_PIN(CHIPSET, 48, ORDER, LEDS, COUNT, colorOrder); break;
+#define FASTLED_DEFAULT_PIN 14
 #else
 #define FASTLED_ADD_PIN_CASES(CHIPSET, ORDER, LEDS, COUNT)           \
   case 2: FASTLED_ADD_PIN(CHIPSET, 2, ORDER, LEDS, COUNT, colorOrder); break;    \

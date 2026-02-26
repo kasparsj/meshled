@@ -88,6 +88,12 @@ void sendCORSHeaders(String methods = "GET, POST, PUT, DELETE") {
 
 String getHeaderMenu() {
   String html = "<p>";
+  if (apMode) {
+    html += "<a href='/settings'>WiFi Setup</a>";
+    html += "</p>";
+    return html;
+  }
+
   #ifdef WEBSERVER_EMITTER
   html += "<a href='/emitter'>Emitter</a> | ";
   #endif
@@ -237,6 +243,18 @@ String getFooterMenu() {
   return menu;
 }
 
+void streamWifiPage(WiFiClient &client) {
+  client.println("<h2>WiFi Setup</h2>");
+  client.println("<p>Enter your WiFi credentials and submit to restart the device.</p>");
+  client.println("<form action='/update_wifi' method='POST'>");
+  client.println("<label for='ssid'>WiFi SSID</label>");
+  client.printf("<input id='ssid' name='ssid' type='text' value='%s' required>", savedSSID.c_str());
+  client.println("<label for='password'>WiFi Password</label>");
+  client.printf("<input id='password' name='password' type='password' value='%s'>", savedPassword.c_str());
+  client.println("<button type='submit'>Save WiFi and Restart</button>");
+  client.println("</form>");
+}
+
 void streamFooter(WiFiClient &client) {
   client.print(getFooterMenu());
   streamConfigDisplay(client);
@@ -245,6 +263,13 @@ void streamFooter(WiFiClient &client) {
 
 // Stream the homepage HTML directly to client to save memory
 void streamHomePage(WiFiClient &client) {
+  if (apMode) {
+    streamHeader(client, "WiFi Setup");
+    streamWifiPage(client);
+    streamFooter(client);
+    return;
+  }
+
   streamHeader(client, "Layers");
 
   yield(); // Allow system to process other tasks
@@ -270,6 +295,12 @@ void streamEmitterPage(WiFiClient &client) {
   streamFooter(client);
 }
 #endif
+
+void streamSettingsPage(WiFiClient &client) {
+  streamHeader(client, "WiFi Setup");
+  streamWifiPage(client);
+  streamFooter(client);
+}
 
 void lowMemory() {
   // Send a simplified page if memory is low
@@ -318,6 +349,14 @@ void handleEmitter() {
   handleGenericPage(streamEmitterPage);
 }
 #endif
+
+void handleSettingsPage() {
+  handleGenericPage(streamSettingsPage);
+}
+
+void handleWifiPage() {
+  handleGenericPage(streamSettingsPage);
+}
 
 // Helper function to check if intersections are already connected
 bool areIntersectionsConnected(Intersection* inter1, Intersection* inter2) {
@@ -1515,6 +1554,8 @@ void setupWebServer() {
   server.collectHeaders(headerKeys, 2);
 
   server.on("/", HTTP_GET, handleRoot);
+  server.on("/settings", HTTP_GET, handleSettingsPage);
+  server.on("/wifi", HTTP_GET, handleWifiPage);
   server.on("/get_devices", HTTP_GET, handleGetDevices);
 
   // Serve static files

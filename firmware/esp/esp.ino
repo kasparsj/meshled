@@ -21,6 +21,7 @@
 // #define SSDP_ENABLED
 #define MDNS_ENABLED
 // #define ESPNOW_ENABLED
+
 // todo: logs crashed the esp once
 // #define LOG_FILE "/log.txt"
 // #define CRASH_LOG_FILE "/crash_log.txt" // Path to store crash logs
@@ -86,7 +87,11 @@ String getActiveNetworkSSID() {
 String deviceHostname = DEFAULT_HOSTNAME; // Device hostname for both WiFi and OTA
 uint8_t maxBrightness = 255;
 uint8_t ledType = LED_WS2812;
+#if defined(FASTLED_ENABLED) && !defined(NEOPIXELBUS_ENABLED)
+uint8_t ledLibrary = LIB_FASTLED;
+#else
 uint8_t ledLibrary = LIB_NEOPIXELBUS;
+#endif
 uint8_t colorOrder = CO_GRB;
 uint16_t pixelCount1 = 300;
 uint16_t pixelCount2 = 0;

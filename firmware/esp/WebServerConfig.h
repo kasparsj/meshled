@@ -128,6 +128,12 @@ void handleUpdateWifi() {
     saveCredentials();
     #endif
 
+    sendCORSHeaders("POST");
+    server.send(200, "text/html",
+      "<html><head><meta name='viewport' content='width=device-width, initial-scale=1'></head>"
+      "<body style='font-family:Arial;background:#333;color:#fff;padding:20px'>"
+      "<h2>WiFi Updated</h2><p>Restarting device to apply new settings...</p></body></html>");
+    delay(150);
     ESP.restart();
   } else {
     sendCORSHeaders("POST");

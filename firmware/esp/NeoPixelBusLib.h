@@ -1,23 +1,45 @@
 #pragma once
 
+#include <sdkconfig.h>
+
 #define COLORGAMMA_CORRECT
 
 #ifdef COLORGAMMA_CORRECT
 NeoGamma<NeoGammaTableMethod> colorGamma;
 #endif
 
+// Arduino IDE and PlatformIO builds can expose different target-id macros.
+// Keep S3 detection broad so we never fall back to legacy RMT methods there.
+#if defined(CONFIG_IDF_TARGET_ESP32S3) || defined(ARDUINO_ESP32S3_DEV) || defined(ARDUINO_ESP32S3_USB_OTG) || defined(ARDUINO_ESP32S3_BOX) || defined(ARDUINO_ESP32S3_BOX_3)
+#define NPB_TARGET_ESP32S3
+#endif
+
+#if defined(CONFIG_IDF_TARGET_ESP32)
+#define NPB_TARGET_ESP32_CLASSIC
+#endif
+
 // ESP32 Arduino core v3 can mix RMT legacy/new drivers when multiple libs touch RMT.
 // On classic ESP32, use I2S methods to avoid RMT driver conflicts.
-#if defined(CONFIG_IDF_TARGET_ESP32)
+#if defined(NPB_TARGET_ESP32_CLASSIC)
 #define NPB_METHOD_STRIP1_WS2812X NeoEsp32I2s0Ws2812xMethod
 #define NPB_METHOD_STRIP2_WS2812X NeoEsp32I2s1Ws2812xMethod
 #define NPB_METHOD_STRIP1_WS2811 NeoEsp32I2s0400KbpsMethod
 #define NPB_METHOD_STRIP2_WS2811 NeoEsp32I2s1400KbpsMethod
+#define NPB_TRANSPORT_NAME "esp32-i2s"
+#elif defined(NPB_TARGET_ESP32S3)
+// On ESP32-S3 (IDF5), avoid legacy RMT to prevent startup conflicts with core RMT NG usage.
+// LCD-X methods are the native non-RMT transport in NeoPixelBus for S3.
+#define NPB_METHOD_STRIP1_WS2812X NeoEsp32LcdX8Ws2812xMethod
+#define NPB_METHOD_STRIP2_WS2812X NeoEsp32LcdX8Ws2812xMethod
+#define NPB_METHOD_STRIP1_WS2811 NeoEsp32LcdX8Ws2811Method
+#define NPB_METHOD_STRIP2_WS2811 NeoEsp32LcdX8Ws2811Method
+#define NPB_TRANSPORT_NAME "esp32s3-lcdx"
 #else
 #define NPB_METHOD_STRIP1_WS2812X NeoEsp32Rmt0Ws2812xMethod
 #define NPB_METHOD_STRIP2_WS2812X NeoEsp32Rmt1Ws2812xMethod
 #define NPB_METHOD_STRIP1_WS2811 NeoEsp32Rmt0Ws2811Method
 #define NPB_METHOD_STRIP2_WS2811 NeoEsp32Rmt1Ws2811Method
+#define NPB_TRANSPORT_NAME "esp32-rmt-legacy"
 #endif
 
 NeoPixelBusStrip* createNeoPixelBusStrip(uint8_t ledType, uint8_t colorOrder, uint16_t pixelCount, uint8_t pixelPin) {
@@ -110,6 +132,7 @@ void setupNeoPixelBus() {
     strip2->Show();
   }
 
+  LP_LOGLN("NeoPixelBus transport = " + String(NPB_TRANSPORT_NAME));
   LP_LOGLN("NeoPixelBus initialized with colorOrder = " + String(colorOrder));
 }
 

@@ -4,7 +4,7 @@
 
 #ifdef FASTLED_ENABLED
 // Use I2S backend on ESP32 to avoid RMT legacy/new-driver conflicts at runtime.
-#if defined(ARDUINO_ARCH_ESP32) && !defined(FASTLED_ESP32_I2S)
+#if defined(ARDUINO_ARCH_ESP32) && defined(CONFIG_IDF_TARGET_ESP32) && !defined(FASTLED_ESP32_I2S)
 #define FASTLED_ESP32_I2S 1
 #endif
 #include <FastLED.h>
@@ -21,6 +21,24 @@ NeoPixelBusStrip* strip2 = NULL;
 #include "NeoPixelBusLib.h"
 #endif
 
+void normalizeLedLibrarySelection() {
+  #if defined(CONFIG_IDF_TARGET_ESP32C3) && defined(FASTLED_ENABLED) && defined(NEOPIXELBUS_ENABLED)
+  // ESP32-C3 can still hit legacy/new RMT conflicts depending on selected methods.
+  if (ledLibrary == LIB_NEOPIXELBUS) {
+    LP_LOGLN("Forcing FastLED backend on ESP32-C3 to avoid RMT driver conflict");
+    ledLibrary = LIB_FASTLED;
+  }
+  #elif defined(FASTLED_ENABLED) && !defined(NEOPIXELBUS_ENABLED)
+  if (ledLibrary != LIB_FASTLED) {
+    ledLibrary = LIB_FASTLED;
+  }
+  #elif !defined(FASTLED_ENABLED) && defined(NEOPIXELBUS_ENABLED)
+  if (ledLibrary != LIB_NEOPIXELBUS) {
+    ledLibrary = LIB_NEOPIXELBUS;
+  }
+  #endif
+}
+
 void setupLEDs() {
   if (objectType == OBJ_HEPTAGON919) {
     pixelCount1 = HEPTAGON919_PIXEL_COUNT1;
@@ -34,6 +52,8 @@ void setupLEDs() {
     pixelPin1 = 14;
     pixelPin2 = 26;
   }
+
+  normalizeLedLibrarySelection();
 
   #ifdef NEOPIXELBUS_ENABLED
   setupNeoPixelBus();
