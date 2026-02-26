@@ -1,7 +1,7 @@
 #define DEV_ENABLED
 #define DEFAULT_HOSTNAME "meshled"
 // #define BUTTON_PIN 25
-// #define SPIFFS_ENABLED
+#define SPIFFS_ENABLED // SPIFFS needs to be enabled to save wifi settings in AP mode
 #define WIFI_ENABLED // comment out WIFI_ENABLED to disable WiFi completely
 // #define WIFI_REQUIRED // Comment this out to enable AP mode when station mode fails
 #define WIFI_SSID ""
