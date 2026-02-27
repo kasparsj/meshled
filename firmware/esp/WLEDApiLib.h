@@ -3,6 +3,13 @@
 // WLED API Compatibility Library
 // Implements a subset of WLED's HTTP API for compatibility with apps and integrations
 
+#if __has_include(<esp_ota_ops.h>)
+#include <esp_ota_ops.h>
+#define MESHLED_HAS_OTA_SHA_HELPER 1
+#else
+#define MESHLED_HAS_OTA_SHA_HELPER 0
+#endif
+
 // WLED API endpoint handlers
 
 #ifndef MESHLED_VERSION
@@ -12,6 +19,49 @@
 #ifndef MESHLED_RELEASE_SHA
 #define MESHLED_RELEASE_SHA "unknown"
 #endif
+
+String getResolvedMeshledVersion() {
+  static String cachedVersion;
+  if (cachedVersion.length() > 0) {
+    return cachedVersion;
+  }
+
+  cachedVersion = String(MESHLED_VERSION);
+  cachedVersion.trim();
+  if (cachedVersion.length() == 0) {
+    cachedVersion = "dev";
+  }
+
+  return cachedVersion;
+}
+
+String getResolvedMeshledReleaseSha() {
+  static String cachedReleaseSha;
+  if (cachedReleaseSha.length() > 0) {
+    return cachedReleaseSha;
+  }
+
+  cachedReleaseSha = String(MESHLED_RELEASE_SHA);
+  cachedReleaseSha.trim();
+  if (cachedReleaseSha.length() > 0 && cachedReleaseSha != "unknown") {
+    return cachedReleaseSha;
+  }
+
+#if MESHLED_HAS_OTA_SHA_HELPER
+  char elfSha[65] = {0};
+  int written = esp_ota_get_app_elf_sha256(elfSha, sizeof(elfSha));
+  if (written > 0 && elfSha[0] != '\0') {
+    cachedReleaseSha = String(elfSha);
+    if (cachedReleaseSha.length() > 12) {
+      cachedReleaseSha = cachedReleaseSha.substring(0, 12);
+    }
+    return cachedReleaseSha;
+  }
+#endif
+
+  cachedReleaseSha = "unknown";
+  return cachedReleaseSha;
+}
 
 bool isOn() {
   if (!state) {
@@ -96,8 +146,8 @@ void getWLEDInfo(JsonObject& info) {
   info["vid"] = 2412100;  // Build ID (use WLED format YYMMDD0)
   info["cn"] = "Kōsen";
   info["release"] = "ESP32";
-  info["meshledVersion"] = MESHLED_VERSION;
-  info["meshledReleaseSha"] = MESHLED_RELEASE_SHA;
+  info["meshledVersion"] = getResolvedMeshledVersion();
+  info["meshledReleaseSha"] = getResolvedMeshledReleaseSha();
 
   // LED information
   info["leds"]["count"] = pixelCount1 + pixelCount2;

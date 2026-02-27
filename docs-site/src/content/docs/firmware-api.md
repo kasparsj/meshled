@@ -66,6 +66,7 @@ Applies to: `firmware/esp` in this repository
 - MeshLED build metadata keys:
   - `meshledVersion`: release tag or git describe string from firmware build.
   - `meshledReleaseSha`: short git SHA from firmware build.
+    - If build macros are unavailable (for example Arduino IDE builds), firmware falls back to deriving a short SHA from the running app image hash.
 - `wifi.ssid` is the active network SSID (`AP` SSID in AP mode, STA SSID in station mode).
 - `wifi.mode` is `"ap"` or `"sta"`.
 
