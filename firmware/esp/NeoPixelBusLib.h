@@ -42,13 +42,17 @@ NeoGamma<NeoGammaTableMethod> colorGamma;
 #define NPB_TRANSPORT_NAME "esp32-rmt-legacy"
 #endif
 
+bool neoPixelBusUsesWs2812xTiming(uint8_t ledType) {
+  return ledType == LED_WS2812 || ledType == LED_WS2815;
+}
+
 NeoPixelBusStrip* createNeoPixelBusStrip(uint8_t ledType, uint8_t colorOrder, uint16_t pixelCount, uint8_t pixelPin) {
   static uint8_t i = 0;
   i++;
 
   // Determine which transport instance to use based on which strip is being created
-  if (ledType == LED_WS2812) {
-    // WS2812 LED type
+  if (neoPixelBusUsesWs2812xTiming(ledType)) {
+    // WS2812/WS2815 LED type (WS2815 uses WS2812x timing in this firmware path)
     if (i == 1) {
       // First strip
       switch (colorOrder) {

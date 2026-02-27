@@ -26,7 +26,7 @@ const SettingsTab = () => {
         pixelPin2: 0,
         pixelDensity: 60,
         ledType: 0, // LED_WS2812
-        colorOrder: 4, // CO_GRB
+        colorOrder: 18, // CO_GRB
         ledLibrary: 1, // LIB_FASTLED
         objectType: 0, // OBJ_HEPTAGON919
         oscEnabled: false,

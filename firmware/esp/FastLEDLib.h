@@ -103,16 +103,16 @@ void setupFastLED() {
 
   // Helper function to add LEDs with the right configuration
   auto addLedsWithConfig = [](CRGB* leds, uint16_t count, uint8_t pin, uint8_t ledType, uint8_t colorOrder) {
-    if (ledType == LED_WS2812) {
+    if (ledType != LED_WS2811) {
       if (IS_RGB(colorOrder)) {
-        // WS2812 with RGB color order
+        // WS2812/WS2815 with RGB color order
         switch(pin) {
           FASTLED_ADD_PIN_CASES(WS2812, RGB, leds, count)
           default: FASTLED_ADD_PIN(WS2812, FASTLED_DEFAULT_PIN, RGB, leds, count, colorOrder); break;
         }
       }
       else { //  if (IS_GRB(colorOrder))
-        // WS2812 with GRB color order
+        // WS2812/WS2815 with GRB color order
         switch(pin) {
           FASTLED_ADD_PIN_CASES(WS2812, GRB, leds, count)
           default: FASTLED_ADD_PIN(WS2812, FASTLED_DEFAULT_PIN, GRB, leds, count, colorOrder); break;
@@ -149,7 +149,7 @@ void setupFastLED() {
   FastLED.clear();
   FastLED.show();
 
-  LP_LOGLN("FastLED initialized with ledType = " + String(ledType == LED_WS2812 ? "WS2812" : "WS2811") +
+  LP_LOGLN("FastLED initialized with ledType = " + String(ledType == LED_WS2811 ? "WS2811" : (ledType == LED_WS2815 ? "WS2815" : "WS2812")) +
                  ", colorOrder = " + String(colorOrder == CO_GRB ? "GRB" : "RGB"));
 }
 

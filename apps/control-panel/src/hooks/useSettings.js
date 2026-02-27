@@ -9,12 +9,13 @@ const useSettings = () => {
     // Constants to match C++ enums
     const LED_TYPES = {
         0: 'WS2812',
-        1: 'WS2811'
+        1: 'WS2811',
+        2: 'WS2815'
     };
 
     const COLOR_ORDERS = {
-        0: 'RGB',
-        4: 'GRB',
+        6: 'RGB',
+        18: 'GRB',
         155: 'RGBW',
         203: 'GRBW'
     };

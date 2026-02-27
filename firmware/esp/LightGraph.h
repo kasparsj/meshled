@@ -5,6 +5,7 @@
 
 #define LED_WS2812 0
 #define LED_WS2811 1
+#define LED_WS2815 2
 
 //#define SC_HOST "192.168.43.101"
 //#define SC_PORT 57120
