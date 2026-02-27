@@ -5,53 +5,6 @@
 
 // WLED API endpoint handlers
 
-// Parse color from hex string to RGB values
-// Formats: #RRGGBB, RRGGBB, RRGGBB,RRGGBB (multiple colors separated by commas)
-void parseHexColor(String hexColor, std::vector<int64_t> &parsedColors) {
-  // Clear existing colors
-  parsedColors.clear();
-
-  // Remove any # characters
-  hexColor.replace("#", "");
-
-  // Split by commas if multiple colors
-  int lastPos = 0;
-  int commaPos = hexColor.indexOf(',');
-
-  // If there are no commas, process the single color
-  if (commaPos < 0) {
-    // Convert a single color
-    if (hexColor.length() >= 6) {
-      char* endPtr;
-      int64_t color = strtol(hexColor.c_str(), &endPtr, 16);
-      parsedColors.push_back(color);
-    }
-    return;
-  }
-
-  // Process multiple colors separated by commas
-  while (commaPos >= 0) {
-    String colorStr = hexColor.substring(lastPos, commaPos);
-
-    if (colorStr.length() >= 6) {
-      char* endPtr;
-      int64_t color = strtol(colorStr.c_str(), &endPtr, 16);
-      parsedColors.push_back(color);
-    }
-
-    lastPos = commaPos + 1;
-    commaPos = hexColor.indexOf(',', lastPos);
-  }
-
-  // Process the last color
-  String colorStr = hexColor.substring(lastPos);
-  if (colorStr.length() >= 6) {
-    char* endPtr;
-    int64_t color = strtol(colorStr.c_str(), &endPtr, 16);
-    parsedColors.push_back(color);
-  }
-}
-
 bool isOn() {
   if (!state) {
     return emitterEnabled;

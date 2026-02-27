@@ -1,5 +1,14 @@
 #pragma once
 
+#if defined(ARDUINO_ARCH_ESP32)
+#include <esp_arduino_version.h>
+#if defined(ESP_ARDUINO_VERSION) && (ESP_ARDUINO_VERSION >= ESP_ARDUINO_VERSION_VAL(3, 3, 0)) && !defined(gpio_hal_iomux_func_sel)
+// NeoPixelBus 2.8.4 still references this removed HAL helper in the S3 LCD-X header.
+// Provide the old macro shape so header parsing succeeds on Arduino-ESP32 3.3.x.
+#define gpio_hal_iomux_func_sel(reg, func) PIN_FUNC_SELECT((reg), (func))
+#endif
+#endif
+
 #include <NeoPixelBus.h>
 
 #define USE_RGBW_COLOR true

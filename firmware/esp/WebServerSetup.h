@@ -616,24 +616,6 @@ void cleanupModelWeights(Intersection* intersection) {
   }
 }
 
-// Helper function to remove connections involving an intersection
-void removeConnections(Intersection* intersection) {
-  if (!intersection) return;
-  
-  // Remove connections that involve this intersection
-  for (uint8_t g = 0; g < MAX_GROUPS; g++) {
-    size_t i = 0;
-    while (i < object->conn[g].size()) {
-      Connection* connection = object->conn[g][i];
-      if (connection && (connection->from == intersection || connection->to == intersection)) {
-        object->removeConnection(g, i);
-      } else {
-        i++;
-      }
-    }
-  }
-}
-
 // Remove intersection from the model
 void handleRemoveIntersection() {
   sendCORSHeaders("POST");
@@ -659,13 +641,30 @@ void handleRemoveIntersection() {
     return;
   }
   
-  uint8_t intersectionId = doc["id"];
-  uint8_t group = doc["group"];
-  
-  // Find intersection in the requested group and remove through TopologyObject.
+  const uint8_t intersectionId = doc["id"];
+  const uint8_t requestedGroup = doc["group"];
+  const uint8_t maxGroupMask = static_cast<uint8_t>((1u << MAX_GROUPS) - 1u);
+
+  // Group is expected as a single-bit mask.
+  // For compatibility with older clients, group index is accepted as fallback.
   Intersection* target = nullptr;
-  if (group < MAX_GROUPS) {
-    for (Intersection* intersection : object->inter[group]) {
+  if (requestedGroup > 0 && requestedGroup <= maxGroupMask && (requestedGroup & (requestedGroup - 1)) == 0) {
+    for (uint8_t g = 0; g < MAX_GROUPS; g++) {
+      if (!(requestedGroup & TopologyObject::groupMaskForIndex(g))) {
+        continue;
+      }
+      for (Intersection* intersection : object->inter[g]) {
+        if (intersection && intersection->id == intersectionId) {
+          target = intersection;
+          break;
+        }
+      }
+      if (target) {
+        break;
+      }
+    }
+  } else if (requestedGroup < MAX_GROUPS) {
+    for (Intersection* intersection : object->inter[requestedGroup]) {
       if (intersection && intersection->id == intersectionId) {
         target = intersection;
         break;
@@ -922,7 +921,7 @@ void handleGetModel() {
         if (!firstInter) client.print(",");
         client.printf("{\"id\":%d,\"group\":%d,\"numPorts\":%d,\"topPixel\":%d,\"bottomPixel\":%d,\"ports\":[",
                      intersection->id,
-                     group,
+                     intersection->group,
                      intersection->numPorts,
                      intersection->topPixel,
                      intersection->bottomPixel);
@@ -967,7 +966,7 @@ void handleGetModel() {
       if (connection) {
         if (!firstConn) client.print(",");
         client.printf("{\"group\":%d,\"fromPixel\":%d,\"toPixel\":%d,\"numLeds\":%d,\"pixelDir\":%d}",
-                     group,
+                     connection->group,
                      connection->fromPixel,
                      connection->toPixel,
                      connection->numLeds,
@@ -1512,23 +1511,6 @@ bool handleStaticFile(String path) {
   return false;
 }
 
-// Handler for serving static files
-void handleStatic() {
-  String path = "/";
-
-  if (server.uri() != "/") {
-    path += server.uri().substring(1);
-  } else {
-    return; // Root path is handled separately
-  }
-
-  if (handleStaticFile(path)) {
-    return;
-  }
-
-  // If file not found
-  server.send(404, "text/plain", "File not found");
-}
 #endif
 
 // Global CORS handler for OPTIONS requests
@@ -1561,7 +1543,9 @@ void setupWebServer() {
   // Serve static files
   #ifdef SPIFFS_ENABLED
   server.on("/scripts.js", HTTP_GET, []() {
-    handleStaticFile("/scripts.js");
+    if (!handleStaticFile("/scripts.js")) {
+      server.send(404, "text/plain", "File not found");
+    }
   });
   #endif
 

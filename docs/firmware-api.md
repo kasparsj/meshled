@@ -164,6 +164,7 @@ Applies to: `firmware/esp` in this repository
 ### `GET /get_model`
 
 - Returns model/editor payload used by control-panel.
+- `intersections[].group` and `connections[].group` are emitted as group bitmasks.
 
 ### `GET /get_colors[?maxColors=<int>][&layer=<id>]`
 
@@ -176,7 +177,8 @@ Applies to: `firmware/esp` in this repository
   - optional: `bottomPixel`
   - `group` must be a single valid group bit.
 - `/remove_intersection` body JSON:
-  - `{"id":<intersectionId>,"group":<groupIndex>}`
+  - `{"id":<intersectionId>,"group":<groupBitmask>}`
+  - `group` expects a single valid group bit (legacy group index is accepted for backward compatibility).
 
 ### Declarative topology schema (JSON)
 
