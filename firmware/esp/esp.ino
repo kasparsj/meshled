@@ -44,15 +44,68 @@
 
 #ifdef WIFI_ENABLED
 #include <WiFi.h>
-bool wifiConnected = false;
-bool apMode = false;
-unsigned long apStartTime = 0;
-String savedSSID = WIFI_SSID;
-String savedPassword = WIFI_PASS;
-String activeApSSID = "";
 #endif
 
-struct UserPalette;
+#ifdef BLUETOOTH_ENABLED
+#include "BluetoothSerial.h"
+#include "esp_bt.h"
+#endif
+
+#include "LightGraph.h"
+#include "FirmwareContext.h"
+
+FirmwareContext gCtx = []() {
+  FirmwareContext ctx;
+  ctx.savedSSID = WIFI_SSID;
+  ctx.savedPassword = WIFI_PASS;
+  return ctx;
+}();
+
+bool& wifiConnected = gCtx.wifiConnected;
+bool& apMode = gCtx.apMode;
+unsigned long& apStartTime = gCtx.apStartTime;
+String& savedSSID = gCtx.savedSSID;
+String& savedPassword = gCtx.savedPassword;
+String& activeApSSID = gCtx.activeApSSID;
+
+String& deviceHostname = gCtx.deviceHostname;
+uint8_t& maxBrightness = gCtx.maxBrightness;
+uint8_t& ledType = gCtx.ledType;
+uint8_t& ledLibrary = gCtx.ledLibrary;
+uint8_t& colorOrder = gCtx.colorOrder;
+uint16_t& pixelCount1 = gCtx.pixelCount1;
+uint16_t& pixelCount2 = gCtx.pixelCount2;
+uint8_t& pixelPin1 = gCtx.pixelPin1;
+uint8_t& pixelPin2 = gCtx.pixelPin2;
+uint8_t& pixelDensity = gCtx.pixelDensity;
+bool& oscEnabled = gCtx.oscEnabled;
+uint16_t& oscPort = gCtx.oscPort;
+bool& otaEnabled = gCtx.otaEnabled;
+uint16_t& otaPort = gCtx.otaPort;
+String& otaPassword = gCtx.otaPassword;
+bool& apiAuthEnabled = gCtx.apiAuthEnabled;
+String& apiAuthTokenHash = gCtx.apiAuthTokenHash;
+
+bool& emitterEnabled = gCtx.emitterEnabled;
+float& emitterMinSpeed = gCtx.emitterMinSpeed;
+float& emitterMaxSpeed = gCtx.emitterMaxSpeed;
+uint32_t& emitterMinDur = gCtx.emitterMinDur;
+uint32_t& emitterMaxDur = gCtx.emitterMaxDur;
+uint8_t& emitterMinSat = gCtx.emitterMinSat;
+uint8_t& emitterMaxSat = gCtx.emitterMaxSat;
+uint8_t& emitterMinVal = gCtx.emitterMinVal;
+uint8_t& emitterMaxVal = gCtx.emitterMaxVal;
+uint16_t& emitterMinNext = gCtx.emitterMinNext;
+uint16_t& emitterMaxNext = gCtx.emitterMaxNext;
+int16_t& emitterFrom = gCtx.emitterFrom;
+
+TopologyObject*& object = gCtx.object;
+uint8_t& objectType = gCtx.objectType;
+State*& state = gCtx.state;
+float& totalWattage = gCtx.totalWattage;
+
+std::vector<UserPalette>& userPalettes = gCtx.userPalettes;
+std::map<String, std::vector<IPAddress>>& deviceIPs = gCtx.deviceIPs;
 
 String getActiveNetworkSSID() {
 #ifdef WIFI_ENABLED
@@ -80,71 +133,6 @@ String getActiveNetworkSSID() {
 #endif
   return "";
 }
-
-#ifdef BLUETOOTH_ENABLED
-#include "BluetoothSerial.h"
-#include "esp_bt.h"
-#endif
-
-#include "LightGraph.h"
-
-// Web configuration variables
-String deviceHostname = DEFAULT_HOSTNAME; // Device hostname for both WiFi and OTA
-uint8_t maxBrightness = 255;
-uint8_t ledType = LED_WS2812;
-#if defined(FASTLED_ENABLED) && !defined(NEOPIXELBUS_ENABLED)
-uint8_t ledLibrary = LIB_FASTLED;
-#else
-uint8_t ledLibrary = LIB_NEOPIXELBUS;
-#endif
-uint8_t colorOrder = CO_GRB;
-uint16_t pixelCount1 = 300;
-uint16_t pixelCount2 = 0;
-uint8_t pixelPin1 = 14;
-uint8_t pixelPin2 = 26;
-uint8_t pixelDensity = 60; // Default pixel density (options: 30, 60, 144 pixels per meter)
-bool oscEnabled = true;
-uint16_t oscPort = 54321;
-bool otaEnabled = true; // OTA updates enabled by default
-uint16_t otaPort = 3232;
-String otaPassword = "meshled";
-bool apiAuthEnabled = false;
-String apiAuthTokenHash = "";
-
-// Auto Emitter
-bool emitterEnabled = false; // Default auto emitter enabled state
-float emitterMinSpeed = 0.5f;      // Default min speed for random speed generation
-float emitterMaxSpeed = 10.0f;     // Default max speed for random speed generation
-uint32_t emitterMinDur = 1920; // Default min duration for random duration generation (120 * 16)
-uint32_t emitterMaxDur = 23040; // Default max duration for random duration generation (1440 * 16)
-uint8_t emitterMinSat = 128; // Default min saturation
-uint8_t emitterMaxSat = 255; // Default max saturation
-uint8_t emitterMinVal = 178; // Default min value (70% of 255)
-uint8_t emitterMaxVal = 255; // Default max value
-uint16_t emitterMinNext = 2000;    // Default min time between auto emits (ms)
-uint16_t emitterMaxNext = 20000;   // Default max time between auto emits (ms)
-int16_t emitterFrom = -1;   // Default starting point for auto emitter
-
-// State
-TopologyObject* object = nullptr;
-uint8_t objectType = OBJ_LINE;
-State *state = nullptr;
-float totalWattage = 0;
-
-// Structure to represent a saved user palette
-struct UserPalette {
-  String name;
-  std::vector<int64_t> colors;
-  std::vector<float> positions;
-  int8_t colorRule;
-  int8_t interMode;
-  int8_t wrapMode;
-  float segmentation;
-};
-
-std::vector<UserPalette> userPalettes;
-
-std::map<String, std::vector<IPAddress>> deviceIPs;
 
 #ifdef SPIFFS_ENABLED
 #include <ArduinoJson.h>
@@ -185,7 +173,7 @@ bool updateUserPalette(const UserPalette& palette) {
 
 #ifdef DEBUGGER_ENABLED
 #include <lightgraph/integration/debug.hpp>
-Debugger *debugger;
+Debugger*& debugger = gCtx.debugger;
 #endif
 
 #include "LEDLib.h"

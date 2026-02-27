@@ -1,6 +1,7 @@
 #pragma once
 
 #include <optional>
+#include "ObjectTypeSupport.h"
 
 #ifdef FASTLED_ENABLED
 // Use I2S backend on ESP32 to avoid RMT legacy/new-driver conflicts at runtime.
@@ -301,20 +302,8 @@ void normalizeLedLibrarySelection() {
   normalizeLedSelection();
 }
 
-bool isObjectTypeSupported(uint8_t type) {
-  switch (type) {
-    case OBJ_HEPTAGON919:
-    case OBJ_HEPTAGON3024:
-    case OBJ_LINE:
-    case OBJ_TRIANGLE:
-      return true;
-    default:
-      return false;
-  }
-}
-
 void normalizeObjectTypeSelection() {
-  if (!isObjectTypeSupported(objectType)) {
+  if (!isSupportedObjectType(objectType)) {
     LP_LOGLN("Unsupported objectType=" + String(objectType) + ", falling back to OBJ_LINE");
     objectType = OBJ_LINE;
   }
@@ -375,6 +364,34 @@ void setupState() {
   state->autoEnabled = emitterEnabled;
 
   LP_LOGLN("State initialized");
+}
+
+void rebuildRuntimeState() {
+  #ifdef DEBUGGER_ENABLED
+  if (debugger != nullptr) {
+    delete debugger;
+    debugger = nullptr;
+  }
+  #endif
+
+  if (state != nullptr) {
+    delete state;
+    state = nullptr;
+  }
+  if (object != nullptr) {
+    delete object;
+    object = nullptr;
+  }
+
+  setupState();
+
+  #ifdef SPIFFS_ENABLED
+  loadLayers();
+  #endif
+
+  #ifdef DEBUGGER_ENABLED
+  debugger = new Debugger(*object);
+  #endif
 }
 
 void updateLEDs() {

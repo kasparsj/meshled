@@ -1377,136 +1377,23 @@ std::function<void(void)> allowCORS(const String& methods) {
   };
 }
 
+#include "WebRoutesBase.h"
+#include "WebRoutesLayers.h"
+#include "WebRoutesSettings.h"
+#include "WebRoutesTopology.h"
+#include "WebRoutesWLED.h"
+
 void setupWebServer() {
   static const char* headerKeys[] = {"Authorization", "X-API-Token"};
   server.collectHeaders(headerKeys, 2);
 
-  server.on("/", HTTP_GET, handleRoot);
-  server.on("/settings", HTTP_GET, handleSettingsPage);
-  server.on("/wifi", HTTP_GET, handleWifiPage);
-  server.on("/get_devices", HTTP_GET, handleGetDevices);
-
-  // LAYERS
-  server.on("/get_layers", HTTP_GET, handleGetLayers);
-  server.on("/get_layers", HTTP_OPTIONS, allowCORS("GET"));
-  server.on("/toggle_visible", HTTP_POST, guardMutatingRoute(handleToggleVisible));
-  server.on("/toggle_visible", HTTP_OPTIONS, allowCORS("POST"));
-  server.on("/update_palette", HTTP_POST, guardMutatingRoute(handleUpdatePalette));
-  server.on("/update_palette", HTTP_OPTIONS, handleCORS);
-  server.on("/update_layer_brightness", HTTP_POST, guardMutatingRoute(handleUpdateLayerBrightness));
-  server.on("/update_layer_brightness", HTTP_OPTIONS, allowCORS("POST"));
-  server.on("/get_palette_colors", HTTP_GET, handleGetPaletteColors);
-  server.on("/get_palette_colors", HTTP_OPTIONS, allowCORS("GET"));
-  server.on("/save_palette", HTTP_POST, guardMutatingRoute(handleSavePalette));
-  server.on("/save_palette", HTTP_OPTIONS, allowCORS("POST"));
-  server.on("/add_layer", HTTP_POST, guardMutatingRoute(handleAddLayer));
-  server.on("/add_layer", HTTP_OPTIONS, allowCORS("POST"));
-  server.on("/remove_layer", HTTP_POST, guardMutatingRoute(handleRemoveLayer));
-  server.on("/remove_layer", HTTP_OPTIONS, allowCORS("POST"));
-  server.on("/update_blend_mode", HTTP_POST, guardMutatingRoute(handleUpdateBlendMode));
-  server.on("/update_speed", HTTP_POST, guardMutatingRoute(handleUpdateSpeed));
-  server.on("/update_speed", HTTP_OPTIONS, allowCORS("POST"));
-  server.on("/update_ease", HTTP_POST, guardMutatingRoute(handleUpdateEase));
-  server.on("/update_ease", HTTP_OPTIONS, allowCORS("POST"));
-  server.on("/update_fade_speed", HTTP_POST, guardMutatingRoute(handleUpdateFadeSpeed));
-  server.on("/update_fade_speed", HTTP_OPTIONS, allowCORS("POST"));
-  server.on("/update_behaviour_flags", HTTP_POST, guardMutatingRoute(handleUpdateBehaviourFlags));
-  server.on("/update_behaviour_flags", HTTP_OPTIONS, allowCORS("POST"));
-  server.on("/update_layer_offset", HTTP_POST, guardMutatingRoute(handleUpdateLayerOffset));
-  server.on("/update_layer_offset", HTTP_OPTIONS, allowCORS("POST"));
-  server.on("/reset_layer", HTTP_POST, guardMutatingRoute(handleResetLayer));
-  server.on("/reset_layer", HTTP_OPTIONS, allowCORS("POST"));
-
-  // PALETTES
-  server.on("/delete_palette", HTTP_POST, guardMutatingRoute(handleDeletePalette));
-  server.on("/delete_palette", HTTP_OPTIONS, allowCORS("POST"));
-  server.on("/sync_palettes", HTTP_POST, guardMutatingRoute(handleSyncPalettes));
-  server.on("/get_palettes", HTTP_GET, handleGetPalettes);
-  server.on("/get_palettes", HTTP_OPTIONS, allowCORS("GET"));
-
-  #ifdef WEBSERVER_EMITTER
-  server.on("/toggle_auto", HTTP_POST, guardMutatingRoute(handleToggleAuto));
-  server.on("/update_emitter_min_speed", HTTP_POST, guardMutatingRoute(handleUpdateEmitterMinSpeed));
-  server.on("/update_emitter_max_speed", HTTP_POST, guardMutatingRoute(handleUpdateEmitterMaxSpeed));
-  server.on("/update_emitter_min_dur", HTTP_POST, guardMutatingRoute(handleUpdateEmitterMinDuration));
-  server.on("/update_emitter_max_dur", HTTP_POST, guardMutatingRoute(handleUpdateEmitterMaxDuration));
-  server.on("/update_emitter_min_sat", HTTP_POST, guardMutatingRoute(handleUpdateEmitterMinSat));
-  server.on("/update_emitter_max_sat", HTTP_POST, guardMutatingRoute(handleUpdateEmitterMaxSat));
-  server.on("/update_emitter_min_val", HTTP_POST, guardMutatingRoute(handleUpdateEmitterMinVal));
-  server.on("/update_emitter_max_val", HTTP_POST, guardMutatingRoute(handleUpdateEmitterMaxVal));
-  server.on("/update_emitter_min_next", HTTP_POST, guardMutatingRoute(handleUpdateEmitterMinNext));
-  server.on("/update_emitter_max_next", HTTP_POST, guardMutatingRoute(handleUpdateEmitterMaxNext));
-  server.on("/update_emitter_from", HTTP_POST, guardMutatingRoute(handleUpdateEmitterFrom));
-  #endif
-
-  server.on("/get_settings", HTTP_GET, guardProtectedRoute(handleGetSettings));
-  server.on("/get_settings", HTTP_OPTIONS, allowCORS("GET"));
-  server.on("/update_settings", HTTP_POST, guardMutatingRoute(handleUpdateSettings));
-  server.on("/update_settings", HTTP_OPTIONS, allowCORS("POST"));
-  server.on("/restart", HTTP_POST, guardMutatingRoute(handleRestart));
-  server.on("/restart", HTTP_OPTIONS, allowCORS("POST"));
-  server.on("/update_wifi", HTTP_POST, guardMutatingRoute(handleUpdateWifi));
-  server.on("/update_wifi", HTTP_OPTIONS, allowCORS("POST"));
-  server.on("/update_brightness", HTTP_POST, guardMutatingRoute(handleUpdateBrightness));
-  server.on("/update_brightness", HTTP_OPTIONS, allowCORS("POST"));
-
-  #ifdef OTA_ENABLED
-  server.on("/ota_status", HTTP_GET, handleOtaStatus);
-  server.on("/ota_status", HTTP_OPTIONS, allowCORS("GET"));
-  #endif
-
-  #ifdef CRASH_LOG_FILE
-  server.on("/trigger_crash", HTTP_POST, guardMutatingRoute(handleTriggerCrash));
-  #endif
-
-  #ifdef DEBUGGER_ENABLED
-  server.on("/state_debug", HTTP_GET, handleStateDebug);
-  server.on("/dump_connections", HTTP_GET, handleDumpConnections);
-  server.on("/dump_intersections", HTTP_GET, handleDumpIntersections);
-  #endif
-
-  server.on("/get_colors", HTTP_GET, handleGetColors);
-  server.on("/get_colors", HTTP_OPTIONS, allowCORS("GET"));
-  server.on("/get_model", HTTP_GET, handleGetModel);
-  server.on("/get_model", HTTP_OPTIONS, allowCORS("GET"));
-  server.on("/export_topology", HTTP_GET, handleExportTopology);
-  server.on("/export_topology", HTTP_OPTIONS, allowCORS("GET"));
-  server.on("/import_topology", HTTP_POST, guardMutatingRoute(handleImportTopology));
-  server.on("/import_topology", HTTP_OPTIONS, allowCORS("POST"));
-  server.on("/add_intersection", HTTP_POST, guardMutatingRoute(handleAddIntersection));
-  server.on("/add_intersection", HTTP_OPTIONS, allowCORS("POST"));
-  server.on("/remove_intersection", HTTP_POST, guardMutatingRoute(handleRemoveIntersection));
-  server.on("/remove_intersection", HTTP_OPTIONS, allowCORS("POST"));
-  
-  #ifdef SSDP_ENABLED
-  setupSSDPService();
-  server.on("/description.xml", HTTP_GET, handleDescriptionXML);
-  server.on("/icon48.png", HTTP_GET, handleIcon);
-  #endif
-
-  #ifdef WLEDAPI_ENABLED
-  server.on("/json", HTTP_ANY, handleWLEDJson);
-  server.on("/json/info", HTTP_GET, handleWLEDInfo);
-  server.on("/json/info", HTTP_OPTIONS, handleCORS);
-  server.on("/device_info", HTTP_GET, handleWLEDInfo);
-  server.on("/device_info", HTTP_OPTIONS, handleCORS);
-  server.on("/json/state", HTTP_ANY, handleWLEDState);
-  server.on("/json/si", HTTP_GET, handleWLEDSI);
-  server.on("/on", HTTP_GET, handleWLEDOn);
-  server.on("/off", HTTP_GET, handleWLEDOff);
-  server.on("/version", HTTP_GET, handleWLEDVersion);
-  server.on("/win", HTTP_GET, handleWLEDWin);
-  #endif
-
-  #ifdef WLEDAPI_ENABLED
-  server.onNotFound([]() {
-    if (server.method() == HTTP_GET && server.uri().startsWith("/win&")) {
-      handleWLEDWin();
-      return;
-    }
-    server.send(404, "text/plain", "Not Found");
-  });
-  #endif
+  registerBaseRoutes(server, gCtx);
+  registerLayerRoutes(server, gCtx);
+  registerPaletteRoutes(server, gCtx);
+  registerEmitterRoutes(server, gCtx);
+  registerSettingsRoutes(server, gCtx);
+  registerTopologyRoutes(server, gCtx);
+  registerWledRoutes(server, gCtx);
 
   server.begin();
   LP_LOGLN("Web server started");

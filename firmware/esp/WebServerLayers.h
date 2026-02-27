@@ -755,8 +755,23 @@ void handleUpdateLayerOffset() {
 // Handler for getting layers as JSON
 void handleGetLayers() {
   sendCORSHeaders();
-  
-  DynamicJsonDocument doc(2048);
+
+  size_t estimatedSize = JSON_ARRAY_SIZE(MAX_LIGHT_LISTS);
+  for (uint8_t i = 0; i < MAX_LIGHT_LISTS; i++) {
+    if (!state || !state->lightLists[i] || !state->lightLists[i]->editable) {
+      continue;
+    }
+    const Palette& palette = state->lightLists[i]->palette;
+    const size_t colorCount = palette.getColors().size();
+    const size_t positionCount = palette.getPositions().size();
+    estimatedSize += JSON_OBJECT_SIZE(8);   // layer fields
+    estimatedSize += JSON_OBJECT_SIZE(5);   // nested palette fields
+    estimatedSize += JSON_ARRAY_SIZE(colorCount);
+    estimatedSize += JSON_ARRAY_SIZE(positionCount);
+    estimatedSize += (colorCount * 10) + (positionCount * 8) + 96;
+  }
+
+  DynamicJsonDocument doc(estimatedSize > 2048 ? estimatedSize : 2048);
   JsonArray layersArray = doc.to<JsonArray>();
 
   // Iterate through all light lists and build JSON response

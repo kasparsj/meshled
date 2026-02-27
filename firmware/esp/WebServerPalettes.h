@@ -141,7 +141,8 @@ void handleSyncPalettes() {
     }
 
     String payload = server.arg("plain");
-    DynamicJsonDocument doc(2048); // Adjust size as needed
+    const size_t requestCapacity = std::max<size_t>(2048, payload.length() * 2);
+    DynamicJsonDocument doc(requestCapacity);
     DeserializationError error = deserializeJson(doc, payload);
 
     if (error) {
@@ -155,7 +156,10 @@ void handleSyncPalettes() {
       std::vector<UserPalette> palettesToReturn = userPalettes;
 
       // Response for the client
-      DynamicJsonDocument responseDoc(1024);
+      const size_t responseCapacity =
+          JSON_ARRAY_SIZE(palettesToReturn.size()) +
+          (palettesToReturn.size() * (JSON_OBJECT_SIZE(7) + JSON_ARRAY_SIZE(32) + JSON_ARRAY_SIZE(32) + 192));
+      DynamicJsonDocument responseDoc(responseCapacity > 1024 ? responseCapacity : 1024);
 
       for (JsonObject paletteObj : palettesArray) {
         if (paletteObj.containsKey("name")) {

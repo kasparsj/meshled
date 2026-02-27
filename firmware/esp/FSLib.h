@@ -1,19 +1,8 @@
 #pragma once
 
 #include <Preferences.h>
+#include "ObjectTypeSupport.h"
 #include "SecurityLib.h"
-
-bool isPersistedObjectTypeSupported(uint8_t type) {
-  switch (type) {
-    case OBJ_HEPTAGON919:
-    case OBJ_LINE:
-    case OBJ_TRIANGLE:
-    case OBJ_HEPTAGON3024:
-      return true;
-    default:
-      return false;
-  }
-}
 
 bool setupFileSystem() {
   // Initialize SPIFFS
@@ -79,7 +68,7 @@ void loadSettings() {
   colorOrder = doc["color_order"] | colorOrder;
   ledLibrary = doc["led_library"] | ledLibrary;
   objectType = doc["object_type"] | objectType;
-  if (!isPersistedObjectTypeSupported(objectType)) {
+  if (!isSupportedObjectType(objectType)) {
     LP_LOGLN("Invalid object_type in settings, falling back to OBJ_LINE");
     objectType = OBJ_LINE;
   }
