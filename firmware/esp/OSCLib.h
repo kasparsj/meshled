@@ -192,6 +192,7 @@ void onSplit(const OscMessage &m) {
 
 void onAuto(const OscMessage &m) {
   state->autoEnabled = !state->autoEnabled;
+  emitterEnabled = state->autoEnabled;
 }
 
 void setupOSC() {

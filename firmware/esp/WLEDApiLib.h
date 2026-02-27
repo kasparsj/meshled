@@ -53,11 +53,15 @@ void parseHexColor(String hexColor, std::vector<int64_t> &parsedColors) {
 }
 
 bool isOn() {
-  return (state && state->isOn()) || emitterEnabled;
+  if (!state) {
+    return emitterEnabled;
+  }
+  // Report "on" when visible layers are active or auto-emitter is running.
+  return state->isOn() || state->autoEnabled || emitterEnabled;
 }
 
 void turnOn() {
-  if (!emitterEnabled && state) {
+  if (state) {
     state->setOn(true);
   }
 }
@@ -254,10 +258,9 @@ void handleWLEDPost() {
   // Handle on/off state
   if (doc.containsKey("on")) {
     bool newState = doc["on"];
-    if (state) {
-      state->setOn(newState);
-    }
-    if (!newState) {
+    if (newState) {
+      turnOn();
+    } else {
       turnOff();
     }
     shouldSaveSettings = true;
@@ -412,8 +415,8 @@ void handleWLEDWin() {
   // Create XML string builder
   String xml = "<?xml version=\"1.0\" ?><vs>";
 
-  // Add state info
-  xml += "<ac>" + String(isOn() ? 1 : 0) + "</ac>";  // Active state
+  // "ac" in WLED XML is current brightness (0 means off).
+  xml += "<ac>" + String(isOn() ? maxBrightness : 0) + "</ac>";
 
   // Add colors from the current palette
   const Palette& bgPalette = state->lightLists[0]->palette;
