@@ -6,6 +6,8 @@
 # Node artifacts
 apps/control-panel/node_modules/
 apps/control-panel/dist/
+apps/installer/node_modules/
+apps/installer/dist/
 
 # Firmware artifacts
 firmware/esp/.pio/

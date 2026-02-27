@@ -8,7 +8,7 @@ It is designed for non-linear LED geometries, where light moves through branches
 
 meshled combines hardware, software, and simulation into one workflow so you can design, test, and run the same lighting logic from development to live installation.
 
-## The Three Core Parts
+## The Four Core Parts
 
 ### 1. Firmware
 
@@ -22,7 +22,13 @@ The control panel is a web-based interface.
 
 It is used to configure geometry, effects, and routing behavior, connect to hardware nodes on the network, and orchestrate the system from one place.
 
-### 3. Simulator
+### 3. Installer
+
+The installer is a web-based firmware flashing surface.
+
+It lets you install MeshLED firmware over USB from a Chromium browser using Web Serial, with channel-based firmware manifests similar to install.wled.me.
+
+### 4. Simulator
 
 The simulator runs the same [LightGraph](https://github.com/kasparsj/lightgraph) engine used by firmware.
 
@@ -81,7 +87,7 @@ Expected result: `ctest` completes without failures.
 
 ## Choose Your Workflow
 
-- Full repository build and verification (firmware + control panel + simulator + core): [docs/build.md](docs/build.md)
+- Full repository build and verification (firmware + control panel + installer + simulator + core): [docs/build.md](docs/build.md)
 - Core engine reproducibility and sanitizer profiles: [docs/core-build.md](docs/core-build.md)
 - Core architecture deep dive: [docs/core-architecture.md](docs/core-architecture.md)
 - Firmware HTTP API contract: [docs/firmware-api.md](docs/firmware-api.md)
@@ -94,6 +100,7 @@ Expected result: `ctest` completes without failures.
 
 - Firmware: [firmware/esp](firmware/esp)
 - Control panel: [apps/control-panel](apps/control-panel)
+- Installer: [apps/installer](apps/installer)
 - Simulator: [apps/simulator](apps/simulator)
 - Core engine submodule: [packages/lightgraph](packages/lightgraph) ([LightGraph repo](https://github.com/kasparsj/lightgraph))
 

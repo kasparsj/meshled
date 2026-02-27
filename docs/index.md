@@ -8,7 +8,7 @@ It is designed for non-linear LED geometries, where light moves through branches
 
 meshled combines hardware, software, and simulation into one workflow so you can design, test, and run the same lighting logic from development to live installation.
 
-## The Three Core Parts
+## The Four Core Parts
 
 ### 1. Firmware
 
@@ -22,7 +22,13 @@ The control panel is a web-based interface.
 
 It is used to configure geometry, effects, and routing behavior, connect to hardware nodes on the network, and orchestrate the system from one place.
 
-### 3. Simulator
+### 3. Installer
+
+The installer is a web-based firmware flashing surface.
+
+It lets you install MeshLED firmware over USB from a Chromium browser using Web Serial, with channel-based firmware manifests similar to install.wled.me.
+
+### 4. Simulator
 
 The simulator runs the same [LightGraph](https://github.com/kasparsj/lightgraph) engine used by firmware.
 
@@ -81,7 +87,7 @@ Expected result: `ctest` completes without failures.
 
 ## Choose Your Workflow
 
-- Full repository build and verification (firmware + control panel + simulator + core): [build.md](build.md)
+- Full repository build and verification (firmware + control panel + installer + simulator + core): [build.md](build.md)
 - Core engine reproducibility and sanitizer profiles: [core-build.md](core-build.md)
 - Core architecture deep dive: [core-architecture.md](core-architecture.md)
 - Firmware HTTP API contract: [firmware-api.md](firmware-api.md)
@@ -94,6 +100,7 @@ Expected result: `ctest` completes without failures.
 
 - Firmware: [firmware/esp](https://github.com/kasparsj/meshled/tree/main/firmware/esp)
 - Control panel: [apps/control-panel](https://github.com/kasparsj/meshled/tree/main/apps/control-panel)
+- Installer: [apps/installer](https://github.com/kasparsj/meshled/tree/main/apps/installer)
 - Simulator: [apps/simulator](https://github.com/kasparsj/meshled/tree/main/apps/simulator)
 - Core engine submodule: [packages/lightgraph](https://github.com/kasparsj/meshled/tree/main/packages/lightgraph) ([LightGraph repo](https://github.com/kasparsj/lightgraph))
 

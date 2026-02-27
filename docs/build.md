@@ -70,6 +70,27 @@ Local dev server:
 npm run dev
 ```
 
+## Installer web app (`apps/installer`)
+
+Prerequisites:
+
+- Node.js 20+ (18+ works, CI uses 20)
+
+Install and verify:
+
+```bash
+cd apps/installer
+npm ci
+npm run lint
+npm run build
+```
+
+Local dev server:
+
+```bash
+npm run dev
+```
+
 ## Simulator (`apps/simulator`)
 
 Prerequisites:
@@ -125,9 +146,11 @@ Jobs:
 2. `Core (ASan)`: host build/test with AddressSanitizer enabled.
 3. `Core (UBSan)`: host build/test with UndefinedBehaviorSanitizer enabled.
 4. `Core (Warnings)`: host build/test with strict warnings enabled (`LIGHTGRAPH_CORE_ENABLE_STRICT_WARNINGS=ON`) and warnings treated as errors.
-5. `Web (React)`: `npm ci --legacy-peer-deps`, lint, build.
-6. `Firmware (PlatformIO smoke)`: generates `compile_commands.json` for `esp32dev` (`pio run -e esp32dev -t compiledb`) to validate dependency resolution and toolchain setup.
-7. `Simulator (Scoped smoke)`: project/config integrity checks, plus optional `make -n` when `OF_ROOT` is provided in CI environment.
+5. `Web (Control Panel)`: `npm ci --legacy-peer-deps`, lint, build.
+6. `Web (Installer)`: `npm ci`, lint, build.
+7. `Installer (Manifest policy)`: validates installer manifests against release URL and naming policy.
+8. `Firmware (PlatformIO smoke)`: generates `compile_commands.json` for `esp32dev` (`pio run -e esp32dev -t compiledb`) to validate dependency resolution and toolchain setup.
+9. `Simulator (Scoped smoke)`: project/config integrity checks, plus optional `make -n` when `OF_ROOT` is provided in CI environment.
 
 Note:
 
@@ -138,5 +161,7 @@ Note:
 ```bash
 ./scripts/build-core.sh all
 ./scripts/build-control-panel.sh
+./scripts/build-installer.sh
+./scripts/validate-installer-manifests.sh
 ./scripts/build-firmware.sh esp32dev compiledb
 ```

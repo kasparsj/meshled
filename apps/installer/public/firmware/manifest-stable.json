@@ -1,0 +1,24 @@
+{
+  "name": "meshled",
+  "version": "v0.1.0",
+  "builds": [
+    {
+      "chipFamily": "ESP32",
+      "parts": [
+        {
+          "path": "https://github.com/kasparsj/meshled/releases/download/v0.1.0/meshled-v0.1.0-esp32.bin",
+          "offset": 0
+        }
+      ]
+    },
+    {
+      "chipFamily": "ESP32-S3",
+      "parts": [
+        {
+          "path": "https://github.com/kasparsj/meshled/releases/download/v0.1.0/meshled-v0.1.0-esp32s3.bin",
+          "offset": 0
+        }
+      ]
+    }
+  ]
+}

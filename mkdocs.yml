@@ -60,6 +60,7 @@ nav:
   - Getting Started:
       - Build and Verification: build.md
       - Versioning and Release Policy: versioning.md
+      - Installer Workflow: installer-web.md
   - For WLED Users:
       - Migration Guide: wled-users.md
   - Architecture:

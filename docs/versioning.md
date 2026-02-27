@@ -48,7 +48,9 @@ git tag -a vX.Y.Z -m "meshled vX.Y.Z"
 git push origin vX.Y.Z
 ```
 
-4. In artwork repo, bump `runtime/meshled` submodule in a separate commit.
+4. Publish a GitHub release for tag `vX.Y.Z`.
+5. Firmware release assets are auto-generated and uploaded by `.github/workflows/release-installer-firmware.yml`.
+6. In artwork repo, bump `runtime/meshled` submodule in a separate commit.
 
 ## First stable runtime tag
 

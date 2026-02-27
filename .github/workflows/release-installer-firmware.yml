@@ -1,0 +1,78 @@
+name: Release Installer Firmware Assets
+
+on:
+  release:
+    types:
+      - published
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to publish firmware assets to (for example: v0.1.0)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  installer-firmware:
+    name: Installer firmware assets
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Resolve release tag
+        id: resolve-tag
+        shell: bash
+        run: |
+          TAG=""
+          if [ "${{ github.event_name }}" = "release" ]; then
+            TAG="${{ github.event.release.tag_name }}"
+          fi
+          if [ -z "$TAG" ]; then
+            TAG="${{ github.event.inputs.tag }}"
+          fi
+          if [ -z "$TAG" ]; then
+            echo "Could not resolve release tag."
+            exit 1
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install firmware tooling
+        run: pip install platformio esptool
+
+      - name: Build merged installer firmware
+        run: |
+          ./scripts/export-installer-firmware.sh \
+            "${{ steps.resolve-tag.outputs.tag }}" \
+            "${{ github.workspace }}/dist/installer-firmware/${{ steps.resolve-tag.outputs.tag }}"
+
+      - name: Generate checksums
+        run: |
+          cd "dist/installer-firmware/${{ steps.resolve-tag.outputs.tag }}"
+          sha256sum *.bin > SHA256SUMS.txt
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: installer-firmware-${{ steps.resolve-tag.outputs.tag }}
+          path: dist/installer-firmware/${{ steps.resolve-tag.outputs.tag }}/*
+
+      - name: Upload firmware to release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.resolve-tag.outputs.tag }}
+          fail_on_unmatched_files: true
+          overwrite_files: true
+          files: |
+            dist/installer-firmware/${{ steps.resolve-tag.outputs.tag }}/meshled-${{ steps.resolve-tag.outputs.tag }}-esp32.bin
+            dist/installer-firmware/${{ steps.resolve-tag.outputs.tag }}/meshled-${{ steps.resolve-tag.outputs.tag }}-esp32s3.bin
+            dist/installer-firmware/${{ steps.resolve-tag.outputs.tag }}/SHA256SUMS.txt
