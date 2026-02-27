@@ -292,8 +292,7 @@ const SettingsTab = () => {
     const installedReleaseVersion = firstNonEmptyValue(
         deviceInfo?.meshledVersion,
         deviceInfo?.releaseVersion,
-        deviceInfo?.version,
-        deviceInfo?.ver
+        deviceInfo?.version
     );
     const installedRelease = installedReleaseSha || installedReleaseVersion || 'N/A';
     const ledTypeEntries = availableLedTypes === null
