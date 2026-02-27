@@ -8,7 +8,7 @@ It is designed for non-linear LED geometries, where light moves through branches
 
 meshled combines hardware, software, and simulation into one workflow so you can design, test, and run the same lighting logic from development to live installation.
 
-## The Four Core Parts
+## The Three Core Parts
 
 ### 1. Firmware
 
@@ -22,13 +22,7 @@ The control panel is a web-based interface.
 
 It is used to configure geometry, effects, and routing behavior, connect to hardware nodes on the network, and orchestrate the system from one place.
 
-### 3. Installer
-
-The installer is a web-based firmware flashing surface.
-
-It lets you install MeshLED firmware over USB from a Chromium browser using Web Serial, with channel-based firmware manifests similar to install.wled.me.
-
-### 4. Simulator
+### 3. Simulator
 
 The simulator runs the same [LightGraph](https://github.com/kasparsj/lightgraph) engine used by firmware.
 
