@@ -37,6 +37,10 @@
 #endif
 #endif
 
+#ifdef OTA_ENABLED
+#include "OTADiagnostics.h"
+#endif
+
 #ifdef WIFI_ENABLED
 #include <WiFi.h>
 bool wifiConnected = false;
@@ -239,6 +243,9 @@ void setup() {
   }
   loadCredentials();
   loadSettings();
+  #ifdef OTA_ENABLED
+  finalizeOtaBootStatus();
+  #endif
 
   #ifdef CRASH_LOG_FILE
   checkForCrash();

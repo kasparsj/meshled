@@ -70,6 +70,21 @@ Applies to: `firmware/esp` in this repository
 - `wifi.ssid` is the active network SSID (`AP` SSID in AP mode, STA SSID in station mode).
 - `wifi.mode` is `"ap"` or `"sta"`.
 
+### `GET /ota_status` (when OTA feature is compiled in)
+
+- Returns OTA diagnostics JSON for confirming OTA apply/revert behavior.
+- Includes:
+  - current runtime identifiers (`meshledVersion`, `meshledReleaseSha`, `sketchMD5`)
+  - reset reason (`resetReason`, `resetReasonCode`)
+  - running partition metadata (`runningPartition`, `runningPartitionAddress`, `runningOtaState`) when available from ESP-IDF APIs
+  - `lastOta` object persisted in SPIFFS (`/ota_status.json`) with stage transitions:
+    - `start`
+    - `end`
+    - `error`
+    - `interrupted`
+    - `booted_new_firmware`
+    - `reverted_or_not_applied`
+
 ### `GET /get_settings`
 
 - Returns runtime settings JSON.

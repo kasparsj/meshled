@@ -6,6 +6,10 @@
 #include "SecurityLib.h"
 #include "WebServerValidation.h"
 
+#ifdef OTA_ENABLED
+#include "OTADiagnostics.h"
+#endif
+
 #define WEBSERVER_CONFIG
 #define WEBSERVER_EMITTER
 
@@ -1312,6 +1316,50 @@ void handleGetDevices() {
   server.send(200, "application/json", jsonResponse);
 }
 
+#ifdef OTA_ENABLED
+void handleOtaStatus() {
+  sendCORSHeaders("GET");
+
+  DynamicJsonDocument doc(2048);
+  JsonObject root = doc.to<JsonObject>();
+  root["meshledVersion"] = getResolvedMeshledVersion();
+  root["meshledReleaseSha"] = getResolvedMeshledReleaseSha();
+  root["uptimeSec"] = millis() / 1000;
+  root["freeHeap"] = ESP.getFreeHeap();
+  root["sketchMD5"] = ESP.getSketchMD5();
+
+#if MESHLED_HAS_RESET_REASON
+  const esp_reset_reason_t resetReason = esp_reset_reason();
+  root["resetReasonCode"] = static_cast<int>(resetReason);
+  root["resetReason"] = meshledResetReasonToString(resetReason);
+#endif
+
+#if MESHLED_HAS_OTA_PARTITION_INFO
+  const esp_partition_t* runningPartition = esp_ota_get_running_partition();
+  if (runningPartition != nullptr) {
+    root["runningPartition"] = runningPartition->label;
+    root["runningPartitionAddress"] = runningPartition->address;
+  }
+
+  esp_ota_img_states_t runningState;
+  if (runningPartition != nullptr &&
+      esp_ota_get_state_partition(runningPartition, &runningState) == ESP_OK) {
+    root["runningOtaState"] = meshledOtaImageStateToString(runningState);
+  }
+#endif
+
+  JsonObject lastOta = root.createNestedObject("lastOta");
+  if (!populateOtaStatus(lastOta)) {
+    lastOta["stage"] = "missing";
+    lastOta["detail"] = "no_ota_status_file";
+  }
+
+  String output;
+  serializeJson(doc, output);
+  server.send(200, "application/json", output);
+}
+#endif
+
 // Global CORS handler for OPTIONS requests
 void handleCORS() {
   sendCORSHeaders();
@@ -1399,6 +1447,11 @@ void setupWebServer() {
   server.on("/update_wifi", HTTP_OPTIONS, allowCORS("POST"));
   server.on("/update_brightness", HTTP_POST, guardMutatingRoute(handleUpdateBrightness));
   server.on("/update_brightness", HTTP_OPTIONS, allowCORS("POST"));
+
+  #ifdef OTA_ENABLED
+  server.on("/ota_status", HTTP_GET, handleOtaStatus);
+  server.on("/ota_status", HTTP_OPTIONS, allowCORS("GET"));
+  #endif
 
   #ifdef CRASH_LOG_FILE
   server.on("/trigger_crash", HTTP_POST, guardMutatingRoute(handleTriggerCrash));

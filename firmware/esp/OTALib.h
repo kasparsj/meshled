@@ -1,5 +1,7 @@
 #pragma once
 
+#include "OTADiagnostics.h"
+
 void setupOTA() {
   if (!wifiConnected || !otaEnabled) {
     if (!wifiConnected) {
@@ -30,10 +32,12 @@ void setupOTA() {
     
     // NOTE: if updating SPIFFS this would be the place to unmount SPIFFS using SPIFFS.end()
     LP_LOGLN("Start OTA " + type);
+    recordOtaStartStatus(type);
   });
   
   ArduinoOTA.onEnd([]() {
     LP_LOGLN("End OTA");
+    recordOtaEndStatus();
   });
   
   // ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
@@ -41,18 +45,27 @@ void setupOTA() {
   // });
   
   ArduinoOTA.onError([](ota_error_t error) {
+    String detail;
     LP_LOGF("Error[%u]: ", error);
     if (error == OTA_AUTH_ERROR) {
       LP_LOGLN("Auth Failed");
+      detail = "auth_failed";
     } else if (error == OTA_BEGIN_ERROR) {
       LP_LOGLN("Begin Failed");
+      detail = "begin_failed";
     } else if (error == OTA_CONNECT_ERROR) {
       LP_LOGLN("Connect Failed");
+      detail = "connect_failed";
     } else if (error == OTA_RECEIVE_ERROR) {
       LP_LOGLN("Receive Failed");
+      detail = "receive_failed";
     } else if (error == OTA_END_ERROR) {
       LP_LOGLN("End Failed");
+      detail = "end_failed";
+    } else {
+      detail = "unknown_error";
     }
+    recordOtaErrorStatus(static_cast<int>(error), detail);
   });
   
   ArduinoOTA.begin();

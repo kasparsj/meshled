@@ -48,34 +48,8 @@ NeoGamma<NeoGammaTableMethod> colorGamma;
 #define NPB_METHOD_STRIP2_APA106 NeoEsp32I2s1Apa106Method
 #define NPB_TRANSPORT_NAME "esp32-i2s"
 #elif defined(NPB_TARGET_ESP32S3)
-// NeoPixelBus 2.8.4 LCD-X calls gpio_hal_iomux_func_sel(), which was removed in
-// Arduino-ESP32 3.3.x. Fall back to RMT there so Arduino IDE builds keep working.
-#if defined(ESP_ARDUINO_VERSION) && (ESP_ARDUINO_VERSION >= ESP_ARDUINO_VERSION_VAL(3, 3, 0))
-#define NPB_METHOD_STRIP1_WS2812X NeoEsp32Rmt0Ws2812xMethod
-#define NPB_METHOD_STRIP2_WS2812X NeoEsp32Rmt1Ws2812xMethod
-#define NPB_METHOD_STRIP1_WS2812 NeoEsp32Rmt0800KbpsMethod
-#define NPB_METHOD_STRIP2_WS2812 NeoEsp32Rmt1800KbpsMethod
-#define NPB_METHOD_STRIP1_WS2811 NeoEsp32Rmt0Ws2811Method
-#define NPB_METHOD_STRIP2_WS2811 NeoEsp32Rmt1Ws2811Method
-#define NPB_METHOD_STRIP1_WS2813 NeoEsp32Rmt0Ws2812xMethod
-#define NPB_METHOD_STRIP2_WS2813 NeoEsp32Rmt1Ws2812xMethod
-#define NPB_METHOD_STRIP1_WS2814 NeoEsp32Rmt0Ws2814Method
-#define NPB_METHOD_STRIP2_WS2814 NeoEsp32Rmt1Ws2814Method
-#define NPB_METHOD_STRIP1_WS2816 NeoEsp32Rmt0Ws2816Method
-#define NPB_METHOD_STRIP2_WS2816 NeoEsp32Rmt1Ws2816Method
-#define NPB_METHOD_STRIP1_SK6812 NeoEsp32Rmt0Sk6812Method
-#define NPB_METHOD_STRIP2_SK6812 NeoEsp32Rmt1Sk6812Method
-#define NPB_METHOD_STRIP1_TM1814 NeoEsp32Rmt0Tm1814Method
-#define NPB_METHOD_STRIP2_TM1814 NeoEsp32Rmt1Tm1814Method
-#define NPB_METHOD_STRIP1_TM1829 NeoEsp32Rmt0Tm1829Method
-#define NPB_METHOD_STRIP2_TM1829 NeoEsp32Rmt1Tm1829Method
-#define NPB_METHOD_STRIP1_TM1914 NeoEsp32Rmt0Tm1914Method
-#define NPB_METHOD_STRIP2_TM1914 NeoEsp32Rmt1Tm1914Method
-#define NPB_METHOD_STRIP1_APA106 NeoEsp32Rmt0Apa106Method
-#define NPB_METHOD_STRIP2_APA106 NeoEsp32Rmt1Apa106Method
-#define NPB_TRANSPORT_NAME "esp32s3-rmt"
-#else
-// On older cores, LCD-X remains the preferred non-RMT transport on S3.
+// Keep S3 on LCD-X transport to avoid ESP-IDF RMT legacy/new-driver conflicts.
+// NeoPixelBusStrip.h provides a compatibility shim for Arduino-ESP32 3.3+.
 #define NPB_METHOD_STRIP1_WS2812X NeoEsp32LcdX8Ws2812xMethod
 #define NPB_METHOD_STRIP2_WS2812X NeoEsp32LcdX8Ws2812xMethod
 #define NPB_METHOD_STRIP1_WS2812 NeoEsp32LcdX8Ws2812Method
@@ -99,7 +73,6 @@ NeoGamma<NeoGammaTableMethod> colorGamma;
 #define NPB_METHOD_STRIP1_APA106 NeoEsp32LcdX8Apa106Method
 #define NPB_METHOD_STRIP2_APA106 NeoEsp32LcdX8Apa106Method
 #define NPB_TRANSPORT_NAME "esp32s3-lcdx"
-#endif
 #else
 #define NPB_METHOD_STRIP1_WS2812X NeoEsp32Rmt0Ws2812xMethod
 #define NPB_METHOD_STRIP2_WS2812X NeoEsp32Rmt1Ws2812xMethod
