@@ -1,0 +1,65 @@
+:root {
+  --sl-font: "IBM Plex Sans", "Avenir Next", "Segoe UI", sans-serif;
+  --sl-font-mono: "JetBrains Mono", "SFMono-Regular", Menlo, monospace;
+  --sl-color-accent-low: #d9f0eb;
+  --sl-color-accent: #0f8b78;
+  --sl-color-accent-high: #0a5f52;
+  --sl-color-text: #153029;
+  --sl-color-bg: #f4f8f6;
+  --sl-color-bg-sidebar: #eaf4f1;
+}
+
+:root[data-theme="dark"] {
+  --sl-color-accent-low: #0b3a33;
+  --sl-color-accent: #22c2a7;
+  --sl-color-accent-high: #85f2df;
+  --sl-color-text: #dff8f1;
+  --sl-color-bg: #081714;
+  --sl-color-bg-sidebar: #0e2220;
+}
+
+.hero {
+  border-radius: 1rem;
+  padding-bottom: 1.25rem;
+  background:
+    radial-gradient(90rem 22rem at 8% -10%, rgba(15, 139, 120, 0.26), transparent 40%),
+    radial-gradient(90rem 20rem at 100% 0%, rgba(245, 158, 11, 0.2), transparent 32%);
+}
+
+.hero .tagline {
+  font-weight: 600;
+  max-width: 46ch;
+}
+
+.sl-markdown-content .meshled-band {
+  margin: 1rem 0 2rem;
+  padding: 1rem 1.15rem;
+  border: 1px solid color-mix(in oklab, var(--sl-color-accent) 42%, transparent);
+  border-radius: 0.9rem;
+  background: linear-gradient(
+    135deg,
+    color-mix(in oklab, var(--sl-color-accent-low) 72%, transparent),
+    transparent
+  );
+}
+
+.sl-markdown-content .meshled-band__kicker {
+  margin: 0 0 0.35rem;
+  font-family: var(--sl-font-mono);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--sl-color-accent-high);
+}
+
+.card {
+  border-radius: 0.9rem;
+  border-width: 1px;
+  transition: transform 140ms ease, border-color 140ms ease;
+}
+
+.card:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in oklab, var(--sl-color-accent) 54%, transparent);
+}

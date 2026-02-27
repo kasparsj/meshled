@@ -1,4 +1,6 @@
-# MeshLED OSC Input Contract
+---
+title: "MeshLED OSC Input Contract"
+---
 
 Date: 2026-02-23  
 Status: Canonical contract for firmware OSC input behavior

@@ -1,4 +1,6 @@
-# MeshLED Build and Verification
+---
+title: "MeshLED Build and Verification"
+---
 
 Date: 2026-02-22
 
@@ -13,9 +15,9 @@ git submodule update --init --recursive
 `ofxColorTheory` is required at `./packages/lightgraph/vendor/ofxColorTheory`.
 `packages/lightgraph` itself is a submodule sourced from `git@github.com:kasparsj/lightgraph.git`.
 
-Core-specific reproducibility notes live in `docs/core-build.md`.
-Core architecture notes live in `docs/core-architecture.md`.
-Third-party dependency licensing/provenance notes live in `docs/third-party-licenses.md`.
+Core-specific reproducibility notes live in `/core-build/`.
+Core architecture notes live in `/core-architecture/`.
+Third-party dependency licensing/provenance notes live in `/third-party-licenses/`.
 
 Optional helper:
 

@@ -1,4 +1,6 @@
-# Third-Party Dependencies and License Notes
+---
+title: "Third-Party Dependencies and License Notes"
+---
 
 Date: 2026-02-23
 

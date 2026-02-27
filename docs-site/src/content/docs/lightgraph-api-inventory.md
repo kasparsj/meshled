@@ -1,4 +1,6 @@
-# Lightgraph API and Parent Usage Inventory (Phase 0)
+---
+title: "Lightgraph API and Parent Usage Inventory (Phase 0)"
+---
 
 Date: 2026-02-23
 Workspace: `/Users/kasparsj/Work2/meshled`

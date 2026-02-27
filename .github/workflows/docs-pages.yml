@@ -5,8 +5,7 @@ on:
     branches:
       - main
     paths:
-      - docs/**
-      - mkdocs.yml
+      - docs-site/**
       - .github/workflows/docs-pages.yml
   workflow_dispatch:
 
@@ -31,21 +30,25 @@ jobs:
       - name: Setup GitHub Pages
         uses: actions/configure-pages@v5
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
-          python-version: "3.11"
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: docs-site/package-lock.json
 
-      - name: Install docs toolchain
-        run: pip install "mkdocs==1.6.1" "mkdocs-material==9.7.2"
+      - name: Install dependencies
+        run: npm ci
+        working-directory: docs-site
 
       - name: Build docs site
-        run: mkdocs build --strict
+        run: npm run build
+        working-directory: docs-site
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: site
+          path: docs-site/dist
 
   deploy:
     needs: build

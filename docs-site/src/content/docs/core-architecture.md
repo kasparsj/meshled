@@ -1,4 +1,6 @@
-# Core Architecture Primer
+---
+title: "Core Architecture Primer"
+---
 
 Date: 2026-02-23
 Scope: `packages/lightgraph/src`

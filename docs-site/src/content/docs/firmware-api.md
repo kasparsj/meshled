@@ -1,4 +1,6 @@
-# MeshLED Firmware HTTP API
+---
+title: "MeshLED Firmware HTTP API"
+---
 
 Date: 2026-02-23  
 Applies to: `firmware/esp` in this repository

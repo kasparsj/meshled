@@ -1,4 +1,6 @@
-# Core Build and Reproducibility Guide
+---
+title: "Core Build and Reproducibility Guide"
+---
 
 Date: 2026-02-23
 Scope: shared engine in `packages/lightgraph/src`
@@ -15,7 +17,7 @@ In this monorepo, `packages/lightgraph` is a git submodule sourced from `git@git
 
 The host build is intended for reproducible compile/test checks in CI without requiring openFrameworks or Arduino SDKs.
 
-For architecture details (module responsibilities, update loop, ownership), see `docs/core-architecture.md`.
+For architecture details (module responsibilities, update loop, ownership), see `/core-architecture/`.
 
 ## Prerequisites
 

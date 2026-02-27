@@ -1,4 +1,6 @@
-# Migration Guide for WLED Users
+---
+title: "Migration Guide for WLED Users"
+---
 
 MeshLED targets users who already run WLED-class LED systems and want topology-aware behaviors plus OSC-native control.
 

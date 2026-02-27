@@ -1,4 +1,6 @@
-# UI/Firmware Compatibility Matrix
+---
+title: "UI/Firmware Compatibility Matrix"
+---
 
 Date: 2026-02-22  
 UI target: `apps/control-panel` (package version `0.0.0`)  
@@ -54,6 +56,6 @@ For endpoints used by React UI:
    - Settings load/save
    - Model fetch and intersection add/remove
 3. If any contract change is unavoidable, update:
-   - `docs/firmware-api.md`
+   - `/firmware-api/`
    - this file
    - React UI call sites in same change set

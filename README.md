@@ -87,14 +87,14 @@ Expected result: `ctest` completes without failures.
 
 ## Choose Your Workflow
 
-- Full repository build and verification (firmware + control panel + installer + simulator + core): [docs/build.md](docs/build.md)
-- Core engine reproducibility and sanitizer profiles: [docs/core-build.md](docs/core-build.md)
-- Core architecture deep dive: [docs/core-architecture.md](docs/core-architecture.md)
-- Firmware HTTP API contract: [docs/firmware-api.md](docs/firmware-api.md)
-- OSC contract: [docs/osc-contract.md](docs/osc-contract.md)
-- UI/firmware compatibility notes: [docs/ui-firmware-compat.md](docs/ui-firmware-compat.md)
-- Third-party licenses and provenance: [docs/third-party-licenses.md](docs/third-party-licenses.md)
-- [LightGraph](https://github.com/kasparsj/lightgraph) API inventory snapshot in this repo: [docs/lightgraph-api-inventory.md](docs/lightgraph-api-inventory.md)
+- Full repository build and verification (firmware + control panel + installer + simulator + core): [docs-site/src/content/docs/build.md](docs-site/src/content/docs/build.md)
+- Core engine reproducibility and sanitizer profiles: [docs-site/src/content/docs/core-build.md](docs-site/src/content/docs/core-build.md)
+- Core architecture deep dive: [docs-site/src/content/docs/core-architecture.md](docs-site/src/content/docs/core-architecture.md)
+- Firmware HTTP API contract: [docs-site/src/content/docs/firmware-api.md](docs-site/src/content/docs/firmware-api.md)
+- OSC contract: [docs-site/src/content/docs/osc-contract.md](docs-site/src/content/docs/osc-contract.md)
+- UI/firmware compatibility notes: [docs-site/src/content/docs/ui-firmware-compat.md](docs-site/src/content/docs/ui-firmware-compat.md)
+- Third-party licenses and provenance: [docs-site/src/content/docs/third-party-licenses.md](docs-site/src/content/docs/third-party-licenses.md)
+- [LightGraph](https://github.com/kasparsj/lightgraph) API inventory snapshot in this repo: [docs-site/src/content/docs/lightgraph-api-inventory.md](docs-site/src/content/docs/lightgraph-api-inventory.md)
 
 ## Repository Surfaces
 
@@ -106,17 +106,16 @@ Expected result: `ctest` completes without failures.
 
 ## Documentation Site (GitHub Pages)
 
-- Docs index: [docs/index.md](docs/index.md)
-- Config: [mkdocs.yml](mkdocs.yml)
+- Docs index: [docs-site/src/content/docs/index.mdx](docs-site/src/content/docs/index.mdx)
+- Config: [docs-site/astro.config.mjs](docs-site/astro.config.mjs)
 - Pages workflow: [.github/workflows/docs-pages.yml](.github/workflows/docs-pages.yml)
 
 Local docs preview:
 
 ```bash
-python3 -m venv .venv-docs
-source .venv-docs/bin/activate
-pip install mkdocs-material
-mkdocs serve
+cd docs-site
+npm install
+npm run dev
 ```
 
 ## Project Policies

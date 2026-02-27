@@ -1,4 +1,6 @@
-# MeshLED Versioning and Release Policy
+---
+title: "MeshLED Versioning and Release Policy"
+---
 
 Date: 2026-02-22
 
@@ -27,13 +29,13 @@ At and after `v1.0.0`:
 Compatibility is evaluated for:
 
 1. Firmware HTTP contract used by React app:
-   - see `docs/firmware-api.md`
-   - see `docs/ui-firmware-compat.md`
+   - see `/firmware-api/`
+   - see `/ui-firmware-compat/`
 2. OSC input contract consumed by SuperCollider/Tidal workflows:
-   - canonical firmware contract: `docs/osc-contract.md`
-   - artwork integration mapping: artwork repo `docs/osc-contract.md`
+   - canonical firmware contract: `/osc-contract/`
+   - artwork integration mapping: artwork repo `/osc-contract/`
 3. Build/dependency expectations:
-   - see `docs/build.md`
+   - see `/build/`
 
 ## Release process
 
