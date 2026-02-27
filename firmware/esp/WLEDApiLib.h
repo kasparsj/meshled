@@ -295,7 +295,8 @@ void getWLEDInfo(JsonObject& info) {
   // LED information
   info["leds"]["count"] = pixelCount1 + pixelCount2;
   info["leds"]["rgbw"] = HAS_WHITE(colorOrder);
-  info["leds"]["pwr"] = totalWattage;
+  // Keep numeric types aligned with WLED clients that decode this as an integer.
+  info["leds"]["pwr"] = static_cast<uint32_t>(totalWattage + 0.5f);
   info["leds"]["fps"] = 40;
   info["leds"]["maxpwr"] = 2400;
   info["leds"]["maxseg"] = 32;
@@ -315,10 +316,12 @@ void getWLEDInfo(JsonObject& info) {
   info["liveseg"] = -1;
   info["lm"] = "";
   info["lip"] = "";
-  info["ws"] = 1;
+  // Active websocket client count. MeshLED currently does not expose /ws.
+  info["ws"] = 0;
   info["fxcount"] = 187;
   info["palcount"] = 71;
   info["cpalcount"] = 0;
+  info["ndc"] = 0;
 
   JsonArray maps = info.createNestedArray("maps");
   JsonObject mainmap = maps.createNestedObject();
@@ -341,6 +344,9 @@ void getWLEDInfo(JsonObject& info) {
 
   info["arch"] = "esp32";
   info["core"] = ESP.getSdkVersion();
+  info["clock"] = ESP.getCpuFreqMHz();
+  info["flash"] = ESP.getFlashChipSize() / (1024 * 1024);
+  info["lwip"] = 0;
   info["freeheap"] = ESP.getFreeHeap();
   info["uptime"] = millis() / 1000;
   info["time"] = "2025-5-14, 18:18:29";
