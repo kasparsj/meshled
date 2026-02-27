@@ -89,6 +89,18 @@ const SettingsTab = () => {
         return `${num.toFixed(digits)}${suffix}`;
     };
 
+    const firstNonEmptyValue = (...values) => {
+        for (const value of values) {
+            if (typeof value === 'string' && value.trim().length > 0) {
+                return value.trim();
+            }
+            if (typeof value === 'number' && Number.isFinite(value)) {
+                return String(value);
+            }
+        }
+        return null;
+    };
+
     // Load current settings from device
     useEffect(() => {
         const loadSettings = async () => {
@@ -269,6 +281,21 @@ const SettingsTab = () => {
         : 0;
     const isApMode = deviceInfo?.wifi?.mode === 'ap' || settings.apMode === true;
     const displayedSSID = deviceInfo?.wifi?.ssid || settings.activeSSID || settings.savedSSID || 'N/A';
+    const installedReleaseSha = firstNonEmptyValue(
+        deviceInfo?.meshledReleaseSha,
+        deviceInfo?.releaseSha,
+        deviceInfo?.gitSha,
+        deviceInfo?.commitSha,
+        deviceInfo?.sha,
+        deviceInfo?.commit
+    );
+    const installedReleaseVersion = firstNonEmptyValue(
+        deviceInfo?.meshledVersion,
+        deviceInfo?.releaseVersion,
+        deviceInfo?.version,
+        deviceInfo?.ver
+    );
+    const installedRelease = installedReleaseSha || installedReleaseVersion || 'N/A';
     const ledTypeEntries = availableLedTypes === null
         ? Object.entries(LED_TYPES)
         : Object.entries(LED_TYPES).filter(([value]) => availableLedTypes.has(Number(value)));
@@ -290,6 +317,8 @@ const SettingsTab = () => {
                                 className="text-sky-400">{displayedSSID}</span></p>
                             <p><span className="text-zinc-300">IP Address:</span> <span
                                 className="text-sky-400">{deviceInfo?.ip ?? 'N/A'}</span></p>
+                            <p><span className="text-zinc-300">Installed Release:</span> <span
+                                className="text-sky-400">{installedRelease}</span></p>
                             <p><span className="text-zinc-300">Total Consumption:</span> <span
                                 className="text-sky-400">{powerWatts !== null ? `${powerWatts.toFixed(2)} watts` : 'N/A'}</span></p>
                             <p><span className="text-zinc-300">Active Lights:</span> <span

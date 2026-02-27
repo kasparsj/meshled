@@ -39,7 +39,7 @@ generate_merged_firmware() {
   local build_dir="$FW_DIR/.pio/build/$env_name"
 
   echo "Building firmware environment: $env_name"
-  pio run -d "$FW_DIR" -e "$env_name"
+  MESHLED_VERSION="$VERSION_TAG" pio run -d "$FW_DIR" -e "$env_name"
 
   local bootloader_bin="$build_dir/bootloader.bin"
   local partitions_bin="$build_dir/partitions.bin"

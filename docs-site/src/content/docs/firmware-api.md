@@ -63,6 +63,9 @@ Applies to: `firmware/esp` in this repository
 
 - WLED-style info payload.
 - Common keys: `wifi.ssid`, `wifi.mode`, `ip`, `leds.pwr`.
+- MeshLED build metadata keys:
+  - `meshledVersion`: release tag or git describe string from firmware build.
+  - `meshledReleaseSha`: short git SHA from firmware build.
 - `wifi.ssid` is the active network SSID (`AP` SSID in AP mode, STA SSID in station mode).
 - `wifi.mode` is `"ap"` or `"sta"`.
 

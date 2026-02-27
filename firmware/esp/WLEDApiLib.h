@@ -5,6 +5,14 @@
 
 // WLED API endpoint handlers
 
+#ifndef MESHLED_VERSION
+#define MESHLED_VERSION "dev"
+#endif
+
+#ifndef MESHLED_RELEASE_SHA
+#define MESHLED_RELEASE_SHA "unknown"
+#endif
+
 bool isOn() {
   if (!state) {
     return emitterEnabled;
@@ -88,6 +96,8 @@ void getWLEDInfo(JsonObject& info) {
   info["vid"] = 2412100;  // Build ID (use WLED format YYMMDD0)
   info["cn"] = "Kōsen";
   info["release"] = "ESP32";
+  info["meshledVersion"] = MESHLED_VERSION;
+  info["meshledReleaseSha"] = MESHLED_RELEASE_SHA;
 
   // LED information
   info["leds"]["count"] = pixelCount1 + pixelCount2;
