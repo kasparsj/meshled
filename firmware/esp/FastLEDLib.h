@@ -238,14 +238,23 @@ CRGB getFastLEDColor(uint16_t i) {
   return color;
 }
 
+float getFastLEDWatts(const CRGB& color, float wattsPerLed = 0.2f) {
+  const float relPixelPower = static_cast<float>(color.r + color.g + color.b) / (255.f * 3.f);
+  const float wattsPerPixel = wattsPerLed * 3.f;
+  return relPixelPower * wattsPerPixel;
+}
+
 void drawFastLED() {
   if (ledLibrary == LIB_FASTLED && leds1 != NULL) {
+    totalWattage = 0.0f;
     for (uint16_t i=0; i<pixelCount1; i++) {
       leds1[i] = getFastLEDColor(i);
+      totalWattage += getFastLEDWatts(leds1[i]);
     }
     if (pixelCount2 > 0 && leds2 != NULL) {
       for (uint16_t i=0; i<pixelCount2; i++) {
         leds2[i] = getFastLEDColor(pixelCount1+i);
+        totalWattage += getFastLEDWatts(leds2[i]);
       }
     }
     FastLED.setBrightness(maxBrightness);

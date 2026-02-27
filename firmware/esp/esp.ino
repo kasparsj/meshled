@@ -1,4 +1,5 @@
 // Define DEV_ENABLED from build flags for development builds.
+#define DEV_ENABLED
 #define DEFAULT_HOSTNAME "meshled"
 // #define BUTTON_PIN 25
 #define SPIFFS_ENABLED // SPIFFS needs to be enabled to save wifi settings in AP mode

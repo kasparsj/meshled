@@ -1498,6 +1498,16 @@ void setupWebServer() {
   server.on("/win", HTTP_GET, handleWLEDWin);
   #endif
 
+  #ifdef WLEDAPI_ENABLED
+  server.onNotFound([]() {
+    if (server.method() == HTTP_GET && server.uri().startsWith("/win&")) {
+      handleWLEDWin();
+      return;
+    }
+    server.send(404, "text/plain", "Not Found");
+  });
+  #endif
+
   server.begin();
   LP_LOGLN("Web server started");
 }

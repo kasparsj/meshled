@@ -156,6 +156,15 @@ bool isOn() {
   return state->isOn() || state->autoEnabled || emitterEnabled;
 }
 
+bool isOutputActive() {
+  // Keep status aligned with real LED output when available.
+  return totalWattage > 0.01f;
+}
+
+bool isReportedOn() {
+  return isOn() || isOutputActive();
+}
+
 void turnOn() {
   if (state) {
     state->setOn(true);
@@ -169,8 +178,16 @@ void turnOff() {
   emitterEnabled = false;
 }
 
+const Palette* getPrimaryPalette() {
+  if (!state || !state->lightLists[0]) {
+    return nullptr;
+  }
+  return &state->lightLists[0]->palette;
+}
+
 void getWLEDState(JsonObject& jsonState) {
-  jsonState["on"] = isOn();
+  const bool reportedOn = isReportedOn();
+  jsonState["on"] = reportedOn;
   jsonState["bri"] = maxBrightness;
   jsonState["transition"] = 0;  // No transition time
   jsonState["ps"] = -1;  // No preset active
@@ -196,20 +213,24 @@ void getWLEDState(JsonObject& jsonState) {
   mainseg["grp"] = 1;  // Grouping (1 = individual control)
   mainseg["spc"] = 0;
   mainseg["of"] = 0;
-  mainseg["on"] = isOn();
+  mainseg["on"] = reportedOn;
   mainseg["frz"] = false;
   mainseg["bri"] = maxBrightness;
   mainseg["cct"] = 127;
   mainseg["set"] = 0;
 
   // Include palette properties
-  const Palette& bgPalette = state->lightLists[0]->palette;
-  mainseg["seg"] = bgPalette.getSegmentation();
+  const Palette* bgPalette = getPrimaryPalette();
+  if (bgPalette) {
+    mainseg["seg"] = bgPalette->getSegmentation();
+  } else {
+    mainseg["seg"] = 0.0f;
+  }
 
-  // Primary color - use colors from palette
+  // Primary color - use colors from palette when available.
   JsonArray col = mainseg.createNestedArray("col");
-  if (bgPalette.size() > 0) {
-    const std::vector<int64_t>& paletteColors = bgPalette.getColors();
+  if (bgPalette && bgPalette->size() > 0) {
+    const std::vector<int64_t>& paletteColors = bgPalette->getColors();
     for (size_t i = 0; i < paletteColors.size(); i++) {
       int64_t color = paletteColors[i];
       JsonArray rgb = col.createNestedArray();
@@ -509,20 +530,123 @@ void handleWLEDVersion() {
   server.send(200, "text/plain", "MeshLED WLED Compatible API v1.0.0");
 }
 
+bool parseWLEDWinLong(const String& rawValue, long& parsedValue) {
+  if (rawValue.length() == 0) {
+    return false;
+  }
+  char* end = nullptr;
+  const long value = strtol(rawValue.c_str(), &end, 10);
+  if (end == rawValue.c_str() || *end != '\0') {
+    return false;
+  }
+  parsedValue = value;
+  return true;
+}
+
+void applyWLEDWinArg(const String& rawKey, const String& rawValue, bool& shouldSaveSettings) {
+  String key = rawKey;
+  key.toUpperCase();
+
+  long parsed = 0;
+  if (key == "A" && parseWLEDWinLong(rawValue, parsed)) {
+    const long clamped = constrain(parsed, 0, 255);
+    if (clamped == 0) {
+      turnOff();
+    } else {
+      maxBrightness = static_cast<uint8_t>(clamped);
+      turnOn();
+    }
+    shouldSaveSettings = true;
+    return;
+  }
+
+  if (key == "T" && parseWLEDWinLong(rawValue, parsed)) {
+    switch (parsed) {
+      case 0:
+        turnOff();
+        shouldSaveSettings = true;
+        break;
+      case 1:
+        turnOn();
+        shouldSaveSettings = true;
+        break;
+      case 2:
+        if (isReportedOn()) {
+          turnOff();
+        } else {
+          turnOn();
+        }
+        shouldSaveSettings = true;
+        break;
+      default:
+        break;
+    }
+  }
+}
+
+void applyWLEDWinUriArgs(bool& shouldSaveSettings) {
+  const String uri = server.uri();
+  if (!uri.startsWith("/win?") && !uri.startsWith("/win&")) {
+    return;
+  }
+
+  const int queryStart = 5;  // "/win?" and "/win&"
+  if (uri.length() <= queryStart) {
+    return;
+  }
+
+  const String query = uri.substring(queryStart);
+  int start = 0;
+
+  while (start < query.length()) {
+    const int nextAmp = query.indexOf('&', start);
+    const String token = nextAmp >= 0 ? query.substring(start, nextAmp) : query.substring(start);
+    if (token.length() > 0) {
+      const int eq = token.indexOf('=');
+      const String key = eq >= 0 ? token.substring(0, eq) : token;
+      const String value = eq >= 0 ? token.substring(eq + 1) : "";
+      applyWLEDWinArg(key, value, shouldSaveSettings);
+    }
+    if (nextAmp < 0) {
+      break;
+    }
+    start = nextAmp + 1;
+  }
+}
+
+void applyWLEDWinArgs(bool& shouldSaveSettings) {
+  for (int i = 0; i < server.args(); i++) {
+    applyWLEDWinArg(server.argName(i), server.arg(i), shouldSaveSettings);
+  }
+  // Legacy WLED mobile app style: "/win&T=2" (without '?').
+  applyWLEDWinUriArgs(shouldSaveSettings);
+}
+
 // Generate the WLED /win XML response
 // This endpoint is critical for WLED app discovery and control
 void handleWLEDWin() {
+  bool shouldSaveSettings = false;
+  applyWLEDWinArgs(shouldSaveSettings);
+
+  if (shouldSaveSettings) {
+    #ifdef SPIFFS_ENABLED
+    saveSettings();
+    saveLayers();
+    #endif
+  }
+
   // Create XML string builder
   String xml = "<?xml version=\"1.0\" ?><vs>";
 
   // "ac" in WLED XML is current brightness (0 means off).
-  xml += "<ac>" + String(isOn() ? maxBrightness : 0) + "</ac>";
+  const bool reportedOn = isReportedOn();
+  xml += "<ac>" + String(reportedOn ? maxBrightness : 0) + "</ac>";
 
   // Add colors from the current palette
-  const Palette& bgPalette = state->lightLists[0]->palette;
-  if (bgPalette.size() > 0) {
+  const Palette* bgPalette = getPrimaryPalette();
+  if (bgPalette && bgPalette->size() > 0) {
     // First color (primary)
-    const std::vector<int64_t>& paletteColors = bgPalette.getColors();
+    const std::vector<int64_t>& paletteColors = bgPalette->getColors();
     int64_t color = paletteColors[0];
     xml += "<cl>" + String((color >> 16) & 0xFF) + "</cl>"; // R
     xml += "<cl>" + String((color >> 8) & 0xFF) + "</cl>";  // G
