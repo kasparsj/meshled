@@ -1,5 +1,20 @@
 #pragma once
 
+#include <Preferences.h>
+#include "SecurityLib.h"
+
+bool isPersistedObjectTypeSupported(uint8_t type) {
+  switch (type) {
+    case OBJ_HEPTAGON919:
+    case OBJ_LINE:
+    case OBJ_TRIANGLE:
+    case OBJ_HEPTAGON3024:
+      return true;
+    default:
+      return false;
+  }
+}
+
 bool setupFileSystem() {
   // Initialize SPIFFS
   if(!SPIFFS.begin(true)){
@@ -64,6 +79,10 @@ void loadSettings() {
   colorOrder = doc["color_order"] | colorOrder;
   ledLibrary = doc["led_library"] | ledLibrary;
   objectType = doc["object_type"] | objectType;
+  if (!isPersistedObjectTypeSupported(objectType)) {
+    LP_LOGLN("Invalid object_type in settings, falling back to OBJ_LINE");
+    objectType = OBJ_LINE;
+  }
 
   // Load emitter settings with proper type handling
   emitterMinSpeed = doc["emitter_min_speed"] | emitterMinSpeed;
@@ -88,8 +107,15 @@ void loadSettings() {
   }
 
   apiAuthEnabled = doc["api_auth_enabled"] | apiAuthEnabled;
-  if (doc.containsKey("api_auth_token")) {
-    apiAuthToken = doc["api_auth_token"].as<String>();
+  if (doc.containsKey("api_auth_token_hash")) {
+    apiAuthTokenHash = doc["api_auth_token_hash"].as<String>();
+  } else if (doc.containsKey("api_auth_token")) {
+    // Migrate legacy plaintext token storage to hashed representation.
+    setApiAuthToken(doc["api_auth_token"].as<String>());
+  }
+  if (apiAuthEnabled && !hasApiAuthTokenConfigured()) {
+    LP_LOGLN("API auth enabled without a configured token, disabling auth");
+    apiAuthEnabled = false;
   }
 
   LP_LOGLN("Settings loaded from SPIFFS using ArduinoJson");
@@ -316,7 +342,7 @@ void saveSettings() {
 
   doc["hostname"] = deviceHostname;
   doc["api_auth_enabled"] = apiAuthEnabled;
-  doc["api_auth_token"] = apiAuthToken;
+  doc["api_auth_token_hash"] = apiAuthTokenHash;
   
   // Open the file for writing
   File file = SPIFFS.open("/settings.json", "w");
@@ -501,10 +527,43 @@ bool saveUserPalettes(const std::vector<UserPalette>& palettes) {
   return true;
 }
 
-// Function to load credentials from a separate file
+static const char* CREDENTIALS_NAMESPACE = "meshled";
+void saveCredentials();
+
+// Function to load credentials from NVS with SPIFFS fallback for migration.
 void loadCredentials() {
+  Preferences prefs;
+  if (prefs.begin(CREDENTIALS_NAMESPACE, true)) {
+    const bool hasAnyKey =
+        prefs.isKey("wifi_ssid") ||
+        prefs.isKey("wifi_pass")
+        #ifdef OTA_ENABLED
+        || prefs.isKey("ota_password")
+        || prefs.isKey("ota_enabled")
+        || prefs.isKey("ota_port")
+        #endif
+        ;
+
+    if (hasAnyKey) {
+      savedSSID = prefs.getString("wifi_ssid", savedSSID);
+      savedPassword = prefs.getString("wifi_pass", savedPassword);
+      #ifdef OTA_ENABLED
+      otaPassword = prefs.getString("ota_password", otaPassword);
+      otaEnabled = prefs.getBool("ota_enabled", otaEnabled);
+      otaPort = static_cast<uint16_t>(prefs.getUShort("ota_port", otaPort));
+      #endif
+      prefs.end();
+      LP_LOGLN("Credentials loaded from NVS");
+      return;
+    }
+    prefs.end();
+  } else {
+    LP_LOGLN("Failed to open NVS namespace for credentials");
+  }
+
+  // Legacy SPIFFS fallback for migration.
   if (!SPIFFS.exists("/credentials.json")) {
-    LP_LOGLN("No credentials file found, using defaults");
+    LP_LOGLN("No credentials found in NVS or SPIFFS, using defaults");
     return;
   }
 
@@ -514,14 +573,9 @@ void loadCredentials() {
     return;
   }
 
-  // Calculate JSON document size based on file size (with some extra capacity)
   size_t fileSize = file.size();
   size_t capacity = fileSize * 1.2;
-
-  // Allocate memory for the document
   DynamicJsonDocument doc(capacity);
-
-  // Parse the JSON
   DeserializationError error = deserializeJson(doc, file);
   file.close();
 
@@ -530,16 +584,13 @@ void loadCredentials() {
     return;
   }
 
-  // Load WiFi credentials
   if (doc.containsKey("wifi_ssid")) {
     savedSSID = doc["wifi_ssid"].as<String>();
   }
-
   if (doc.containsKey("wifi_pass")) {
     savedPassword = doc["wifi_pass"].as<String>();
   }
 
-  // Load OTA settings if present
   #ifdef OTA_ENABLED
   if (doc.containsKey("ota_password")) {
     otaPassword = doc["ota_password"].as<String>();
@@ -552,39 +603,35 @@ void loadCredentials() {
   }
   #endif
 
-  LP_LOGLN("Credentials loaded from SPIFFS");
+  // Immediately migrate legacy file credentials into NVS.
+  saveCredentials();
+  SPIFFS.remove("/credentials.json");
+  LP_LOGLN("Credentials migrated from SPIFFS to NVS");
 }
 
-// Function to save credentials to a separate file
+// Function to save credentials to NVS.
 void saveCredentials() {
-  const size_t capacity = JSON_OBJECT_SIZE(5) + 256; // Space for SSID, password, OTA password, enabled state, and port
-  DynamicJsonDocument doc(capacity);
-
-  // Add credentials to the JSON document
-  doc["wifi_ssid"] = savedSSID;
-  doc["wifi_pass"] = savedPassword;
-  
-  #ifdef OTA_ENABLED
-  doc["ota_password"] = otaPassword;
-  doc["ota_enabled"] = otaEnabled;
-  doc["ota_port"] = otaPort;
-  #endif
-
-  // Open the file for writing
-  File file = SPIFFS.open("/credentials.json", "w");
-  if (!file) {
-    LP_LOGLN("Failed to open credentials file for writing");
+  Preferences prefs;
+  if (!prefs.begin(CREDENTIALS_NAMESPACE, false)) {
+    LP_LOGLN("Failed to open NVS namespace for credentials");
     return;
   }
 
-  // Serialize JSON to file
-  if (serializeJson(doc, file) == 0) {
-    LP_LOGLN("Failed to write credentials to file");
-  } else {
-    LP_LOGLN("Credentials saved to SPIFFS");
+  prefs.putString("wifi_ssid", savedSSID);
+  prefs.putString("wifi_pass", savedPassword);
+  #ifdef OTA_ENABLED
+  prefs.putString("ota_password", otaPassword);
+  prefs.putBool("ota_enabled", otaEnabled);
+  prefs.putUShort("ota_port", otaPort);
+  #endif
+  prefs.end();
+
+  // Remove any legacy plaintext credentials file.
+  if (SPIFFS.exists("/credentials.json")) {
+    SPIFFS.remove("/credentials.json");
   }
 
-  file.close();
+  LP_LOGLN("Credentials saved to NVS");
 }
 
 void saveLayers() {

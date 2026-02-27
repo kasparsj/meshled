@@ -8,8 +8,8 @@
 #define FASTLED_ESP32_I2S 1
 #endif
 #include <FastLED.h>
-CRGB* leds1;
-CRGB* leds2;
+CRGB* leds1 = NULL;
+CRGB* leds2 = NULL;
 #include "FastLEDLib.h"
 #endif
 
@@ -301,7 +301,28 @@ void normalizeLedLibrarySelection() {
   normalizeLedSelection();
 }
 
+bool isObjectTypeSupported(uint8_t type) {
+  switch (type) {
+    case OBJ_HEPTAGON919:
+    case OBJ_HEPTAGON3024:
+    case OBJ_LINE:
+    case OBJ_TRIANGLE:
+      return true;
+    default:
+      return false;
+  }
+}
+
+void normalizeObjectTypeSelection() {
+  if (!isObjectTypeSupported(objectType)) {
+    LP_LOGLN("Unsupported objectType=" + String(objectType) + ", falling back to OBJ_LINE");
+    objectType = OBJ_LINE;
+  }
+}
+
 void setupLEDs() {
+  normalizeObjectTypeSelection();
+
   if (objectType == OBJ_HEPTAGON919) {
     pixelCount1 = HEPTAGON919_PIXEL_COUNT1;
     pixelCount2 = HEPTAGON919_PIXEL_COUNT2;
@@ -327,6 +348,8 @@ void setupLEDs() {
 }
 
 void setupState() {
+  normalizeObjectTypeSelection();
+
   if (objectType == OBJ_HEPTAGON919) {
     object = new Heptagon919();
   }
@@ -338,6 +361,9 @@ void setupState() {
   }
   else if (objectType == OBJ_TRIANGLE) {
     object = new Triangle(pixelCount1 + pixelCount2);
+  }
+  else {
+    object = new Line(pixelCount1 + pixelCount2);
   }
 
   state = new State(*object);

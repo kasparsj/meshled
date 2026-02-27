@@ -142,13 +142,16 @@ void streamSpiffs(WiFiClient& client) {
     client.print("</span></a>");
     
     #ifdef SPIFFS_DELETE
-    client.print("<a href='/delete?file=");
+    client.print("<form method='POST' action='/delete' style='margin:0 0 0 10px;' ");
+    client.print("onsubmit=\"return confirm('Are you sure you want to delete ");
     client.print(filename);
-    client.print("' onclick=\"return confirm('Are you sure you want to delete ");
+    client.print("?')\">");
+    client.print("<input type='hidden' name='file' value='");
     client.print(filename);
-    client.print("?')\" style='background: #922; color: white; text-decoration: none; ");
-    client.print("padding: 2px 8px; border-radius: 3px; margin-left: 10px; font-size: 12px;");
-    client.print("'>Delete</a>");
+    client.print("'>");
+    client.print("<button type='submit' style='background:#922;color:white;border:none;");
+    client.print("padding:2px 8px;border-radius:3px;font-size:12px;cursor:pointer;'>Delete</button>");
+    client.print("</form>");
     #endif
     client.print("</div>");
     
@@ -380,12 +383,6 @@ void handleUploadComplete() {
   } else {
     // Provide a more descriptive error message in the 500 response with debug info
     String debugInfo = "Upload failed. ";
-    
-    // Add more specific debug information based on known checks
-    if (!server.hasArg("csrf_token") || server.arg("csrf_token") != deviceHostname) {
-      debugInfo += "CSRF token validation failed. ";
-      LP_LOGLN("Upload failed: CSRF token validation failed");
-    }
     
     if (uploadFilename.length() == 0) {
       debugInfo += "Empty or invalid filename. ";

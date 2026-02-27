@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <ArduinoJson.h>
 #include <functional>
+#include "SecurityLib.h"
+#include "WebServerValidation.h"
 
 // todo: gist does not work because of CORS
 #define SCRIPTS_FALLBACK "//gist.githubusercontent.com/kasparsj/e297e6ffff5a4d4aca3657912a17f993/raw/scripts.js"
@@ -36,7 +38,7 @@ bool isApiRequestAuthorized() {
     token = server.arg("token");
   }
 
-  return token.length() > 0 && token == apiAuthToken;
+  return isApiAuthTokenAuthorized(token);
 }
 
 bool requireApiAuth() {
@@ -51,6 +53,40 @@ bool requireApiAuth() {
 std::function<void(void)> guardMutatingRoute(void (*handler)()) {
   return [handler]() {
     if (!requireApiAuth()) {
+      return;
+    }
+    handler();
+  };
+}
+
+std::function<void(void)> guardProtectedRoute(void (*handler)()) {
+  return [handler]() {
+    if (!requireApiAuth()) {
+      return;
+    }
+    handler();
+  };
+}
+
+bool requireAdminAuth() {
+  if (!apiAuthEnabled || !hasApiAuthTokenConfigured()) {
+    sendCORSHeaders("GET, POST, PUT, DELETE");
+    server.send(403, "application/json", "{\"error\":\"Admin routes require API auth with a configured token\"}");
+    return false;
+  }
+
+  if (!isApiRequestAuthorized()) {
+    sendCORSHeaders("GET, POST, PUT, DELETE");
+    server.send(401, "application/json", "{\"error\":\"Unauthorized\"}");
+    return false;
+  }
+
+  return true;
+}
+
+std::function<void(void)> guardAdminRoute(void (*handler)()) {
+  return [handler]() {
+    if (!requireAdminAuth()) {
       return;
     }
     handler();
@@ -101,7 +137,9 @@ String getHeaderMenu() {
   html += "<a href='/settings'>Settings</a> | ";
   #endif
   #ifdef WEBSERVER_SPIFFS
-  html += "<a href='/spiffs' style='color: #00cc00;'>SPIFFS</a>";
+  if (apiAuthEnabled && hasApiAuthTokenConfigured()) {
+    html += "<a href='/spiffs' style='color: #00cc00;'>SPIFFS</a>";
+  }
   #endif
   html += "</p>";
   return html;
@@ -250,7 +288,7 @@ void streamWifiPage(WiFiClient &client) {
   client.println("<label for='ssid'>WiFi SSID</label>");
   client.printf("<input id='ssid' name='ssid' type='text' value='%s' required>", savedSSID.c_str());
   client.println("<label for='password'>WiFi Password</label>");
-  client.printf("<input id='password' name='password' type='password' value='%s'>", savedPassword.c_str());
+  client.println("<input id='password' name='password' type='password' placeholder='Enter WiFi password'>");
   client.println("<button type='submit'>Save WiFi and Restart</button>");
   client.println("</form>");
 }
@@ -645,10 +683,19 @@ void handleRemoveIntersection() {
   const uint8_t requestedGroup = doc["group"];
   const uint8_t maxGroupMask = static_cast<uint8_t>((1u << MAX_GROUPS) - 1u);
 
-  // Group is expected as a single-bit mask.
-  // For compatibility with older clients, group index is accepted as fallback.
+  // Prefer group-index lookup to preserve compatibility with current UI payloads.
   Intersection* target = nullptr;
-  if (requestedGroup > 0 && requestedGroup <= maxGroupMask && (requestedGroup & (requestedGroup - 1)) == 0) {
+  if (requestedGroup < MAX_GROUPS) {
+    for (Intersection* intersection : object->inter[requestedGroup]) {
+      if (intersection && intersection->id == intersectionId) {
+        target = intersection;
+        break;
+      }
+    }
+  }
+
+  // Fallback: group bitmask lookup (canonical API form).
+  if (!target && requestedGroup > 0 && requestedGroup <= maxGroupMask && (requestedGroup & (requestedGroup - 1)) == 0) {
     for (uint8_t g = 0; g < MAX_GROUPS; g++) {
       if (!(requestedGroup & TopologyObject::groupMaskForIndex(g))) {
         continue;
@@ -663,11 +710,16 @@ void handleRemoveIntersection() {
         break;
       }
     }
-  } else if (requestedGroup < MAX_GROUPS) {
-    for (Intersection* intersection : object->inter[requestedGroup]) {
-      if (intersection && intersection->id == intersectionId) {
-        target = intersection;
-        break;
+  }
+
+  // Fallback: direct match against stored group mask in case data is out of band.
+  if (!target) {
+    for (uint8_t g = 0; g < MAX_GROUPS && !target; g++) {
+      for (Intersection* intersection : object->inter[g]) {
+        if (intersection && intersection->id == intersectionId && intersection->group == requestedGroup) {
+          target = intersection;
+          break;
+        }
       }
     }
   }
@@ -715,30 +767,38 @@ void handleGetColors() {
   }
 
   if (server.hasArg("layer")) {
-    specificLayer = server.arg("layer").toInt();
+    uint8_t requestedLayer = 0;
+    if (!parseLayerArg("layer", requestedLayer)) {
+      server.send(400, "application/json", "{\"error\":\"Invalid layer index\"}");
+      return;
+    }
+    if (!state || !state->lightLists[requestedLayer]) {
+      server.send(400, "application/json", "{\"error\":\"Invalid layer index\"}");
+      return;
+    }
 
-    // Store original visibility states
-    if (state) {
-      for (uint8_t i = 0; i < MAX_LIGHT_LISTS; i++) {
-        if (state->lightLists[i]) {
-          originalVisibility.push_back(state->lightLists[i]->visible);
-          // Disable all layers except the requested one
-          if (i != specificLayer) {
-            toggledLayers = toggledLayers || state->lightLists[i]->visible;
-            state->lightLists[i]->visible = false;
-          } else {
-            toggledLayers = toggledLayers || !state->lightLists[i]->visible;
-            state->lightLists[i]->visible = true;
-            originalBlendMode = state->lightLists[i]->blendMode;
-            state->lightLists[i]->blendMode = BLEND_NORMAL;
-          }
+    specificLayer = requestedLayer;
+
+    // Store original visibility states.
+    for (uint8_t i = 0; i < MAX_LIGHT_LISTS; i++) {
+      if (state->lightLists[i]) {
+        originalVisibility.push_back(state->lightLists[i]->visible);
+        // Disable all layers except the requested one.
+        if (i != requestedLayer) {
+          toggledLayers = toggledLayers || state->lightLists[i]->visible;
+          state->lightLists[i]->visible = false;
         } else {
-          originalVisibility.push_back(false);
+          toggledLayers = toggledLayers || !state->lightLists[i]->visible;
+          state->lightLists[i]->visible = true;
+          originalBlendMode = state->lightLists[i]->blendMode;
+          state->lightLists[i]->blendMode = BLEND_NORMAL;
         }
+      } else {
+        originalVisibility.push_back(false);
       }
     }
 
-    // Force a redraw to apply visibility changes
+    // Force a redraw to apply visibility changes.
     if (toggledLayers) {
       state->update();
     }
@@ -869,7 +929,7 @@ void handleGetColors() {
         state->lightLists[i]->visible = originalVisibility[i];
       }
     }
-    if (specificLayer > -1) {
+    if (specificLayer > -1 && specificLayer < MAX_LIGHT_LISTS && state->lightLists[specificLayer]) {
       state->lightLists[specificLayer]->blendMode = originalBlendMode;
     }
     // Force a redraw to apply the restored visibility
@@ -1520,12 +1580,9 @@ void handleCORS() {
   server.send(200, "text/plain", "");
 }
 
-typedef void (*Cors)();
-static String corsMethods;
-Cors allowCORS(String methods) {
-  corsMethods = methods;
-  return []() {
-    sendCORSHeaders(corsMethods);
+std::function<void(void)> allowCORS(const String& methods) {
+  return [methods]() {
+    sendCORSHeaders(methods);
     server.sendHeader("Access-Control-Max-Age", "86400");
     server.send(200, "text/plain", "");
   };
@@ -1603,7 +1660,7 @@ void setupWebServer() {
   server.on("/update_emitter_from", HTTP_POST, guardMutatingRoute(handleUpdateEmitterFrom));
   #endif
 
-  server.on("/get_settings", HTTP_GET, handleGetSettings);
+  server.on("/get_settings", HTTP_GET, guardProtectedRoute(handleGetSettings));
   server.on("/get_settings", HTTP_OPTIONS, allowCORS("GET"));
   server.on("/update_settings", HTTP_POST, guardMutatingRoute(handleUpdateSettings));
   server.on("/update_settings", HTTP_OPTIONS, allowCORS("POST"));
@@ -1658,14 +1715,29 @@ void setupWebServer() {
   #endif
 
   #ifdef SPIFFS_UPLOAD
-  server.on("/spiffs", HTTP_GET, handleUploadPage);
-  server.on("/spiffs", HTTP_POST, handleUploadComplete, handleFileUpload);
+  server.on("/spiffs", HTTP_GET, guardAdminRoute(handleUploadPage));
+  server.on("/spiffs", HTTP_POST,
+            []() {
+              if (!requireAdminAuth()) {
+                return;
+              }
+              handleUploadComplete();
+            },
+            []() {
+              if (!requireAdminAuth()) {
+                return;
+              }
+              handleFileUpload();
+            });
+  server.on("/spiffs", HTTP_OPTIONS, allowCORS("POST"));
   #endif
   #ifdef SPIFFS_DELETE
-  server.on("/delete", HTTP_GET, handleDeleteFile);
+  server.on("/delete", HTTP_POST, guardAdminRoute(handleDeleteFile));
+  server.on("/delete", HTTP_OPTIONS, allowCORS("POST"));
   #endif
   #ifdef SPIFFS_FORMAT
-  server.on("/format-spiffs", HTTP_POST, handleFormatSpiffs);
+  server.on("/format-spiffs", HTTP_POST, guardAdminRoute(handleFormatSpiffs));
+  server.on("/format-spiffs", HTTP_OPTIONS, allowCORS("POST"));
   #endif
 
   server.begin();

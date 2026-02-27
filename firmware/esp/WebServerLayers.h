@@ -1,5 +1,7 @@
 #pragma once
 
+#include "WebServerValidation.h"
+
 // Get the name of a palette by index
 String getPaletteName(uint8_t index) {
     static const char* paletteNames[] = {
@@ -48,18 +50,33 @@ String getPaletteName(uint8_t index) {
     return String(paletteNames[index]);
 }
 
+bool resolveLayerForRequest(uint8_t layerIndex, LightList*& layerOut) {
+  if (!state || layerIndex >= MAX_LIGHT_LISTS || !state->lightLists[layerIndex]) {
+    return false;
+  }
+  layerOut = state->lightLists[layerIndex];
+  return true;
+}
+
 // Handle toggle background
 void handleToggleVisible() {
   sendCORSHeaders();
 
   if (server.hasArg("layer") && server.hasArg("visible")) {
-    uint8_t layer = server.arg("layer").toInt();
+    uint8_t layer = 0;
+    if (!parseLayerArg("layer", layer)) {
+      server.send(400, "text/plain", "Invalid layer parameter");
+      return;
+    }
     bool visible = (server.arg("visible") == "true");
-    if (state && state->lightLists[layer]) {
-      state->lightLists[layer]->visible = visible;
-      LP_LOGLN("Toggle visible: " + String(state->lightLists[layer]->visible ? "ON" : "OFF"));
+    LightList* layerRef = nullptr;
+    if (resolveLayerForRequest(layer, layerRef)) {
+      layerRef->visible = visible;
+      LP_LOGLN("Toggle visible: " + String(layerRef->visible ? "ON" : "OFF"));
     } else {
       LP_LOGLN("Cannot toggle visible: state or lightList is NULL");
+      server.send(400, "text/plain", "Invalid layer parameter");
+      return;
     }
 
     #ifdef SPIFFS_ENABLED
@@ -77,17 +94,22 @@ void handleToggleVisible() {
 // Handle AJAX brightness update
 void handleUpdateLayerBrightness() {
   if (server.hasArg("layer") && server.hasArg("value")) {
-    uint8_t layer = server.arg("layer").toInt();
+    uint8_t layer = 0;
+    if (!parseLayerArg("layer", layer)) {
+      server.send(400, "text/plain", "Invalid layer index");
+      return;
+    }
     uint8_t newBrightness = server.arg("value").toInt();
     if (newBrightness >= 1 && newBrightness <= 255) {
-      if (!state || layer >= MAX_LIGHT_LISTS || !state->lightLists[layer]) {
+      LightList* layerRef = nullptr;
+      if (!resolveLayerForRequest(layer, layerRef)) {
         server.send(400, "text/plain", "Invalid layer index");
         return;
       }
 
-      state->lightLists[layer]->maxBri = newBrightness;
-      if (state->lightLists[layer]->minBri > newBrightness) {
-        state->lightLists[layer]->minBri = newBrightness;
+      layerRef->maxBri = newBrightness;
+      if (layerRef->minBri > newBrightness) {
+        layerRef->minBri = newBrightness;
       }
 
       LP_LOGLN("Updated layer brightness via AJAX: " + String(newBrightness));
@@ -110,10 +132,6 @@ void handleGetPaletteColors() {
   sendCORSHeaders();
 
   if (server.hasArg("index")) {
-    uint8_t layer = 0;
-    if (server.hasArg("layer")) {
-      layer = server.arg("layer").toInt();
-    }
     String indexStr = server.arg("index");
 
     // Check if it's a user palette (starts with 'u')
@@ -229,16 +247,21 @@ void handleUpdatePalette() {
     return;
   }
 
-  uint8_t layer = server.arg("layer").toInt();
+  uint8_t layer = 0;
+  if (!parseLayerArg("layer", layer)) {
+    server.send(400, "text/plain", "Invalid layer index");
+    return;
+  }
 
   // Check if the layer exists
-  if (!state || !state->lightLists[layer]) {
+  LightList* layerRef = nullptr;
+  if (!resolveLayerForRequest(layer, layerRef)) {
     server.send(400, "text/plain", "Invalid layer index");
     return;
   }
 
   // Create a new palette based on the current one
-  Palette newPalette = state->lightLists[layer]->palette;
+  Palette newPalette = layerRef->palette;
   bool paletteChanged = false;
 
   // Update color rule if provided
@@ -418,7 +441,7 @@ void handleUpdatePalette() {
 
   // Apply the updated palette if any changes were made
   if (paletteChanged) {
-    state->lightLists[layer]->setPalette(newPalette);
+    layerRef->setPalette(newPalette);
 
     #ifdef SPIFFS_ENABLED
     saveLayers();
@@ -486,7 +509,11 @@ void handleRemoveLayer() {
     return;
   }
 
-  uint8_t layerIndex = server.arg("layer").toInt();
+  uint8_t layerIndex = 0;
+  if (!parseLayerArg("layer", layerIndex)) {
+    server.send(400, "text/plain", "Invalid layer index");
+    return;
+  }
 
   // Don't allow removing layer 0 (base layer)
   if (layerIndex == 0) {
@@ -494,9 +521,10 @@ void handleRemoveLayer() {
     return;
   }
 
-  if (state && state->lightLists[layerIndex] && state->lightLists[layerIndex]->editable) {
+  LightList* layerRef = nullptr;
+  if (resolveLayerForRequest(layerIndex, layerRef) && layerRef->editable) {
     // Clear the layer
-    state->lightLists[layerIndex]->setDuration(0);
+    layerRef->setDuration(0);
 
     delay(1);
 
@@ -516,12 +544,17 @@ void handleRemoveLayer() {
 // Handler for updating the speed value
 void handleUpdateSpeed() {
   if (server.hasArg("layer") && server.hasArg("value")) {
-    uint8_t layer = server.arg("layer").toInt();
+    uint8_t layer = 0;
+    if (!parseLayerArg("layer", layer)) {
+      server.send(400, "text/plain", "Invalid layer index");
+      return;
+    }
     float newSpeed = server.arg("value").toFloat();
 
     if (newSpeed >= -10.0 && newSpeed <= 10.0) {
-      if (state && state->lightLists[layer]) {
-        state->lightLists[layer]->setSpeed(newSpeed, state->lightLists[layer]->easeIndex);
+      LightList* layerRef = nullptr;
+      if (resolveLayerForRequest(layer, layerRef)) {
+        layerRef->setSpeed(newSpeed, layerRef->easeIndex);
 
         LP_LOGLN("Updated speed for layer " + String(layer) + " to: " + String(newSpeed));
 
@@ -544,12 +577,17 @@ void handleUpdateSpeed() {
 // Handler for updating the fade speed value
 void handleUpdateFadeSpeed() {
   if (server.hasArg("layer") && server.hasArg("value")) {
-    uint8_t layer = server.arg("layer").toInt();
+    uint8_t layer = 0;
+    if (!parseLayerArg("layer", layer)) {
+      server.send(400, "text/plain", "Invalid layer index");
+      return;
+    }
     uint8_t newFadeSpeed = server.arg("value").toInt();
 
     if (newFadeSpeed >= 0 && newFadeSpeed <= 255) {
-      if (state && state->lightLists[layer]) {
-        state->lightLists[layer]->setFade(newFadeSpeed, state->lightLists[layer]->fadeThresh, state->lightLists[layer]->fadeEaseIndex);
+      LightList* layerRef = nullptr;
+      if (resolveLayerForRequest(layer, layerRef)) {
+        layerRef->setFade(newFadeSpeed, layerRef->fadeThresh, layerRef->fadeEaseIndex);
 
         LP_LOGLN("Updated fade speed for layer " + String(layer) + " to: " + String(newFadeSpeed));
 
@@ -574,12 +612,17 @@ void handleUpdateEase() {
   sendCORSHeaders();
 
   if (server.hasArg("layer") && server.hasArg("ease")) {
-    uint8_t layer = server.arg("layer").toInt();
+    uint8_t layer = 0;
+    if (!parseLayerArg("layer", layer)) {
+      server.send(400, "text/plain", "Invalid layer index");
+      return;
+    }
     uint8_t ease = server.arg("ease").toInt();
 
     if (ease >= EASE_NONE && ease <= EASE_ELASTIC_INOUT) {
-      if (state && state->lightLists[layer]) {
-        state->lightLists[layer]->setSpeed(state->lightLists[layer]->speed, ease);
+      LightList* layerRef = nullptr;
+      if (resolveLayerForRequest(layer, layerRef)) {
+        layerRef->setSpeed(layerRef->speed, ease);
 
         LP_LOGLN("Updated easing for layer " + String(layer) + " to ease: " + String(ease));
 
@@ -601,12 +644,17 @@ void handleUpdateEase() {
 
 void handleUpdateBlendMode() {
   if (server.hasArg("layer") && server.hasArg("mode")) {
-    uint8_t layer = server.arg("layer").toInt();
+    uint8_t layer = 0;
+    if (!parseLayerArg("layer", layer)) {
+      server.send(400, "text/plain", "Invalid layer index");
+      return;
+    }
     uint8_t mode = server.arg("mode").toInt();
 
     if (mode >= BLEND_NORMAL && mode <= BLEND_PIN_LIGHT) {
-      if (state && state->lightLists[layer]) {
-        state->lightLists[layer]->blendMode = static_cast<BlendMode>(mode);
+      LightList* layerRef = nullptr;
+      if (resolveLayerForRequest(layer, layerRef)) {
+        layerRef->blendMode = static_cast<BlendMode>(mode);
 
         // Simply log the mode value instead of using a large switch statement
         LP_LOGLN("Updated blend mode for layer " + String(layer) + " to mode: " + String(mode));
@@ -632,24 +680,30 @@ void handleUpdateBehaviourFlags() {
   sendCORSHeaders();
   
   if (server.hasArg("layer") && server.hasArg("flags")) {
-    uint8_t layer = server.arg("layer").toInt();
+    uint8_t layer = 0;
+    if (!parseLayerArg("layer", layer)) {
+      server.send(400, "text/plain", "Invalid layer index");
+      return;
+    }
     uint16_t flags = server.arg("flags").toInt();
 
-    if (state && state->lightLists[layer]) {
-      if (flags > 0 && state->lightLists[layer]->numLights == 0) {
+    LightList* layerRef = nullptr;
+    if (resolveLayerForRequest(layer, layerRef)) {
+      if (flags > 0 && layerRef->numLights == 0) {
         // convert BgLight to LightList
-        LightList* lightList = new LightList(*state->lightLists[layer]);
+        LightList* lightList = new LightList(*layerRef);
         delete state->lightLists[layer];
         state->lightLists[layer] = lightList;
-        state->doEmit(state->object.getIntersection(0, 0), state->lightLists[layer]);
+        layerRef = lightList;
+        state->doEmit(state->object.getIntersection(0, 0), layerRef);
       }
       else if (flags == 0) {
         // todo: convert LightList to BgLight
       }
-      if (!state->lightLists[layer]->behaviour) {
-        state->lightLists[layer]->behaviour = new Behaviour(flags);
+      if (!layerRef->behaviour) {
+        layerRef->behaviour = new Behaviour(flags);
       } else {
-        state->lightLists[layer]->behaviour->flags = flags;
+        layerRef->behaviour->flags = flags;
       }
 
       LP_LOGF("Updated behaviour flags for layer %d to: %d\n", layer, flags);
@@ -672,11 +726,16 @@ void handleUpdateLayerOffset() {
   sendCORSHeaders();
   
   if (server.hasArg("layer") && server.hasArg("offset")) {
-    uint8_t layer = server.arg("layer").toInt();
+    uint8_t layer = 0;
+    if (!parseLayerArg("layer", layer)) {
+      server.send(400, "text/plain", "Invalid layer index");
+      return;
+    }
     float offset = server.arg("offset").toFloat();
 
-    if (state && state->lightLists[layer]) {
-      state->lightLists[layer]->setOffset(offset);
+    LightList* layerRef = nullptr;
+    if (resolveLayerForRequest(layer, layerRef)) {
+      layerRef->setOffset(offset);
       
       LP_LOGF("Updated offset for layer %d to: %f\n", layer, offset);
 
@@ -758,11 +817,16 @@ void handleResetLayer() {
   sendCORSHeaders();
 
   if (server.hasArg("layer")) {
-    uint8_t layer = server.arg("layer").toInt();
+    uint8_t layer = 0;
+    if (!parseLayerArg("layer", layer)) {
+      server.send(400, "text/plain", "Invalid layer index");
+      return;
+    }
     
-    if (state && state->lightLists[layer]) {
+    LightList* layerRef = nullptr;
+    if (resolveLayerForRequest(layer, layerRef)) {
       // Reset the layer to default values
-      state->lightLists[layer]->reset();
+      layerRef->reset();
       
       LP_LOGLN("Reset layer: " + String(layer));
 

@@ -147,10 +147,28 @@ const char* fastLedTypeName(uint8_t ledType) {
 }
 
 void setupFastLED() {
+  if (leds1 != NULL) {
+    delete[] leds1;
+    leds1 = NULL;
+  }
+  if (leds2 != NULL) {
+    delete[] leds2;
+    leds2 = NULL;
+  }
+
   if (ledLibrary != LIB_FASTLED) return;
 
-  leds1 = new CRGB[pixelCount1];
-  leds2 = new CRGB[pixelCount2];
+  if (pixelCount1 > 0) {
+    leds1 = new CRGB[pixelCount1];
+  }
+  if (pixelCount2 > 0) {
+    leds2 = new CRGB[pixelCount2];
+  }
+
+  if (leds1 == NULL) {
+    LP_LOGLN("FastLED setup skipped: pixelCount1 must be > 0");
+    return;
+  }
 
   // Helper function to add LEDs with the right chipset and color order.
   auto addLedsWithConfig = [](CRGB* leds, uint16_t count, uint8_t pin, uint8_t ledType, uint8_t colorOrder) {

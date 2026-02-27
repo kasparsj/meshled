@@ -137,6 +137,7 @@ void handleSyncPalettes() {
 
     if (!push && !pull) {
       server.send(400, "application/json", "{\"error\":\"push or pull not set\"}");
+      return;
     }
 
     String payload = server.arg("plain");

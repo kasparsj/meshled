@@ -1,4 +1,4 @@
-#define DEV_ENABLED
+// Define DEV_ENABLED from build flags for development builds.
 #define DEFAULT_HOSTNAME "meshled"
 // #define BUTTON_PIN 25
 #define SPIFFS_ENABLED // SPIFFS needs to be enabled to save wifi settings in AP mode
@@ -104,7 +104,7 @@ bool otaEnabled = true; // OTA updates enabled by default
 uint16_t otaPort = 3232;
 String otaPassword = "meshled";
 bool apiAuthEnabled = false;
-String apiAuthToken = "";
+String apiAuthTokenHash = "";
 
 // Auto Emitter
 bool emitterEnabled = false; // Default auto emitter enabled state
@@ -121,9 +121,9 @@ uint16_t emitterMaxNext = 20000;   // Default max time between auto emits (ms)
 int16_t emitterFrom = -1;   // Default starting point for auto emitter
 
 // State
-TopologyObject* object;
+TopologyObject* object = nullptr;
 uint8_t objectType = OBJ_LINE;
-State *state;
+State *state = nullptr;
 float totalWattage = 0;
 
 // Structure to represent a saved user palette
@@ -143,6 +143,7 @@ std::map<String, std::vector<IPAddress>> deviceIPs;
 
 #ifdef SPIFFS_ENABLED
 #include <ArduinoJson.h>
+#include "SecurityLib.h"
 #include "FSLib.h"
 #endif
 

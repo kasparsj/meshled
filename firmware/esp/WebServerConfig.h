@@ -1,5 +1,17 @@
 #pragma once
 
+bool isFirmwareObjectTypeSupported(uint8_t type) {
+  switch (type) {
+    case OBJ_HEPTAGON919:
+    case OBJ_LINE:
+    case OBJ_TRIANGLE:
+    case OBJ_HEPTAGON3024:
+      return true;
+    default:
+      return false;
+  }
+}
+
 // Handle settings update
 void handleUpdateSettings() {
   if (server.hasArg("max_brightness")) {
@@ -22,13 +34,21 @@ void handleUpdateSettings() {
     }
   }
 
+  bool requestedApiAuthEnabled = apiAuthEnabled;
   if (server.hasArg("api_auth_enabled")) {
-    apiAuthEnabled = server.arg("api_auth_enabled").toInt() == 1;
+    requestedApiAuthEnabled = server.arg("api_auth_enabled").toInt() == 1;
   }
 
   if (server.hasArg("api_auth_token")) {
-    apiAuthToken = server.arg("api_auth_token");
+    setApiAuthToken(server.arg("api_auth_token"));
   }
+
+  if (requestedApiAuthEnabled && !hasApiAuthTokenConfigured()) {
+    sendCORSHeaders("POST");
+    server.send(400, "application/json", "{\"error\":\"api_auth_token is required when enabling API auth\"}");
+    return;
+  }
+  apiAuthEnabled = requestedApiAuthEnabled;
 
   #ifdef OSC_ENABLED
   if (server.hasArg("osc_enabled")) {
@@ -97,7 +117,9 @@ void handleUpdateSettings() {
 
   if (server.hasArg("object_type")) {
     uint8_t newObjectType = server.arg("object_type").toInt();
-    if (newObjectType != objectType) {
+    if (!isFirmwareObjectTypeSupported(newObjectType)) {
+      LP_LOGLN("Ignoring unsupported object_type=" + String(newObjectType));
+    } else if (newObjectType != objectType) {
       objectType = newObjectType;
       // Flag that we need to reinitialize state as well
       // This will be handled after restarting
@@ -178,6 +200,9 @@ void handleUpdateWifi() {
 
 void handleGetSettings() {
   normalizeLedSelection();
+  if (!isFirmwareObjectTypeSupported(objectType)) {
+    objectType = OBJ_LINE;
+  }
 
   DynamicJsonDocument doc(4096);
   
@@ -193,11 +218,13 @@ void handleGetSettings() {
   doc["ledLibrary"] = ledLibrary;
   doc["objectType"] = objectType;
   doc["savedSSID"] = savedSSID;
-  doc["savedPassword"] = savedPassword;
+  doc["savedPassword"] = "";
+  doc["hasSavedPassword"] = savedPassword.length() > 0;
   doc["activeSSID"] = getActiveNetworkSSID();
   doc["apMode"] = apMode;
   doc["apiAuthEnabled"] = apiAuthEnabled;
-  doc["apiAuthToken"] = apiAuthToken;
+  doc["apiAuthToken"] = "";
+  doc["hasApiAuthToken"] = hasApiAuthTokenConfigured();
 
   JsonArray availableLedLibraries = doc.createNestedArray("availableLedLibraries");
   if (isLedLibraryAvailable(LIB_NEOPIXELBUS)) {
@@ -250,7 +277,8 @@ void handleGetSettings() {
   #ifdef OTA_ENABLED
   doc["otaEnabled"] = otaEnabled;
   doc["otaPort"] = otaPort;
-  doc["otaPassword"] = otaPassword;
+  doc["otaPassword"] = "";
+  doc["hasOtaPassword"] = otaPassword.length() > 0;
   #endif
 
   String jsonResponse;

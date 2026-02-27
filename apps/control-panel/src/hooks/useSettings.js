@@ -109,7 +109,15 @@ const useSettings = () => {
                 apiAuthToken: 'api_auth_token'
             };
 
+            const optionalSecretFields = new Set(['otaPassword', 'apiAuthToken']);
+
             Object.entries(settings).forEach(([key, value]) => {
+                if (optionalSecretFields.has(key)) {
+                    const raw = value == null ? '' : String(value).trim();
+                    if (raw.length === 0) {
+                        return;
+                    }
+                }
                 const paramName = fieldMapping[key] || key;
                 // Convert boolean to 1/0 for C++ compatibility
                 const paramValue = typeof value === 'boolean' ? (value ? '1' : '0') : value.toString();

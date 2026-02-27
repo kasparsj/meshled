@@ -117,7 +117,7 @@ void onNoteOff(const OscMessage& m) {
 }
 
 void onNotesSet(const OscMessage& m) {
-  EmitParams notesSet[MAX_NOTES_SET];
+  EmitParams notesSet[MAX_NOTES_SET] = {};
   for (uint8_t i=0; i<m.size() / 3; i++) {
     uint16_t noteId = m.arg<uint16_t>(i*3);
     uint8_t k = 0;
@@ -126,6 +126,10 @@ void onNotesSet(const OscMessage& m) {
         notesSet[k].noteId = noteId;
         break;
       }
+    }
+    if (k >= MAX_NOTES_SET) {
+      LP_LOGLN("OSC /notes_set dropped note: MAX_NOTES_SET reached");
+      continue;
     }
     EmitParam param = static_cast<EmitParam>(m.arg<uint8_t>(i*3+1));
     uint8_t j = i*3+2;
