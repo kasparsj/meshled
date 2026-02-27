@@ -51,19 +51,42 @@ def _resolve_meshled_release_sha():
     return "unknown"
 
 
+def _resolve_meshled_git_commit():
+    env_commit = os.getenv("MESHLED_GIT_COMMIT", "").strip()
+    if env_commit:
+        return env_commit[:12]
+
+    env_sha = os.getenv("MESHLED_RELEASE_SHA", "").strip()
+    if env_sha:
+        return env_sha[:12]
+
+    github_sha = os.getenv("GITHUB_SHA", "").strip()
+    if github_sha:
+        return github_sha[:12]
+
+    git_sha = _git_output("rev-parse", "--short=12", "HEAD")
+    if git_sha:
+        return git_sha
+
+    return "unknown"
+
+
 meshled_version = _resolve_meshled_version()
 meshled_release_sha = _resolve_meshled_release_sha()
+meshled_git_commit = _resolve_meshled_git_commit()
 
 env.Append(
     CPPDEFINES=[
         ("MESHLED_VERSION", '\\"%s\\"' % meshled_version),
         ("MESHLED_RELEASE_SHA", '\\"%s\\"' % meshled_release_sha),
+        ("MESHLED_GIT_COMMIT", '\\"%s\\"' % meshled_git_commit),
     ]
 )
 
 print("MeshLED build metadata:")
 print("  version =", meshled_version)
 print("  sha     =", meshled_release_sha)
+print("  commit  =", meshled_git_commit)
 
 def before_upload(source, target, env):
     print("Uploading SPIFFS filesystem...")

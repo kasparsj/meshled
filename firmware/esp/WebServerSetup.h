@@ -1323,6 +1323,8 @@ void handleOtaStatus() {
   DynamicJsonDocument doc(2048);
   JsonObject root = doc.to<JsonObject>();
   root["meshledVersion"] = getResolvedMeshledVersion();
+  root["meshledCommitSha"] = getResolvedMeshledCommitSha();
+  root["meshledBuildSha"] = getResolvedMeshledReleaseSha();
   root["meshledReleaseSha"] = getResolvedMeshledReleaseSha();
   root["uptimeSec"] = millis() / 1000;
   root["freeHeap"] = ESP.getFreeHeap();

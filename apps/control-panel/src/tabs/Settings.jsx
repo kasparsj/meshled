@@ -281,20 +281,28 @@ const SettingsTab = () => {
         : 0;
     const isApMode = deviceInfo?.wifi?.mode === 'ap' || settings.apMode === true;
     const displayedSSID = deviceInfo?.wifi?.ssid || settings.activeSSID || settings.savedSSID || 'N/A';
-    const installedReleaseSha = firstNonEmptyValue(
-        deviceInfo?.meshledReleaseSha,
-        deviceInfo?.releaseSha,
+    const installedCommitSha = firstNonEmptyValue(
+        deviceInfo?.meshledCommitSha,
         deviceInfo?.gitSha,
         deviceInfo?.commitSha,
-        deviceInfo?.sha,
         deviceInfo?.commit
+    );
+    const installedBuildSha = firstNonEmptyValue(
+        deviceInfo?.meshledBuildSha,
+        deviceInfo?.meshledReleaseSha,
+        deviceInfo?.releaseSha,
+        deviceInfo?.sha
     );
     const installedReleaseVersion = firstNonEmptyValue(
         deviceInfo?.meshledVersion,
         deviceInfo?.releaseVersion,
         deviceInfo?.version
     );
-    const installedRelease = installedReleaseSha || installedReleaseVersion || 'N/A';
+    const installedRelease = installedCommitSha
+        ? (installedBuildSha && installedBuildSha !== installedCommitSha
+            ? `${installedCommitSha} (${installedBuildSha})`
+            : installedCommitSha)
+        : (installedBuildSha || installedReleaseVersion || 'N/A');
     const ledTypeEntries = availableLedTypes === null
         ? Object.entries(LED_TYPES)
         : Object.entries(LED_TYPES).filter(([value]) => availableLedTypes.has(Number(value)));

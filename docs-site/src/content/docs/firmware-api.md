@@ -65,8 +65,11 @@ Applies to: `firmware/esp` in this repository
 - Common keys: `wifi.ssid`, `wifi.mode`, `ip`, `leds.pwr`.
 - MeshLED build metadata keys:
   - `meshledVersion`: release tag or git describe string from firmware build.
-  - `meshledReleaseSha`: short git SHA from firmware build.
-    - If build macros are unavailable (for example Arduino IDE builds), firmware falls back to deriving a short SHA from the running app image hash.
+  - `meshledCommitSha`: git commit SHA when available from build metadata (or parsed from git-describe version string).
+  - `meshledBuildSha`: short hash of the running firmware image.
+    - Usually matches commit SHA in CI/PlatformIO builds.
+    - In Arduino IDE builds without injected build macros, this falls back to the app image ELF SHA.
+  - `meshledReleaseSha`: backward-compatible alias for `meshledBuildSha`.
 - `wifi.ssid` is the active network SSID (`AP` SSID in AP mode, STA SSID in station mode).
 - `wifi.mode` is `"ap"` or `"sta"`.
 
@@ -74,7 +77,7 @@ Applies to: `firmware/esp` in this repository
 
 - Returns OTA diagnostics JSON for confirming OTA apply/revert behavior.
 - Includes:
-  - current runtime identifiers (`meshledVersion`, `meshledReleaseSha`, `sketchMD5`)
+  - current runtime identifiers (`meshledVersion`, `meshledCommitSha`, `meshledBuildSha`, `meshledReleaseSha`, `sketchMD5`)
   - reset reason (`resetReason`, `resetReasonCode`)
   - running partition metadata (`runningPartition`, `runningPartitionAddress`, `runningOtaState`) when available from ESP-IDF APIs
   - `lastOta` object persisted in SPIFFS (`/ota_status.json`) with stage transitions:

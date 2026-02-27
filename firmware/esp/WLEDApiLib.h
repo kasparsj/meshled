@@ -20,6 +20,63 @@
 #define MESHLED_RELEASE_SHA "unknown"
 #endif
 
+#ifndef MESHLED_GIT_COMMIT
+#define MESHLED_GIT_COMMIT "unknown"
+#endif
+
+inline bool meshledIsHexChar(char c) {
+  return (c >= '0' && c <= '9') ||
+         (c >= 'a' && c <= 'f') ||
+         (c >= 'A' && c <= 'F');
+}
+
+inline bool meshledLooksLikeGitSha(const String& value) {
+  String candidate = value;
+  candidate.trim();
+  const int length = candidate.length();
+  if (length < 7 || length > 40) {
+    return false;
+  }
+
+  for (int i = 0; i < length; i++) {
+    if (!meshledIsHexChar(candidate.charAt(i))) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+inline String meshledExtractGitShaFromVersion(const String& version) {
+  String value = version;
+  value.trim();
+  if (value.length() == 0) {
+    return "";
+  }
+
+  const int gitMarkerPos = value.lastIndexOf("-g");
+  if (gitMarkerPos >= 0) {
+    const int start = gitMarkerPos + 2;
+    int end = start;
+    while (end < value.length() && meshledIsHexChar(value.charAt(end))) {
+      end++;
+    }
+    String candidate = value.substring(start, end);
+    if (meshledLooksLikeGitSha(candidate)) {
+      return candidate;
+    }
+  }
+
+  if (value.length() > 1 && (value.charAt(0) == 'g' || value.charAt(0) == 'G')) {
+    String candidate = value.substring(1);
+    if (meshledLooksLikeGitSha(candidate)) {
+      return candidate;
+    }
+  }
+
+  return "";
+}
+
 String getResolvedMeshledVersion() {
   static String cachedVersion;
   if (cachedVersion.length() > 0) {
@@ -33,6 +90,34 @@ String getResolvedMeshledVersion() {
   }
 
   return cachedVersion;
+}
+
+String getResolvedMeshledCommitSha() {
+  static String cachedCommitSha;
+  if (cachedCommitSha.length() > 0) {
+    return cachedCommitSha;
+  }
+
+  cachedCommitSha = String(MESHLED_GIT_COMMIT);
+  cachedCommitSha.trim();
+  if (meshledLooksLikeGitSha(cachedCommitSha)) {
+    return cachedCommitSha;
+  }
+
+  cachedCommitSha = String(MESHLED_RELEASE_SHA);
+  cachedCommitSha.trim();
+  if (meshledLooksLikeGitSha(cachedCommitSha)) {
+    return cachedCommitSha;
+  }
+
+  cachedCommitSha = meshledExtractGitShaFromVersion(getResolvedMeshledVersion());
+  cachedCommitSha.trim();
+  if (meshledLooksLikeGitSha(cachedCommitSha)) {
+    return cachedCommitSha;
+  }
+
+  cachedCommitSha = "unknown";
+  return cachedCommitSha;
 }
 
 String getResolvedMeshledReleaseSha() {
@@ -147,6 +232,8 @@ void getWLEDInfo(JsonObject& info) {
   info["cn"] = "Kōsen";
   info["release"] = "ESP32";
   info["meshledVersion"] = getResolvedMeshledVersion();
+  info["meshledCommitSha"] = getResolvedMeshledCommitSha();
+  info["meshledBuildSha"] = getResolvedMeshledReleaseSha();
   info["meshledReleaseSha"] = getResolvedMeshledReleaseSha();
 
   // LED information
