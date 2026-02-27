@@ -73,6 +73,8 @@ const SettingsTab = () => {
     const [saveMessage, setSaveMessage] = useState('');
     const [showWifiModal, setShowWifiModal] = useState(false);
     const brightnessUpdateTimeoutRef = useRef(null);
+    const [oscSupported, setOscSupported] = useState(false);
+    const [otaSupported, setOtaSupported] = useState(false);
     const [availableLedLibraries, setAvailableLedLibraries] = useState(null);
     const [unavailableLedLibraryReasons, setUnavailableLedLibraryReasons] = useState({});
     const [availableLedTypes, setAvailableLedTypes] = useState(null);
@@ -110,6 +112,14 @@ const SettingsTab = () => {
                 setAvailableLedTypes(null);
                 setLedTypeAvailableLibraries({});
                 const data = await getSettings();
+                const supportsOsc = Object.prototype.hasOwnProperty.call(data, 'oscEnabled') ||
+                    Object.prototype.hasOwnProperty.call(data, 'oscPort');
+                setOscSupported(supportsOsc);
+                const supportsOta = Object.prototype.hasOwnProperty.call(data, 'otaEnabled') ||
+                    Object.prototype.hasOwnProperty.call(data, 'otaPort') ||
+                    Object.prototype.hasOwnProperty.call(data, 'otaPassword') ||
+                    Object.prototype.hasOwnProperty.call(data, 'hasOtaPassword');
+                setOtaSupported(supportsOta);
 
                 const availabilitySet = Array.isArray(data?.availableLedLibraries)
                     ? new Set(
@@ -173,6 +183,15 @@ const SettingsTab = () => {
                         }
                     }
 
+                    if (!supportsOsc) {
+                        nextSettings.oscEnabled = false;
+                    }
+
+                    if (!supportsOta) {
+                        nextSettings.otaEnabled = false;
+                        nextSettings.otaPassword = '';
+                    }
+
                     const supportedLibrariesForType = ledTypeLibraryMap[String(nextSettings.ledType)];
                     if (Array.isArray(supportedLibrariesForType) && supportedLibrariesForType.length === 1) {
                         nextSettings.ledLibrary = supportedLibrariesForType[0];
@@ -206,7 +225,26 @@ const SettingsTab = () => {
         setSaveMessage('');
         
         try {
-            await saveSettingsHook(settings);
+            let settingsToSave = { ...settings };
+            if (!oscSupported) {
+                settingsToSave = Object.fromEntries(
+                    Object.entries(settingsToSave).filter(([key]) => (
+                        key !== 'oscEnabled' &&
+                        key !== 'oscPort'
+                    ))
+                );
+            }
+            if (!otaSupported) {
+                settingsToSave = Object.fromEntries(
+                    Object.entries(settingsToSave).filter(([key]) => (
+                        key !== 'otaEnabled' &&
+                        key !== 'otaPort' &&
+                        key !== 'otaPassword'
+                    ))
+                );
+            }
+
+            await saveSettingsHook(settingsToSave);
             if (settings.apiAuthEnabled && settings.apiAuthToken) {
                 localStorage.setItem('ledController_apiToken', settings.apiAuthToken);
             } else if (!settings.apiAuthEnabled) {
@@ -524,66 +562,74 @@ const SettingsTab = () => {
                     Communication Settings
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label className="block text-sm text-zinc-300 mb-2">OSC Enabled</label>
-                        <label className="flex items-center">
-                            <input
-                                type="checkbox"
-                                checked={settings.oscEnabled}
-                                onChange={(e) => updateSetting('oscEnabled', e.target.checked)}
-                                className="mr-2"
-                            />
-                            <span>Enable OSC communication</span>
-                        </label>
-                    </div>
-                    {settings.oscEnabled && (
-                        <div>
-                            <label className="block text-sm text-zinc-300 mb-2">OSC Port</label>
-                            <input
-                                type="number"
-                                min="1024"
-                                max="65535"
-                                value={settings.oscPort}
-                                onChange={(e) => updateSetting('oscPort', parseInt(e.target.value))}
-                                className="w-full bg-zinc-600 border border-zinc-500 rounded px-3 py-2"
-                            />
-                        </div>
-                    )}
-                    <div>
-                        <label className="block text-sm text-zinc-300 mb-2">OTA Updates Enabled</label>
-                        <label className="flex items-center">
-                            <input
-                                type="checkbox"
-                                checked={settings.otaEnabled}
-                                onChange={(e) => updateSetting('otaEnabled', e.target.checked)}
-                                className="mr-2"
-                            />
-                            <span>Enable over-the-air updates</span>
-                        </label>
-                    </div>
-                    {settings.otaEnabled && (
+                    {oscSupported && (
                         <>
                             <div>
-                                <label className="block text-sm text-zinc-300 mb-2">OTA Port</label>
-                                <input
-                                    type="number"
-                                    min="1024"
-                                    max="65535"
-                                    value={settings.otaPort}
-                                    onChange={(e) => updateSetting('otaPort', parseInt(e.target.value))}
-                                    className="w-full bg-zinc-600 border border-zinc-500 rounded px-3 py-2"
-                                />
+                                <label className="block text-sm text-zinc-300 mb-2">OSC Enabled</label>
+                                <label className="flex items-center">
+                                    <input
+                                        type="checkbox"
+                                        checked={settings.oscEnabled}
+                                        onChange={(e) => updateSetting('oscEnabled', e.target.checked)}
+                                        className="mr-2"
+                                    />
+                                    <span>Enable OSC communication</span>
+                                </label>
                             </div>
-                            <div className="md:col-start-2">
-                                <label className="block text-sm text-zinc-300 mb-2">OTA Password</label>
-                                <input
-                                    type="password"
-                                    value={settings.otaPassword}
-                                    onChange={(e) => updateSetting('otaPassword', e.target.value)}
-                                    className="w-full bg-zinc-600 border border-zinc-500 rounded px-3 py-2"
-                                    placeholder="Enter OTA password"
-                                />
+                            {settings.oscEnabled && (
+                                <div>
+                                    <label className="block text-sm text-zinc-300 mb-2">OSC Port</label>
+                                    <input
+                                        type="number"
+                                        min="1024"
+                                        max="65535"
+                                        value={settings.oscPort}
+                                        onChange={(e) => updateSetting('oscPort', parseInt(e.target.value))}
+                                        className="w-full bg-zinc-600 border border-zinc-500 rounded px-3 py-2"
+                                    />
+                                </div>
+                            )}
+                        </>
+                    )}
+                    {otaSupported && (
+                        <>
+                            <div>
+                                <label className="block text-sm text-zinc-300 mb-2">OTA Updates Enabled</label>
+                                <label className="flex items-center">
+                                    <input
+                                        type="checkbox"
+                                        checked={settings.otaEnabled}
+                                        onChange={(e) => updateSetting('otaEnabled', e.target.checked)}
+                                        className="mr-2"
+                                    />
+                                    <span>Enable over-the-air updates</span>
+                                </label>
                             </div>
+                            {settings.otaEnabled && (
+                                <>
+                                    <div>
+                                        <label className="block text-sm text-zinc-300 mb-2">OTA Port</label>
+                                        <input
+                                            type="number"
+                                            min="1024"
+                                            max="65535"
+                                            value={settings.otaPort}
+                                            onChange={(e) => updateSetting('otaPort', parseInt(e.target.value))}
+                                            className="w-full bg-zinc-600 border border-zinc-500 rounded px-3 py-2"
+                                        />
+                                    </div>
+                                    <div className="md:col-start-2">
+                                        <label className="block text-sm text-zinc-300 mb-2">OTA Password</label>
+                                        <input
+                                            type="password"
+                                            value={settings.otaPassword}
+                                            onChange={(e) => updateSetting('otaPassword', e.target.value)}
+                                            className="w-full bg-zinc-600 border border-zinc-500 rounded px-3 py-2"
+                                            placeholder="Enter OTA password"
+                                        />
+                                    </div>
+                                </>
+                            )}
                         </>
                     )}
                     <div>
