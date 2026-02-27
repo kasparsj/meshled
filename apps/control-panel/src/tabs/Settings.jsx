@@ -4,6 +4,33 @@ import useDeviceInfo from "../hooks/useDeviceInfo";
 import useSettings from "../hooks/useSettings";
 import WifiModal from "../components/WifiModal";
 
+const SETTINGS_FIELD_KEYS = [
+    'maxBrightness',
+    'deviceHostname',
+    'pixelCount1',
+    'pixelCount2',
+    'pixelPin1',
+    'pixelPin2',
+    'pixelDensity',
+    'ledType',
+    'colorOrder',
+    'ledLibrary',
+    'objectType',
+    'oscEnabled',
+    'oscPort',
+    'otaEnabled',
+    'otaPort',
+    'otaPassword',
+    'apiAuthEnabled',
+    'apiAuthToken',
+    'savedSSID',
+    'savedPassword',
+    'activeSSID',
+    'apMode'
+];
+
+const LED_LIBRARY_ORDER = [0, 1];
+
 const SettingsTab = () => {
     const { deviceInfo, loading: deviceInfoLoading, error: deviceInfoError } = useDeviceInfo();
     const { 
@@ -46,6 +73,10 @@ const SettingsTab = () => {
     const [saveMessage, setSaveMessage] = useState('');
     const [showWifiModal, setShowWifiModal] = useState(false);
     const brightnessUpdateTimeoutRef = useRef(null);
+    const [availableLedLibraries, setAvailableLedLibraries] = useState(null);
+    const [unavailableLedLibraryReasons, setUnavailableLedLibraryReasons] = useState({});
+    const [availableLedTypes, setAvailableLedTypes] = useState(null);
+    const [ledTypeAvailableLibraries, setLedTypeAvailableLibraries] = useState({});
 
     const toNumberOrNull = (value) => {
         const num = Number(value);
@@ -62,11 +93,81 @@ const SettingsTab = () => {
     useEffect(() => {
         const loadSettings = async () => {
             try {
+                setAvailableLedLibraries(null);
+                setUnavailableLedLibraryReasons({});
+                setAvailableLedTypes(null);
+                setLedTypeAvailableLibraries({});
                 const data = await getSettings();
-                setSettings(prevSettings => ({
-                    ...prevSettings,
-                    ...data
-                }));
+
+                const availabilitySet = Array.isArray(data?.availableLedLibraries)
+                    ? new Set(
+                        data.availableLedLibraries
+                            .map((value) => Number(value))
+                            .filter((value) => Number.isFinite(value))
+                    )
+                    : null;
+
+                const reasonMap = (data?.unavailableLedLibraryReasons && typeof data.unavailableLedLibraryReasons === 'object')
+                    ? Object.fromEntries(
+                        Object.entries(data.unavailableLedLibraryReasons).map(([key, value]) => [String(key), String(value)])
+                    )
+                    : {};
+
+                const availableTypeSet = Array.isArray(data?.availableLedTypes)
+                    ? new Set(
+                        data.availableLedTypes
+                            .map((value) => Number(value))
+                            .filter((value) => Number.isFinite(value))
+                    )
+                    : null;
+
+                const ledTypeLibraryMap = (data?.ledTypeAvailableLibraries && typeof data.ledTypeAvailableLibraries === 'object')
+                    ? Object.fromEntries(
+                        Object.entries(data.ledTypeAvailableLibraries).map(([typeId, libraryIds]) => {
+                            const libraries = Array.isArray(libraryIds)
+                                ? libraryIds
+                                    .map((value) => Number(value))
+                                    .filter((value) => Number.isFinite(value))
+                                : [];
+                            return [String(typeId), libraries];
+                        })
+                    )
+                    : {};
+
+                setAvailableLedLibraries(availabilitySet);
+                setUnavailableLedLibraryReasons(reasonMap);
+                setAvailableLedTypes(availableTypeSet);
+                setLedTypeAvailableLibraries(ledTypeLibraryMap);
+
+                setSettings(prevSettings => {
+                    const nextSettings = { ...prevSettings };
+                    SETTINGS_FIELD_KEYS.forEach((key) => {
+                        if (Object.prototype.hasOwnProperty.call(data, key)) {
+                            nextSettings[key] = data[key];
+                        }
+                    });
+
+                    if (availabilitySet !== null && !availabilitySet.has(Number(nextSettings.ledLibrary))) {
+                        const firstAvailableLibrary = LED_LIBRARY_ORDER.find((libraryId) => availabilitySet.has(libraryId));
+                        if (typeof firstAvailableLibrary === 'number') {
+                            nextSettings.ledLibrary = firstAvailableLibrary;
+                        }
+                    }
+
+                    if (availableTypeSet !== null && !availableTypeSet.has(Number(nextSettings.ledType))) {
+                        const firstAvailableType = availableTypeSet.values().next().value;
+                        if (Number.isFinite(firstAvailableType)) {
+                            nextSettings.ledType = firstAvailableType;
+                        }
+                    }
+
+                    const supportedLibrariesForType = ledTypeLibraryMap[String(nextSettings.ledType)];
+                    if (Array.isArray(supportedLibrariesForType) && supportedLibrariesForType.length === 1) {
+                        nextSettings.ledLibrary = supportedLibrariesForType[0];
+                    }
+
+                    return nextSettings;
+                });
             } catch (error) {
                 console.error('Failed to load settings:', error);
             }
@@ -114,6 +215,23 @@ const SettingsTab = () => {
         }));
     }, []);
 
+    const handleLedTypeChange = useCallback((event) => {
+        const nextLedType = parseInt(event.target.value, 10);
+        setSettings(prev => {
+            const nextSettings = {
+                ...prev,
+                ledType: nextLedType
+            };
+
+            const supportedLibrariesForType = ledTypeAvailableLibraries[String(nextLedType)];
+            if (Array.isArray(supportedLibrariesForType) && supportedLibrariesForType.length === 1) {
+                nextSettings.ledLibrary = supportedLibrariesForType[0];
+            }
+
+            return nextSettings;
+        });
+    }, [ledTypeAvailableLibraries]);
+
     const queueBrightnessUpdate = useCallback((value) => {
         if (brightnessUpdateTimeoutRef.current) {
             clearTimeout(brightnessUpdateTimeoutRef.current);
@@ -151,6 +269,10 @@ const SettingsTab = () => {
         : 0;
     const isApMode = deviceInfo?.wifi?.mode === 'ap' || settings.apMode === true;
     const displayedSSID = deviceInfo?.wifi?.ssid || settings.activeSSID || settings.savedSSID || 'N/A';
+    const ledTypeEntries = availableLedTypes === null
+        ? Object.entries(LED_TYPES)
+        : Object.entries(LED_TYPES).filter(([value]) => availableLedTypes.has(Number(value)));
+    const renderedLedTypeEntries = ledTypeEntries.length > 0 ? ledTypeEntries : Object.entries(LED_TYPES);
 
     return (
         <div className="space-y-6">
@@ -240,10 +362,10 @@ const SettingsTab = () => {
                         <label className="block text-sm text-zinc-300 mb-2">LED Type</label>
                         <select
                             value={settings.ledType}
-                            onChange={(e) => updateSetting('ledType', parseInt(e.target.value))}
+                            onChange={handleLedTypeChange}
                             className="w-full bg-zinc-600 border border-zinc-500 rounded px-3 py-2"
                         >
-                            {Object.entries(LED_TYPES).map(([value, label]) => (
+                            {renderedLedTypeEntries.map(([value, label]) => (
                                 <option key={value} value={value}>{label}</option>
                             ))}
                         </select>
@@ -323,9 +445,25 @@ const SettingsTab = () => {
                             onChange={(e) => updateSetting('ledLibrary', parseInt(e.target.value))}
                             className="w-full bg-zinc-600 border border-zinc-500 rounded px-3 py-2"
                         >
-                            {Object.entries(LED_LIBRARIES).map(([value, label]) => (
-                                <option key={value} value={value}>{label}</option>
-                            ))}
+                            {Object.entries(LED_LIBRARIES).map(([value, label]) => {
+                                const libraryId = Number(value);
+                                const isAvailable = availableLedLibraries === null || availableLedLibraries.has(libraryId);
+                                const reason = unavailableLedLibraryReasons[value] || unavailableLedLibraryReasons[String(libraryId)];
+                                const optionLabel = isAvailable
+                                    ? label
+                                    : `${label} (Unavailable${reason ? `: ${reason}` : ''})`;
+
+                                return (
+                                    <option
+                                        key={value}
+                                        value={value}
+                                        disabled={!isAvailable}
+                                        title={!isAvailable && reason ? reason : undefined}
+                                    >
+                                        {optionLabel}
+                                    </option>
+                                );
+                            })}
                         </select>
                     </div>
                     <div>

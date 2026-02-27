@@ -21,22 +21,284 @@ NeoPixelBusStrip* strip2 = NULL;
 #include "NeoPixelBusLib.h"
 #endif
 
-void normalizeLedLibrarySelection() {
-  #if defined(CONFIG_IDF_TARGET_ESP32C3) && defined(FASTLED_ENABLED) && defined(NEOPIXELBUS_ENABLED)
+static constexpr uint8_t KNOWN_LED_LIBRARIES[] = {
+  LIB_NEOPIXELBUS,
+  LIB_FASTLED
+};
+
+static constexpr uint8_t KNOWN_LED_TYPES[] = {
+  LED_WS2812,
+  LED_WS2811,
+  LED_WS2815,
+  LED_WS2813,
+  LED_WS2816,
+  LED_SK6812,
+  LED_TM1829,
+  LED_APA106,
+  LED_WS2814,
+  LED_TM1814,
+  LED_TM1914,
+  LED_TM1812,
+  LED_TM1809,
+  LED_TM1804,
+  LED_TM1803,
+  LED_UCS1903,
+  LED_UCS1903B,
+  LED_UCS1904,
+  LED_UCS2903,
+  LED_SK6822,
+  LED_APA104,
+  LED_WS2811_400,
+  LED_GS1903,
+  LED_GW6205,
+  LED_GW6205_400,
+  LED_LPD1886,
+  LED_LPD1886_8BIT,
+  LED_PL9823,
+  LED_UCS1912,
+  LED_SM16703,
+  LED_SM16824E
+};
+
+size_t knownLedLibraryCount() {
+  return sizeof(KNOWN_LED_LIBRARIES) / sizeof(KNOWN_LED_LIBRARIES[0]);
+}
+
+uint8_t knownLedLibraryAt(size_t index) {
+  return KNOWN_LED_LIBRARIES[index];
+}
+
+size_t knownLedTypeCount() {
+  return sizeof(KNOWN_LED_TYPES) / sizeof(KNOWN_LED_TYPES[0]);
+}
+
+uint8_t knownLedTypeAt(size_t index) {
+  return KNOWN_LED_TYPES[index];
+}
+
+bool isLedTypeKnown(uint8_t ledType) {
+  for (size_t i = 0; i < knownLedTypeCount(); i++) {
+    if (knownLedTypeAt(i) == ledType) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool isLedLibraryCompiled(uint8_t lib) {
+  switch (lib) {
+    case LIB_NEOPIXELBUS:
+      #ifdef NEOPIXELBUS_ENABLED
+      return true;
+      #else
+      return false;
+      #endif
+    case LIB_FASTLED:
+      #ifdef FASTLED_ENABLED
+      return true;
+      #else
+      return false;
+      #endif
+    default:
+      return false;
+  }
+}
+
+bool isLedLibraryRuntimeAllowed(uint8_t lib) {
   // ESP32-C3 can still hit legacy/new RMT conflicts depending on selected methods.
-  if (ledLibrary == LIB_NEOPIXELBUS) {
-    LP_LOGLN("Forcing FastLED backend on ESP32-C3 to avoid RMT driver conflict");
-    ledLibrary = LIB_FASTLED;
-  }
-  #elif defined(FASTLED_ENABLED) && !defined(NEOPIXELBUS_ENABLED)
-  if (ledLibrary != LIB_FASTLED) {
-    ledLibrary = LIB_FASTLED;
-  }
-  #elif !defined(FASTLED_ENABLED) && defined(NEOPIXELBUS_ENABLED)
-  if (ledLibrary != LIB_NEOPIXELBUS) {
-    ledLibrary = LIB_NEOPIXELBUS;
+  #if defined(CONFIG_IDF_TARGET_ESP32C3)
+  if (lib == LIB_NEOPIXELBUS) {
+    return false;
   }
   #endif
+  return true;
+}
+
+bool isLedLibraryAvailable(uint8_t lib) {
+  return isLedLibraryCompiled(lib) && isLedLibraryRuntimeAllowed(lib);
+}
+
+const char* ledLibraryUnavailableReason(uint8_t lib) {
+  if (!isLedLibraryCompiled(lib)) {
+    return "Not compiled into this firmware";
+  }
+
+  if (!isLedLibraryRuntimeAllowed(lib)) {
+    #if defined(CONFIG_IDF_TARGET_ESP32C3)
+    if (lib == LIB_NEOPIXELBUS) {
+      return "Disabled on ESP32-C3 to avoid RMT driver conflict";
+    }
+    #endif
+    return "Not allowed on this target";
+  }
+
+  return NULL;
+}
+
+uint8_t defaultAvailableLedLibrary() {
+  if (isLedLibraryAvailable(LIB_FASTLED)) {
+    return LIB_FASTLED;
+  }
+  if (isLedLibraryAvailable(LIB_NEOPIXELBUS)) {
+    return LIB_NEOPIXELBUS;
+  }
+  return ledLibrary;
+}
+
+bool doesLedLibrarySupportType(uint8_t lib, uint8_t ledType) {
+  switch (lib) {
+    case LIB_FASTLED:
+      switch (ledType) {
+        case LED_WS2812:
+        case LED_WS2811:
+        case LED_WS2815:
+        case LED_WS2813:
+        case LED_WS2816:
+        case LED_SK6812:
+        case LED_TM1829:
+        case LED_APA106:
+        case LED_TM1812:
+        case LED_TM1809:
+        case LED_TM1804:
+        case LED_TM1803:
+        case LED_UCS1903:
+        case LED_UCS1903B:
+        case LED_UCS1904:
+        case LED_UCS2903:
+        case LED_SK6822:
+        case LED_APA104:
+        case LED_WS2811_400:
+        case LED_GS1903:
+        case LED_GW6205:
+        case LED_GW6205_400:
+        case LED_LPD1886:
+        case LED_LPD1886_8BIT:
+        case LED_PL9823:
+        case LED_UCS1912:
+        case LED_SM16703:
+        case LED_SM16824E:
+          return true;
+        default:
+          return false;
+      }
+    case LIB_NEOPIXELBUS:
+      switch (ledType) {
+        case LED_WS2812:
+        case LED_WS2811:
+        case LED_WS2815:
+        case LED_WS2813:
+        case LED_WS2816:
+        case LED_SK6812:
+        case LED_TM1829:
+        case LED_APA106:
+        case LED_WS2814:
+        case LED_TM1814:
+        case LED_TM1914:
+          return true;
+        default:
+          return false;
+      }
+    default:
+      return false;
+  }
+}
+
+bool isLedTypeAvailableForLibrary(uint8_t ledType, uint8_t lib) {
+  return isLedLibraryAvailable(lib) && doesLedLibrarySupportType(lib, ledType);
+}
+
+uint8_t availableLedLibraryCountForType(uint8_t ledType) {
+  uint8_t count = 0;
+  for (size_t i = 0; i < knownLedLibraryCount(); i++) {
+    if (isLedTypeAvailableForLibrary(ledType, knownLedLibraryAt(i))) {
+      count++;
+    }
+  }
+  return count;
+}
+
+bool isLedTypeAvailable(uint8_t ledType) {
+  return availableLedLibraryCountForType(ledType) > 0;
+}
+
+const char* ledTypeUnavailableReason(uint8_t ledType) {
+  if (!isLedTypeKnown(ledType)) {
+    return "Unknown LED type";
+  }
+  if (isLedTypeAvailable(ledType)) {
+    return NULL;
+  }
+  return "Not supported by installed LED libraries";
+}
+
+uint8_t defaultAvailableLedType() {
+  if (isLedTypeAvailable(ledType)) {
+    return ledType;
+  }
+
+  for (size_t i = 0; i < knownLedTypeCount(); i++) {
+    uint8_t candidateType = knownLedTypeAt(i);
+    if (isLedTypeAvailable(candidateType)) {
+      return candidateType;
+    }
+  }
+
+  return ledType;
+}
+
+uint8_t firstAvailableLedLibraryForType(uint8_t ledType) {
+  for (size_t i = 0; i < knownLedLibraryCount(); i++) {
+    uint8_t candidateLibrary = knownLedLibraryAt(i);
+    if (isLedTypeAvailableForLibrary(ledType, candidateLibrary)) {
+      return candidateLibrary;
+    }
+  }
+  return defaultAvailableLedLibrary();
+}
+
+void normalizeLedSelection() {
+  if (!isLedLibraryAvailable(ledLibrary)) {
+    const char* reason = ledLibraryUnavailableReason(ledLibrary);
+    if (reason != NULL) {
+      LP_LOGLN("Selected LED library is unavailable: " + String(reason));
+    } else {
+      LP_LOGLN("Selected LED library is unavailable");
+    }
+
+    uint8_t fallbackLibrary = defaultAvailableLedLibrary();
+    if (fallbackLibrary != ledLibrary) {
+      LP_LOGLN("Switching LED library to " + String(fallbackLibrary == LIB_FASTLED ? "FastLED" : "NeoPixelBus"));
+      ledLibrary = fallbackLibrary;
+    }
+  }
+
+  if (!isLedTypeAvailable(ledType)) {
+    const char* reason = ledTypeUnavailableReason(ledType);
+    if (reason != NULL) {
+      LP_LOGLN("Selected LED type is unavailable: " + String(reason));
+    } else {
+      LP_LOGLN("Selected LED type is unavailable");
+    }
+
+    uint8_t fallbackType = defaultAvailableLedType();
+    if (fallbackType != ledType) {
+      LP_LOGLN("Switching LED type to " + String(fallbackType));
+      ledType = fallbackType;
+    }
+  }
+
+  if (!isLedTypeAvailableForLibrary(ledType, ledLibrary)) {
+    uint8_t fallbackLibrary = firstAvailableLedLibraryForType(ledType);
+    if (fallbackLibrary != ledLibrary && isLedTypeAvailableForLibrary(ledType, fallbackLibrary)) {
+      LP_LOGLN("Switching LED library to match LED type " + String(ledType) + ": " +
+               String(fallbackLibrary == LIB_FASTLED ? "FastLED" : "NeoPixelBus"));
+      ledLibrary = fallbackLibrary;
+    }
+  }
+}
+
+void normalizeLedLibrarySelection() {
+  normalizeLedSelection();
 }
 
 void setupLEDs() {

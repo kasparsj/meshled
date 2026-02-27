@@ -69,6 +69,13 @@ Applies to: `firmware/esp` in this repository
 - Returns runtime settings JSON.
 - Includes:
   - LED/object config (`pixelCount*`, `pixelPin*`, `ledType`, `colorOrder`, `ledLibrary`, `objectType`)
+  - LED library capability metadata:
+    - `availableLedLibraries`: array of available backend IDs (for example `[0,1]`)
+    - `unavailableLedLibraryReasons`: object keyed by library ID string with short reason text (for example `{"0":"Disabled on ESP32-C3 to avoid RMT driver conflict"}`)
+  - LED type capability metadata:
+    - `availableLedTypes`: array of LED type IDs supported by at least one available backend
+    - `ledTypeAvailableLibraries`: object keyed by LED type ID string with array of available backend IDs that support that type (for example `{"2":[1],"0":[0,1]}`)
+    - `unavailableLedTypeReasons`: object keyed by LED type ID string with short reason text
   - network/runtime (`maxBrightness`, `deviceHostname`, WiFi saved credentials, `activeSSID`, `apMode`)
   - optional runtime toggles (OSC/OTA)
   - API auth config (`apiAuthEnabled`, `apiAuthToken`)

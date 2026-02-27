@@ -41,7 +41,17 @@ void handleUpdateSettings() {
   #endif
 
   if (server.hasArg("led_type")) {
-    ledType = server.arg("led_type").toInt();
+    uint8_t requestedLedType = server.arg("led_type").toInt();
+    if (isLedTypeAvailable(requestedLedType)) {
+      ledType = requestedLedType;
+    } else {
+      const char* reason = ledTypeUnavailableReason(requestedLedType);
+      if (reason != NULL) {
+        LP_LOGLN("Ignoring unavailable led_type=" + String(requestedLedType) + ": " + String(reason));
+      } else {
+        LP_LOGLN("Ignoring unavailable led_type=" + String(requestedLedType));
+      }
+    }
   }
 
   if (server.hasArg("color_order")) {
@@ -72,7 +82,17 @@ void handleUpdateSettings() {
   }
 
   if (server.hasArg("led_library")) {
-    ledLibrary = server.arg("led_library").toInt();
+    uint8_t requestedLedLibrary = server.arg("led_library").toInt();
+    if (isLedLibraryAvailable(requestedLedLibrary)) {
+      ledLibrary = requestedLedLibrary;
+    } else {
+      const char* reason = ledLibraryUnavailableReason(requestedLedLibrary);
+      if (reason != NULL) {
+        LP_LOGLN("Ignoring unavailable led_library=" + String(requestedLedLibrary) + ": " + String(reason));
+      } else {
+        LP_LOGLN("Ignoring unavailable led_library=" + String(requestedLedLibrary));
+      }
+    }
   }
 
   if (server.hasArg("object_type")) {
@@ -83,6 +103,8 @@ void handleUpdateSettings() {
       // This will be handled after restarting
     }
   }
+
+  normalizeLedSelection();
 
   #ifdef OTA_ENABLED
   bool otaSettingsChanged = false;
@@ -155,7 +177,9 @@ void handleUpdateWifi() {
 }
 
 void handleGetSettings() {
-  DynamicJsonDocument doc(1024);
+  normalizeLedSelection();
+
+  DynamicJsonDocument doc(4096);
   
   doc["maxBrightness"] = maxBrightness;
   doc["deviceHostname"] = deviceHostname;
@@ -174,6 +198,49 @@ void handleGetSettings() {
   doc["apMode"] = apMode;
   doc["apiAuthEnabled"] = apiAuthEnabled;
   doc["apiAuthToken"] = apiAuthToken;
+
+  JsonArray availableLedLibraries = doc.createNestedArray("availableLedLibraries");
+  if (isLedLibraryAvailable(LIB_NEOPIXELBUS)) {
+    availableLedLibraries.add(LIB_NEOPIXELBUS);
+  }
+  if (isLedLibraryAvailable(LIB_FASTLED)) {
+    availableLedLibraries.add(LIB_FASTLED);
+  }
+
+  JsonObject unavailableLedLibraryReasons = doc.createNestedObject("unavailableLedLibraryReasons");
+  if (!isLedLibraryAvailable(LIB_NEOPIXELBUS)) {
+    const char* reason = ledLibraryUnavailableReason(LIB_NEOPIXELBUS);
+    unavailableLedLibraryReasons[String(LIB_NEOPIXELBUS)] = reason != NULL ? reason : "Unavailable";
+  }
+  if (!isLedLibraryAvailable(LIB_FASTLED)) {
+    const char* reason = ledLibraryUnavailableReason(LIB_FASTLED);
+    unavailableLedLibraryReasons[String(LIB_FASTLED)] = reason != NULL ? reason : "Unavailable";
+  }
+
+  JsonArray availableLedTypes = doc.createNestedArray("availableLedTypes");
+  JsonObject ledTypeAvailableLibraries = doc.createNestedObject("ledTypeAvailableLibraries");
+  JsonObject unavailableLedTypeReasons = doc.createNestedObject("unavailableLedTypeReasons");
+
+  for (size_t typeIndex = 0; typeIndex < knownLedTypeCount(); typeIndex++) {
+    uint8_t typeId = knownLedTypeAt(typeIndex);
+
+    if (isLedTypeAvailable(typeId)) {
+      availableLedTypes.add(typeId);
+    }
+
+    JsonArray supportedLibraries = ledTypeAvailableLibraries.createNestedArray(String(typeId));
+    for (size_t libraryIndex = 0; libraryIndex < knownLedLibraryCount(); libraryIndex++) {
+      uint8_t libraryId = knownLedLibraryAt(libraryIndex);
+      if (isLedTypeAvailableForLibrary(typeId, libraryId)) {
+        supportedLibraries.add(libraryId);
+      }
+    }
+
+    if (supportedLibraries.size() == 0) {
+      const char* reason = ledTypeUnavailableReason(typeId);
+      unavailableLedTypeReasons[String(typeId)] = reason != NULL ? reason : "Unavailable";
+    }
+  }
   
   #ifdef OSC_ENABLED
   doc["oscEnabled"] = oscEnabled;

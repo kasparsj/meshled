@@ -95,45 +95,97 @@
 #define FASTLED_DEFAULT_PIN 14
 #endif
 
+#define FASTLED_ADD_CHIPSET_FOR_ORDER(CHIPSET, ORDER, LEDS, COUNT, PIN, COLOR_ORDER) \
+  do {                                                                                  \
+    switch (PIN) {                                                                      \
+      FASTLED_ADD_PIN_CASES(CHIPSET, ORDER, LEDS, COUNT)                               \
+      default: FASTLED_ADD_PIN(CHIPSET, FASTLED_DEFAULT_PIN, ORDER, LEDS, COUNT, COLOR_ORDER); break; \
+    }                                                                                   \
+  } while (0)
+
+#define FASTLED_ADD_CHIPSET(CHIPSET, LEDS, COUNT, PIN, COLOR_ORDER) \
+  do {                                                               \
+    if (IS_RGB(COLOR_ORDER)) {                                       \
+      FASTLED_ADD_CHIPSET_FOR_ORDER(CHIPSET, RGB, LEDS, COUNT, PIN, COLOR_ORDER); \
+    } else {                                                         \
+      FASTLED_ADD_CHIPSET_FOR_ORDER(CHIPSET, GRB, LEDS, COUNT, PIN, COLOR_ORDER); \
+    }                                                                \
+  } while (0)
+
+const char* fastLedTypeName(uint8_t ledType) {
+  switch (ledType) {
+    case LED_WS2812: return "WS2812";
+    case LED_WS2811: return "WS2811";
+    case LED_WS2815: return "WS2815";
+    case LED_WS2813: return "WS2813";
+    case LED_WS2816: return "WS2816";
+    case LED_SK6812: return "SK6812";
+    case LED_TM1829: return "TM1829";
+    case LED_APA106: return "APA106";
+    case LED_TM1812: return "TM1812";
+    case LED_TM1809: return "TM1809";
+    case LED_TM1804: return "TM1804";
+    case LED_TM1803: return "TM1803";
+    case LED_UCS1903: return "UCS1903";
+    case LED_UCS1903B: return "UCS1903B";
+    case LED_UCS1904: return "UCS1904";
+    case LED_UCS2903: return "UCS2903";
+    case LED_SK6822: return "SK6822";
+    case LED_APA104: return "APA104";
+    case LED_WS2811_400: return "WS2811_400";
+    case LED_GS1903: return "GS1903";
+    case LED_GW6205: return "GW6205";
+    case LED_GW6205_400: return "GW6205_400";
+    case LED_LPD1886: return "LPD1886";
+    case LED_LPD1886_8BIT: return "LPD1886_8BIT";
+    case LED_PL9823: return "PL9823";
+    case LED_UCS1912: return "UCS1912";
+    case LED_SM16703: return "SM16703";
+    case LED_SM16824E: return "SM16824E";
+    default: return "WS2812";
+  }
+}
+
 void setupFastLED() {
   if (ledLibrary != LIB_FASTLED) return;
 
   leds1 = new CRGB[pixelCount1];
   leds2 = new CRGB[pixelCount2];
 
-  // Helper function to add LEDs with the right configuration
+  // Helper function to add LEDs with the right chipset and color order.
   auto addLedsWithConfig = [](CRGB* leds, uint16_t count, uint8_t pin, uint8_t ledType, uint8_t colorOrder) {
-    if (ledType != LED_WS2811) {
-      if (IS_RGB(colorOrder)) {
-        // WS2812/WS2815 with RGB color order
-        switch(pin) {
-          FASTLED_ADD_PIN_CASES(WS2812, RGB, leds, count)
-          default: FASTLED_ADD_PIN(WS2812, FASTLED_DEFAULT_PIN, RGB, leds, count, colorOrder); break;
-        }
-      }
-      else { //  if (IS_GRB(colorOrder))
-        // WS2812/WS2815 with GRB color order
-        switch(pin) {
-          FASTLED_ADD_PIN_CASES(WS2812, GRB, leds, count)
-          default: FASTLED_ADD_PIN(WS2812, FASTLED_DEFAULT_PIN, GRB, leds, count, colorOrder); break;
-        }
-      }
-    } else {
-      // LED_WS2811
-      if (IS_RGB(colorOrder)) {
-        // WS2811 with RGB color order
-        switch(pin) {
-          FASTLED_ADD_PIN_CASES(WS2811, RGB, leds, count)
-          default: FASTLED_ADD_PIN(WS2811, FASTLED_DEFAULT_PIN, RGB, leds, count, colorOrder); break;
-        }
-      }
-      else {
-        // WS2811 with GRB color order
-        switch(pin) {
-          FASTLED_ADD_PIN_CASES(WS2811, GRB, leds, count)
-          default: FASTLED_ADD_PIN(WS2811, FASTLED_DEFAULT_PIN, GRB, leds, count, colorOrder); break;
-        }
-      }
+    switch (ledType) {
+      case LED_WS2811: FASTLED_ADD_CHIPSET(WS2811, leds, count, pin, colorOrder); break;
+      case LED_WS2815: FASTLED_ADD_CHIPSET(WS2815, leds, count, pin, colorOrder); break;
+      case LED_WS2813: FASTLED_ADD_CHIPSET(WS2813, leds, count, pin, colorOrder); break;
+      case LED_WS2816: FASTLED_ADD_CHIPSET(WS2816, leds, count, pin, colorOrder); break;
+      case LED_SK6812: FASTLED_ADD_CHIPSET(SK6812, leds, count, pin, colorOrder); break;
+      case LED_TM1829: FASTLED_ADD_CHIPSET(TM1829, leds, count, pin, colorOrder); break;
+      case LED_APA106: FASTLED_ADD_CHIPSET(APA106, leds, count, pin, colorOrder); break;
+      case LED_TM1812: FASTLED_ADD_CHIPSET(TM1812, leds, count, pin, colorOrder); break;
+      case LED_TM1809: FASTLED_ADD_CHIPSET(TM1809, leds, count, pin, colorOrder); break;
+      case LED_TM1804: FASTLED_ADD_CHIPSET(TM1804, leds, count, pin, colorOrder); break;
+      case LED_TM1803: FASTLED_ADD_CHIPSET(TM1803, leds, count, pin, colorOrder); break;
+      case LED_UCS1903: FASTLED_ADD_CHIPSET(UCS1903, leds, count, pin, colorOrder); break;
+      case LED_UCS1903B: FASTLED_ADD_CHIPSET(UCS1903B, leds, count, pin, colorOrder); break;
+      case LED_UCS1904: FASTLED_ADD_CHIPSET(UCS1904, leds, count, pin, colorOrder); break;
+      case LED_UCS2903: FASTLED_ADD_CHIPSET(UCS2903, leds, count, pin, colorOrder); break;
+      case LED_SK6822: FASTLED_ADD_CHIPSET(SK6822, leds, count, pin, colorOrder); break;
+      case LED_APA104: FASTLED_ADD_CHIPSET(APA104, leds, count, pin, colorOrder); break;
+      case LED_WS2811_400: FASTLED_ADD_CHIPSET(WS2811_400, leds, count, pin, colorOrder); break;
+      case LED_GS1903: FASTLED_ADD_CHIPSET(GS1903, leds, count, pin, colorOrder); break;
+      case LED_GW6205: FASTLED_ADD_CHIPSET(GW6205, leds, count, pin, colorOrder); break;
+      case LED_GW6205_400: FASTLED_ADD_CHIPSET(GW6205_400, leds, count, pin, colorOrder); break;
+      case LED_LPD1886: FASTLED_ADD_CHIPSET(LPD1886, leds, count, pin, colorOrder); break;
+      case LED_LPD1886_8BIT: FASTLED_ADD_CHIPSET(LPD1886_8BIT, leds, count, pin, colorOrder); break;
+      case LED_PL9823: FASTLED_ADD_CHIPSET(PL9823, leds, count, pin, colorOrder); break;
+      case LED_UCS1912: FASTLED_ADD_CHIPSET(UCS1912, leds, count, pin, colorOrder); break;
+      case LED_SM16703: FASTLED_ADD_CHIPSET(SM16703, leds, count, pin, colorOrder); break;
+      case LED_SM16824E: FASTLED_ADD_CHIPSET(SM16824E, leds, count, pin, colorOrder); break;
+      case LED_WS2812:
+      default:
+        FASTLED_ADD_CHIPSET(WS2812, leds, count, pin, colorOrder);
+        break;
     }
   };
 
@@ -149,8 +201,8 @@ void setupFastLED() {
   FastLED.clear();
   FastLED.show();
 
-  LP_LOGLN("FastLED initialized with ledType = " + String(ledType == LED_WS2811 ? "WS2811" : (ledType == LED_WS2815 ? "WS2815" : "WS2812")) +
-                 ", colorOrder = " + String(colorOrder == CO_GRB ? "GRB" : "RGB"));
+  LP_LOGLN("FastLED initialized with ledType = " + String(fastLedTypeName(ledType)) +
+           ", colorOrder = " + String(IS_RGB(colorOrder) ? "RGB" : "GRB"));
 }
 
 CRGB getFastLEDColor(uint16_t i) {
