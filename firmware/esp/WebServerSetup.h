@@ -6,17 +6,16 @@
 #include "SecurityLib.h"
 #include "WebServerValidation.h"
 
-// todo: gist does not work because of CORS
-#define SCRIPTS_FALLBACK "//gist.githubusercontent.com/kasparsj/e297e6ffff5a4d4aca3657912a17f993/raw/scripts.js"
-
 #define WEBSERVER_CONFIG
 #define WEBSERVER_EMITTER
-#if defined(SPIFFS_ENABLED) and defined(DEV_ENABLED)
-#define SPIFFS_UPLOAD
-#define SPIFFS_DELETE
-//#define SPIFFS_FORMAT
+
+#ifndef MESHLED_WEB_UI_CSS_URL
+#define MESHLED_WEB_UI_CSS_URL "https://meshled-ui.pages.dev/assets/app.css"
 #endif
-#define WEBSERVER_SPIFFS defined(SPIFFS_UPLOAD) or defined(SPIFFS_DELETE) or defined(SPIFFS_FORMAT)
+
+#ifndef MESHLED_WEB_UI_JS_URL
+#define MESHLED_WEB_UI_JS_URL "https://meshled-ui.pages.dev/assets/app.js"
+#endif
 
 void sendCORSHeaders(String methods);
 
@@ -68,31 +67,6 @@ std::function<void(void)> guardProtectedRoute(void (*handler)()) {
   };
 }
 
-bool requireAdminAuth() {
-  if (!apiAuthEnabled || !hasApiAuthTokenConfigured()) {
-    sendCORSHeaders("GET, POST, PUT, DELETE");
-    server.send(403, "application/json", "{\"error\":\"Admin routes require API auth with a configured token\"}");
-    return false;
-  }
-
-  if (!isApiRequestAuthorized()) {
-    sendCORSHeaders("GET, POST, PUT, DELETE");
-    server.send(401, "application/json", "{\"error\":\"Unauthorized\"}");
-    return false;
-  }
-
-  return true;
-}
-
-std::function<void(void)> guardAdminRoute(void (*handler)()) {
-  return [handler]() {
-    if (!requireAdminAuth()) {
-      return;
-    }
-    handler();
-  };
-}
-
 void sendCORSHeaders(String methods = "GET, POST, PUT, DELETE") {
   server.sendHeader("Access-Control-Allow-Origin", "*");
   server.sendHeader("Access-Control-Allow-Methods", methods + ", OPTIONS");
@@ -118,282 +92,100 @@ void sendCORSHeaders(String methods = "GET, POST, PUT, DELETE") {
 #include "SSDPLib.h"
 #endif
 
-#ifdef SPIFFS_UPLOAD
-#include "WebServerSpiffs.h"
-#endif
-
-String getHeaderMenu() {
-  String html = "<p>";
-  if (apMode) {
-    html += "<a href='/settings'>WiFi Setup</a>";
-    html += "</p>";
-    return html;
-  }
-
-  #ifdef WEBSERVER_EMITTER
-  html += "<a href='/emitter'>Emitter</a> | ";
-  #endif
-  #ifdef WEBSERVER_CONFIG
-  html += "<a href='/settings'>Settings</a> | ";
-  #endif
-  #ifdef WEBSERVER_SPIFFS
-  if (apiAuthEnabled && hasApiAuthTokenConfigured()) {
-    html += "<a href='/spiffs' style='color: #00cc00;'>SPIFFS</a>";
-  }
-  #endif
-  html += "</p>";
-  return html;
-}
-
-void streamHeader(WiFiClient &client, String title, bool includeScripts = true) {
-  client.printf("<html><head><title>%s - %s</title>", title.c_str(), deviceHostname.c_str());
-  client.println("<meta name='viewport' content='width=device-width, initial-scale=1'>");
-
-  if (includeScripts) {
-    // Check if scripts.js exists in SPIFFS, use fallback if not
-    #ifdef SPIFFS_ENABLED
-    if (SPIFFS.exists("/scripts.js")) {
-      client.println("<script src='/scripts.js'></script>");
-    } else {
-      client.printf("<script src='%s'></script>", SCRIPTS_FALLBACK);
-    }
-    #else
-    // If SPIFFS is not enabled, always use the fallback
-    client.printf("<script src='%s'></script>", SCRIPTS_FALLBACK);
-    #endif
-  }
-
-  client.println("<style>body{font-family: Arial; margin: 20px; background: #333; color: #fff;}");
-  client.println(".container{max-width: 600px; margin: 0 auto; background: #444; padding: 20px; border-radius: 5px;}");
-  client.println("input, select{width: 100%; padding: 8px; margin: 8px 0; box-sizing: border-box;}");
-  client.println("input[type='color'] {width: 50px; padding: inherit;}");
-  client.println("label{display: block; margin-top: 10px;} button{background: #0066ff; color: white; border: none; padding: 10px; cursor: pointer; margin-top: 20px; width: 100%;}");
-  client.println("button:hover{background: #0044cc;} .value{color: #0066ff;}</style></head>");
-  client.printf("<body><div class='container'><h1>%s - %s</h1>", title.c_str(), deviceHostname.c_str());
-  client.println(getHeaderMenu());
-}
-
-void streamConfigDisplay(WiFiClient &client) {
-  // Only yield periodically to prevent watchdog reset but minimize lag
-  unsigned long lastYield = millis();
-  #define YIELD_IF_NEEDED() if (millis() - lastYield > 20) { yield(); lastYield = millis(); }
+void sendRecoverySetupPage() {
   const String activeSSID = getActiveNetworkSSID();
-  const bool isApMode = apMode;
+  const unsigned long elapsed = millis() - apStartTime;
+  const unsigned long apTimeoutMs = AP_TIMEOUT;
+  const unsigned long remainingSeconds = (apMode && elapsed < apTimeoutMs) ? ((apTimeoutMs - elapsed) / 1000) : 0;
 
-  client.print("<div>");
-
-  client.print(isApMode ? "<p>AP SSID: <span class='value'>" : "<p>WiFi SSID: <span class='value'>");
-  client.print(activeSSID);
-  client.print("</span></p>");
-  YIELD_IF_NEEDED();
-
-  client.print("<p>IP Address: <span class='value'>");
-  client.print(WiFi.localIP().toString());
-  client.print("</span></p>");
-  YIELD_IF_NEEDED();
-
-  client.print("<p>Total consumption: <span class='value'>");
-  client.print(String(totalWattage, 2));
-  client.print(" watts</span></p>");
-  YIELD_IF_NEEDED();
-
-  // Add file system information
-  #ifdef SPIFFS_ENABLED
-  size_t totalBytes = SPIFFS.totalBytes();
-  size_t usedBytes = SPIFFS.usedBytes();
-  float usedPercent = (float)usedBytes / totalBytes * 100;
-
-  client.print("<p>Storage: <span class='value'>");
-  client.print(String(usedBytes / 1024));
-  client.print(" KB used of ");
-  client.print(String(totalBytes / 1024));
-  client.print(" KB (");
-  client.print(String(usedPercent, 1));
-  client.print("%)</span></p>");
-  YIELD_IF_NEEDED();
-
-  #ifdef LOG_FILE
-  // Show log file sizes if they exist
-  if (SPIFFS.exists(LOG_FILE)) {
-    File f = SPIFFS.open(LOG_FILE, FILE_READ);
-    size_t logSize = f.size();
-    f.close();
-    client.print("<p>Log file: <span class='value'>");
-    client.print(String(logSize / 1024.0, 1));
-    client.print(" KB</span></p>");
-    YIELD_IF_NEEDED();
-  }
-  #endif
-
-  #ifdef CRASH_LOG_FILE
-  if (SPIFFS.exists(CRASH_LOG_FILE)) {
-    File f = SPIFFS.open(CRASH_LOG_FILE, FILE_READ);
-    size_t crashLogSize = f.size();
-    f.close();
-    client.print("<p>Crash log: <span class='value'>");
-    client.print(String(crashLogSize / 1024.0, 1));
-    client.print(" KB</span></p>");
-    YIELD_IF_NEEDED();
-  }
-  #endif
-  #endif
+  String html;
+  html.reserve(2800);
+  html += "<!doctype html><html><head><meta charset='utf-8'>";
+  html += "<meta name='viewport' content='width=device-width, initial-scale=1'>";
+  html += "<title>MeshLED Setup</title>";
+  html += "<style>";
+  html += "body{font-family:Arial,sans-serif;margin:0;background:#101826;color:#e5e7eb;}";
+  html += ".wrap{max-width:560px;margin:24px auto;padding:20px;background:#1f2937;border-radius:10px;}";
+  html += "h1{margin:0 0 12px 0;font-size:24px;}p{line-height:1.4;}";
+  html += "label{display:block;margin-top:12px;font-weight:600;}input{width:100%;box-sizing:border-box;padding:10px;margin-top:6px;border:1px solid #4b5563;border-radius:6px;background:#111827;color:#f9fafb;}";
+  html += "button{width:100%;margin-top:14px;padding:10px;border:0;border-radius:6px;background:#2563eb;color:#fff;font-weight:600;cursor:pointer;}";
+  html += "button.secondary{background:#4b5563;}";
+  html += ".meta{font-size:13px;color:#9ca3af;margin-bottom:10px;}";
+  html += "</style></head><body><div class='wrap'>";
+  html += "<h1>MeshLED Recovery</h1>";
+  html += "<p class='meta'>Device: ";
+  html += deviceHostname;
+  html += "</p>";
 
   if (apMode) {
-    client.print("<p><strong>Device is in Access Point mode.</strong> Connect to WiFi network: <span class='value'>");
-    client.print(activeSSID);
-    client.print("</span></p>");
-    unsigned long timeLeft = (AP_TIMEOUT - (millis() - apStartTime)) / 1000;
-    client.print("<p>The device will restart in <span class='value'>");
-    client.print(String(timeLeft));
-    client.print("</span> seconds.</p>");
-    YIELD_IF_NEEDED();
+    html += "<p>Access point mode is active. Connect to <strong>";
+    html += activeSSID;
+    html += "</strong> and submit WiFi credentials below.</p>";
+    html += "<p class='meta'>AP timeout in ";
+    html += String(remainingSeconds);
+    html += " seconds</p>";
+  } else {
+    html += "<p>WiFi credentials can be updated here if connectivity changes.</p>";
+    html += "<p class='meta'>Current network: ";
+    html += activeSSID;
+    html += "</p>";
   }
 
-  client.print("<p>Current state:</p><ul>");
-  client.print("<li>Active Lights: <span class='value'>");
-  client.print(String(state->totalLights));
-  client.print(" (");
-  client.print(String(state->totalLightLists));
-  client.print(")</span></li>");
-  YIELD_IF_NEEDED();
+  html += "<form action='/update_wifi' method='POST'>";
+  html += "<label for='ssid'>WiFi SSID</label>";
+  html += "<input id='ssid' name='ssid' type='text' value='";
+  html += savedSSID;
+  html += "' required>";
+  html += "<label for='password'>WiFi Password</label>";
+  html += "<input id='password' name='password' type='password' placeholder='Enter WiFi password'>";
+  html += "<button type='submit'>Save WiFi and Restart</button>";
+  html += "</form>";
+  html += "<form action='/restart' method='POST'>";
+  html += "<button class='secondary' type='submit'>Restart Device</button>";
+  html += "</form>";
+  html += "</div></body></html>";
 
-  client.print("<li>Free Memory: <span class='value'>");
-  client.print(String(ESP.getFreeHeap() / 1024));
-  client.print(" KB</span></li>");
-  YIELD_IF_NEEDED();
-
-  #ifdef DEBUGGER_ENABLED
-  client.print("<li>FPS: <span class='value'>");
-  client.print(String(debugger->getFPS(), 1));
-  client.print("</span></li>");
-
-  client.print("<li>Emits per frame: <span class='value'>");
-  client.print(String(debugger->getNumEmits(), 2));
-  client.print("</span></li>");
-  YIELD_IF_NEEDED();
-  #endif
-  client.print("</ul></div>");
-}
-
-String getFooterMenu() {
-  String menu = "";
-  menu += "<p><a href='/wifi'>Configure WiFi</a> | <a href='#' onclick=\"fetch('/restart',{method:'POST'}).catch(console.error); return false;\">Restart Device</a></p>";
-  return menu;
-}
-
-void streamWifiPage(WiFiClient &client) {
-  client.println("<h2>WiFi Setup</h2>");
-  client.println("<p>Enter your WiFi credentials and submit to restart the device.</p>");
-  client.println("<form action='/update_wifi' method='POST'>");
-  client.println("<label for='ssid'>WiFi SSID</label>");
-  client.printf("<input id='ssid' name='ssid' type='text' value='%s' required>", savedSSID.c_str());
-  client.println("<label for='password'>WiFi Password</label>");
-  client.println("<input id='password' name='password' type='password' placeholder='Enter WiFi password'>");
-  client.println("<button type='submit'>Save WiFi and Restart</button>");
-  client.println("</form>");
-}
-
-void streamFooter(WiFiClient &client) {
-  client.print(getFooterMenu());
-  streamConfigDisplay(client);
-  client.print("</div></body></html>");
-}
-
-// Stream the homepage HTML directly to client to save memory
-void streamHomePage(WiFiClient &client) {
-  if (apMode) {
-    streamHeader(client, "WiFi Setup");
-    streamWifiPage(client);
-    streamFooter(client);
-    return;
-  }
-
-  streamHeader(client, "Layers");
-
-  yield(); // Allow system to process other tasks
-
-  #if defined(WEBSERVER_EMITTER)
-  streamEmitter(client);
-  #elif defined(WEBSERVER_CONFIG)
-  streamSettings(client);
-  #endif
-
-  yield();
-
-  // Use our optimized footer function that includes menu and config display
-  streamFooter(client);
-}
-
-#ifdef WEBSERVER_EMITTER
-void streamEmitterPage(WiFiClient &client) {
-  streamHeader(client, "Emitter");
-
-  streamEmitter(client);
-
-  streamFooter(client);
-}
-#endif
-
-void streamSettingsPage(WiFiClient &client) {
-  streamHeader(client, "WiFi Setup");
-  streamWifiPage(client);
-  streamFooter(client);
-}
-
-void lowMemory() {
-  // Send a simplified page if memory is low
-  server.send(200, "text/html",
-    "<html><body style='font-family:Arial;background:#333;color:#fff;text-align:center'>"
-    "<h1>Low Memory Warning</h1>"
-    "<p>System memory is low (" + String(ESP.getFreeHeap() / 1024) + " KB available). "
-    "Try reducing the number of active lights or restart the device.</p>"
-    "<p><a href='#' onclick=\"fetch('/restart',{method:'POST'}).catch(console.error); return false;\" style='color:#0066ff'>Restart Device</a></p>"
-    "</body></html>");
-}
-
-// Generic page handler to reduce code duplication
-void handleGenericPage(void (*streamPageFunc)(WiFiClient&)) {
-  if (ESP.getFreeHeap() < 10000) {
-    lowMemory();
-    return;
-  }
-
-  WiFiClient client = server.client();
-
-  if (!client) {
-    server.send(500, "text/plain", "Client connection error");
-    return;
-  }
-
-  // Send HTTP headers
-  client.println("HTTP/1.1 200 OK");
-  client.println("Content-Type: text/html");
-  client.println("Connection: close");
-  client.println();
-
-  // Stream the page content directly to the client
-  streamPageFunc(client);
-
-  // Allow time for data to be sent
-  delay(1);
+  server.send(200, "text/html; charset=utf-8", html);
 }
 
 void handleRoot() {
-  handleGenericPage(streamHomePage);
-}
+  if (apMode) {
+    sendRecoverySetupPage();
+    return;
+  }
 
-#ifdef WEBSERVER_EMITTER
-void handleEmitter() {
-  handleGenericPage(streamEmitterPage);
+  String html;
+  html.reserve(1600);
+  html += "<!doctype html><html><head><meta charset='utf-8'>";
+  html += "<meta name='viewport' content='width=device-width, initial-scale=1'>";
+  html += "<title>MeshLED</title>";
+  html += "<link rel='stylesheet' href='";
+  html += MESHLED_WEB_UI_CSS_URL;
+  html += "'>";
+  html += "</head><body>";
+  html += "<noscript>MeshLED requires JavaScript.</noscript>";
+  html += "<div id='app'>Loading MeshLED control panel...</div>";
+  html += "<script>";
+  html += "window.__MESHLED_API_BASE=location.origin;";
+  html += "window.__MESHLED_DEVICE_HOST='";
+  html += deviceHostname;
+  html += "';";
+  html += "window.__MESHLED_AP_MODE=false;";
+  html += "</script>";
+  html += "<script defer src='";
+  html += MESHLED_WEB_UI_JS_URL;
+  html += "'></script>";
+  html += "</body></html>";
+
+  server.send(200, "text/html; charset=utf-8", html);
 }
-#endif
 
 void handleSettingsPage() {
-  handleGenericPage(streamSettingsPage);
+  sendRecoverySetupPage();
 }
 
 void handleWifiPage() {
-  handleGenericPage(streamSettingsPage);
+  sendRecoverySetupPage();
 }
 
 // Helper function to check if intersections are already connected
@@ -1489,35 +1281,6 @@ void handleIcon() {
   server.send(404, "text/plain", "Icon not found");
 }
 
-#ifdef SPIFFS_UPLOAD
-// Handler for the file upload page
-void handleUploadPage() {
-  #ifdef SPIFFS_ENABLED
-  WiFiClient client = server.client();
-
-  if (!client) {
-    server.send(500, "text/plain", "Client connection error");
-    return;
-  }
-
-  // Send HTTP headers
-  client.println("HTTP/1.1 200 OK");
-  client.println("Content-Type: text/html");
-  client.println("Connection: close");
-  client.println();
-
-  // Don't include scripts in this page to avoid any interference with showing script file content
-  streamHeader(client, "SPIFFS", false);
-
-  streamSpiffs(client);
-
-  streamFooter(client);
-  #else
-  server.send(501, "text/plain", "SPIFFS not enabled");
-  #endif
-}
-#endif
-
 void handleGetDevices() {
   DynamicJsonDocument doc(1024);
   JsonArray devices = doc.to<JsonArray>();
@@ -1549,30 +1312,6 @@ void handleGetDevices() {
   server.send(200, "application/json", jsonResponse);
 }
 
-#ifdef SPIFFS_ENABLED
-// Serve static files from SPIFFS
-bool handleStaticFile(String path) {
-  if (SPIFFS.exists(path)) {
-    String contentType = "text/plain";
-    if (path.endsWith(".html")) contentType = "text/html";
-    else if (path.endsWith(".css")) contentType = "text/css";
-    else if (path.endsWith(".js")) contentType = "application/javascript";
-    else if (path.endsWith(".json")) contentType = "application/json";
-    else if (path.endsWith(".png")) contentType = "image/png";
-    else if (path.endsWith(".jpg")) contentType = "image/jpeg";
-
-    File file = SPIFFS.open(path, "r");
-    if (file) {
-      server.streamFile(file, contentType);
-      file.close();
-      return true;
-    }
-  }
-  return false;
-}
-
-#endif
-
 // Global CORS handler for OPTIONS requests
 void handleCORS() {
   sendCORSHeaders();
@@ -1596,15 +1335,6 @@ void setupWebServer() {
   server.on("/settings", HTTP_GET, handleSettingsPage);
   server.on("/wifi", HTTP_GET, handleWifiPage);
   server.on("/get_devices", HTTP_GET, handleGetDevices);
-
-  // Serve static files
-  #ifdef SPIFFS_ENABLED
-  server.on("/scripts.js", HTTP_GET, []() {
-    if (!handleStaticFile("/scripts.js")) {
-      server.send(404, "text/plain", "File not found");
-    }
-  });
-  #endif
 
   // LAYERS
   server.on("/get_layers", HTTP_GET, handleGetLayers);
@@ -1645,7 +1375,6 @@ void setupWebServer() {
   server.on("/get_palettes", HTTP_OPTIONS, allowCORS("GET"));
 
   #ifdef WEBSERVER_EMITTER
-  server.on("/emitter", HTTP_GET, handleEmitter);
   server.on("/toggle_auto", HTTP_POST, guardMutatingRoute(handleToggleAuto));
   server.on("/update_emitter_min_speed", HTTP_POST, guardMutatingRoute(handleUpdateEmitterMinSpeed));
   server.on("/update_emitter_max_speed", HTTP_POST, guardMutatingRoute(handleUpdateEmitterMaxSpeed));
@@ -1712,32 +1441,6 @@ void setupWebServer() {
   server.on("/off", HTTP_GET, handleWLEDOff);
   server.on("/version", HTTP_GET, handleWLEDVersion);
   server.on("/win", HTTP_GET, handleWLEDWin);
-  #endif
-
-  #ifdef SPIFFS_UPLOAD
-  server.on("/spiffs", HTTP_GET, guardAdminRoute(handleUploadPage));
-  server.on("/spiffs", HTTP_POST,
-            []() {
-              if (!requireAdminAuth()) {
-                return;
-              }
-              handleUploadComplete();
-            },
-            []() {
-              if (!requireAdminAuth()) {
-                return;
-              }
-              handleFileUpload();
-            });
-  server.on("/spiffs", HTTP_OPTIONS, allowCORS("POST"));
-  #endif
-  #ifdef SPIFFS_DELETE
-  server.on("/delete", HTTP_POST, guardAdminRoute(handleDeleteFile));
-  server.on("/delete", HTTP_OPTIONS, allowCORS("POST"));
-  #endif
-  #ifdef SPIFFS_FORMAT
-  server.on("/format-spiffs", HTTP_POST, guardAdminRoute(handleFormatSpiffs));
-  server.on("/format-spiffs", HTTP_OPTIONS, allowCORS("POST"));
   #endif
 
   server.begin();
