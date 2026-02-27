@@ -80,17 +80,23 @@ void handleUpdateLayerBrightness() {
     uint8_t layer = server.arg("layer").toInt();
     uint8_t newBrightness = server.arg("value").toInt();
     if (newBrightness >= 1 && newBrightness <= 255) {
-      if (state && state->lightLists[layer]) {
+      if (!state || layer >= MAX_LIGHT_LISTS || !state->lightLists[layer]) {
+        server.send(400, "text/plain", "Invalid layer index");
+        return;
+      }
+
+      state->lightLists[layer]->maxBri = newBrightness;
+      if (state->lightLists[layer]->minBri > newBrightness) {
         state->lightLists[layer]->minBri = newBrightness;
       }
 
-      LP_LOGLN("Updated background brightness via AJAX: " + String(newBrightness));
+      LP_LOGLN("Updated layer brightness via AJAX: " + String(newBrightness));
 
       #ifdef SPIFFS_ENABLED
       saveLayers();
       #endif
 
-      server.send(200, "text/plain", "Background brightness updated");
+      server.send(200, "text/plain", "Layer brightness updated");
     } else {
       server.send(400, "text/plain", "Invalid brightness value");
     }
@@ -701,7 +707,7 @@ void handleGetLayers() {
       
       layer["id"] = i;
       layer["visible"] = state->lightLists[i]->visible;
-      layer["brightness"] = state->lightLists[i]->minBri;
+      layer["brightness"] = state->lightLists[i]->maxBri;
       layer["speed"] = state->lightLists[i]->speed;
       layer["fadeSpeed"] = state->lightLists[i]->fadeSpeed;
       layer["easing"] = state->lightLists[i]->easeIndex;

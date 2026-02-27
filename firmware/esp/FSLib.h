@@ -114,7 +114,10 @@ void processLayersArray(JsonArray& layersArray) {
     // Set brightness
     if (layerObj.containsKey("brightness")) {
       uint8_t brightness = layerObj["brightness"].as<uint8_t>();
-      state->lightLists[index]->minBri = brightness;
+      state->lightLists[index]->maxBri = brightness;
+      if (state->lightLists[index]->minBri > brightness) {
+        state->lightLists[index]->minBri = brightness;
+      }
     }
     
     // Set blend mode
@@ -610,7 +613,7 @@ void saveLayers() {
         layerObj["visible"] = state->lightLists[i]->visible;
 
         // Save brightness
-        layerObj["brightness"] = state->lightLists[i]->minBri;
+        layerObj["brightness"] = state->lightLists[i]->maxBri;
         
         // Save blend mode
         layerObj["blendMode"] = static_cast<uint8_t>(state->lightLists[i]->blendMode);

@@ -15,8 +15,8 @@
 // #define BLUETOOTH_ENABLED
 // #define SERIAL_ENABLED   // Serial commands
 // #define DEBUGGER_ENABLED // Debugging features
-// #define NEOPIXELBUS_ENABLED
-#define FASTLED_ENABLED
+#define NEOPIXELBUS_ENABLED
+// #define FASTLED_ENABLED
 #define WLEDAPI_ENABLED
 // #define SSDP_ENABLED
 #define MDNS_ENABLED
