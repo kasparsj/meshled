@@ -132,6 +132,8 @@ void handleSSDPDiscovery() {
           
           // Build Hue Bridge response (for Alexa/WLED app compatibility)
           if (respondAsHue) {
+            uint8_t mac[6];
+            WiFi.macAddress(mac);
             sprintf(responseBuffer, 
               "HTTP/1.1 200 OK\r\n"
               "EXT:\r\n"
@@ -143,8 +145,8 @@ void handleSSDPDiscovery() {
               "USN: uuid:%s::upnp:rootdevice\r\n"
               "\r\n",
               WiFi.localIP().toString().c_str(),
-              WiFi.macAddress()[0], WiFi.macAddress()[1], WiFi.macAddress()[2], 
-              WiFi.macAddress()[3], WiFi.macAddress()[4], WiFi.macAddress()[5],
+              mac[0], mac[1], mac[2], 
+              mac[3], mac[4], mac[5],
               uuid.c_str()
             );
             

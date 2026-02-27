@@ -20,9 +20,12 @@ void setupMDNSService() {
   // Initialize mDNS service
   if (MDNS.begin(deviceHostname.c_str())) {
     LP_LOGLN("mDNS service started with hostname: " + deviceHostname);
+    String normalizedMac = WiFi.macAddress();
+    normalizedMac.replace(":", "");
+    normalizedMac.toLowerCase();
     
     MDNS.addService(MDNS_XLED_SERVICE, MDNS_TCP, 80);
-    MDNS.addServiceTxt(MDNS_XLED_SERVICE, MDNS_TCP, "mac", WiFi.macAddress());
+    MDNS.addServiceTxt(MDNS_XLED_SERVICE, MDNS_TCP, "mac", normalizedMac);
     MDNS.addServiceTxt(MDNS_XLED_SERVICE, MDNS_TCP, "ip", WiFi.localIP().toString());
     MDNS.addServiceTxt(MDNS_XLED_SERVICE, MDNS_TCP, "name", deviceHostname);
     MDNS.addServiceTxt(MDNS_XLED_SERVICE, MDNS_TCP, "type", "DIY");
@@ -31,7 +34,7 @@ void setupMDNSService() {
 
     MDNS.addService(MDNS_WLED_SERVICE, MDNS_TCP, 80);
     MDNS.addServiceTxt(MDNS_WLED_SERVICE, MDNS_TCP, "mdns", "true");
-    MDNS.addServiceTxt(MDNS_WLED_SERVICE, MDNS_TCP, "mac", WiFi.macAddress());
+    MDNS.addServiceTxt(MDNS_WLED_SERVICE, MDNS_TCP, "mac", normalizedMac);
     MDNS.addServiceTxt(MDNS_WLED_SERVICE, MDNS_TCP, "ip", WiFi.localIP().toString());
     MDNS.addServiceTxt(MDNS_WLED_SERVICE, MDNS_TCP, "name", deviceHostname);
     MDNS.addServiceTxt(MDNS_WLED_SERVICE, MDNS_TCP, "type", "DIY");
@@ -39,7 +42,7 @@ void setupMDNSService() {
     MDNS.addServiceTxt(MDNS_WLED_SERVICE, MDNS_TCP, "version", "1.0.0");
     
     MDNS.addService(MDNS_HTTP_SERVICE, MDNS_TCP, 80);
-    MDNS.addServiceTxt(MDNS_HTTP_SERVICE, MDNS_TCP, "mac", WiFi.macAddress());
+    MDNS.addServiceTxt(MDNS_HTTP_SERVICE, MDNS_TCP, "mac", normalizedMac);
     MDNS.addServiceTxt(MDNS_HTTP_SERVICE, MDNS_TCP, "ip", WiFi.localIP().toString());
     MDNS.addServiceTxt(MDNS_HTTP_SERVICE, MDNS_TCP, "name", deviceHostname);
     MDNS.addServiceTxt(MDNS_HTTP_SERVICE, MDNS_TCP, "type", "DIY");

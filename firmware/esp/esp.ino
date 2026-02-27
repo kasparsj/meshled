@@ -19,7 +19,7 @@
 #define NEOPIXELBUS_ENABLED
 // #define FASTLED_ENABLED
 #define WLEDAPI_ENABLED
-// #define SSDP_ENABLED
+#define SSDP_ENABLED
 #define MDNS_ENABLED
 // #define ESPNOW_ENABLED
 
@@ -103,6 +103,7 @@ TopologyObject*& object = gCtx.object;
 uint8_t& objectType = gCtx.objectType;
 State*& state = gCtx.state;
 float& totalWattage = gCtx.totalWattage;
+bool wledMasterOn = true;
 
 std::vector<UserPalette>& userPalettes = gCtx.userPalettes;
 std::map<String, std::vector<IPAddress>>& deviceIPs = gCtx.deviceIPs;

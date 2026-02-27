@@ -59,3 +59,6 @@
 #include "src/runtime/State.h"
 #include "src/topology/TopologyObject.h"
 #include "src/core/Platform.h"
+
+// Master power state for WLED-compatible on/off control.
+extern bool wledMasterOn;

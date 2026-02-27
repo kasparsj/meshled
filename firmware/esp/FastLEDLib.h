@@ -224,15 +224,16 @@ void setupFastLED() {
 }
 
 CRGB getFastLEDColor(uint16_t i) {
-  ColorRGB pixel = state->getPixel(i, maxBrightness);
+  const uint8_t effectiveBrightness = wledMasterOn ? maxBrightness : 0;
+  ColorRGB pixel = state->getPixel(i, effectiveBrightness);
   CRGB color = CRGB(pixel.R, pixel.G, pixel.B);
 
   #ifdef DEBUGGER_ENABLED
   if (state->showConnections) {
-    color.g = (debugger->isConnection(i) ? 1.f : 0.f) * maxBrightness;
+    color.g = (debugger->isConnection(i) ? 1.f : 0.f) * effectiveBrightness;
   }
   if (state->showIntersections) {
-    color.b = (debugger->isIntersection(i) ? 1.f : 0.f) * maxBrightness;
+    color.b = (debugger->isIntersection(i) ? 1.f : 0.f) * effectiveBrightness;
   }
   #endif
   return color;
@@ -246,6 +247,7 @@ float getFastLEDWatts(const CRGB& color, float wattsPerLed = 0.2f) {
 
 void drawFastLED() {
   if (ledLibrary == LIB_FASTLED && leds1 != NULL) {
+    const uint8_t effectiveBrightness = wledMasterOn ? maxBrightness : 0;
     totalWattage = 0.0f;
     for (uint16_t i=0; i<pixelCount1; i++) {
       leds1[i] = getFastLEDColor(i);
@@ -257,7 +259,7 @@ void drawFastLED() {
         totalWattage += getFastLEDWatts(leds2[i]);
       }
     }
-    FastLED.setBrightness(maxBrightness);
+    FastLED.setBrightness(effectiveBrightness);
     FastLED.show();
   }
 }

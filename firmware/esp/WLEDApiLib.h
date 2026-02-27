@@ -148,32 +148,39 @@ String getResolvedMeshledReleaseSha() {
   return cachedReleaseSha;
 }
 
-bool isOn() {
-  if (!state) {
-    return emitterEnabled;
+uint8_t getWLEDSignalPercent(int32_t rssi) {
+  if (rssi <= -100) {
+    return 0;
   }
-  // Report "on" when visible layers are active or auto-emitter is running.
-  return state->isOn() || state->autoEnabled || emitterEnabled;
+  if (rssi >= -50) {
+    return 100;
+  }
+  return static_cast<uint8_t>(2 * (rssi + 100));
 }
 
-bool isOutputActive() {
-  // Keep status aligned with real LED output when available.
-  return totalWattage > 0.01f;
+String getWLEDMacString() {
+  String mac = WiFi.macAddress();
+  mac.replace(":", "");
+  mac.toLowerCase();
+  return mac;
+}
+
+bool isOn() {
+  return wledMasterOn;
 }
 
 bool isReportedOn() {
-  return isOn() || isOutputActive();
+  return isOn();
 }
 
 void turnOn() {
-  if (state) {
-    state->setOn(true);
-  }
+  wledMasterOn = true;
 }
 
 void turnOff() {
+  wledMasterOn = false;
   if (state) {
-    state->setOn(false);
+    state->autoEnabled = false;
   }
   emitterEnabled = false;
 }
@@ -189,13 +196,17 @@ void getWLEDState(JsonObject& jsonState) {
   const bool reportedOn = isReportedOn();
   jsonState["on"] = reportedOn;
   jsonState["bri"] = maxBrightness;
-  jsonState["transition"] = 0;  // No transition time
+  jsonState["transition"] = 7;
   jsonState["ps"] = -1;  // No preset active
   jsonState["pl"] = -1;  // No playlist active
   jsonState["ledmap"] = 0;
 
   // Include these fields for WLED compatibility
   jsonState["nl"]["on"] = false;
+  jsonState["nl"]["dur"] = 60;
+  jsonState["nl"]["mode"] = 1;
+  jsonState["nl"]["tbri"] = 0;
+  jsonState["nl"]["rem"] = -1;
   jsonState["udpn"]["send"] = false;
   jsonState["udpn"]["recv"] = true;
   jsonState["udpn"]["sgrp"] = 1;
@@ -244,6 +255,30 @@ void getWLEDState(JsonObject& jsonState) {
     rgb.add(0);    // Default G
     rgb.add(0);    // Default B
   }
+
+  while (col.size() < 3) {
+    JsonArray rgb = col.createNestedArray();
+    rgb.add(0);
+    rgb.add(0);
+    rgb.add(0);
+  }
+
+  // Match common WLED state keys used by mobile app clients.
+  mainseg["fx"] = 0;
+  mainseg["sx"] = 128;
+  mainseg["ix"] = 128;
+  mainseg["pal"] = 50;
+  mainseg["c1"] = 128;
+  mainseg["c2"] = 128;
+  mainseg["c3"] = 16;
+  mainseg["sel"] = true;
+  mainseg["rev"] = false;
+  mainseg["mi"] = false;
+  mainseg["o1"] = false;
+  mainseg["o2"] = false;
+  mainseg["o3"] = false;
+  mainseg["si"] = 0;
+  mainseg["m12"] = 0;
 }
 
 void getWLEDInfo(JsonObject& info) {
@@ -261,20 +296,28 @@ void getWLEDInfo(JsonObject& info) {
   info["leds"]["count"] = pixelCount1 + pixelCount2;
   info["leds"]["rgbw"] = HAS_WHITE(colorOrder);
   info["leds"]["pwr"] = totalWattage;
-  info["leds"]["maxpwr"] = 0;  // No power limiting
-  info["leds"]["maxseg"] = 1;  // Just one segment for our simple setup
+  info["leds"]["fps"] = 40;
+  info["leds"]["maxpwr"] = 2400;
+  info["leds"]["maxseg"] = 32;
+  info["leds"]["bootps"] = 0;
+  JsonArray seglc = info["leds"].createNestedArray("seglc");
+  seglc.add(1);
+  info["leds"]["lc"] = 1;
+  info["leds"]["wv"] = 0;
+  info["leds"]["cct"] = 0;
 
   // Network information - essential for app connectivity
   info["str"] = false;
   info["name"] = deviceHostname;
-  //info["udpport"] = 21324;  // Use fixed value for compatibility
+  info["udpport"] = 21324;
+  info["simplifiedui"] = false;
   info["live"] = false;
   info["liveseg"] = -1;
   info["lm"] = "";
   info["lip"] = "";
-  info["ws"] = 0;
-  info["fxcount"] = 1;
-  info["palcount"] = 1;
+  info["ws"] = 1;
+  info["fxcount"] = 187;
+  info["palcount"] = 71;
   info["cpalcount"] = 0;
 
   JsonArray maps = info.createNestedArray("maps");
@@ -284,9 +327,11 @@ void getWLEDInfo(JsonObject& info) {
   JsonObject wifi = info.createNestedObject("wifi");
   wifi["ssid"] = getActiveNetworkSSID();
   wifi["mode"] = apMode ? "ap" : "sta";
+  wifi["ap"] = apMode;
   wifi["bssid"] = WiFi.BSSIDstr();
-  wifi["rssi"] = WiFi.RSSI();
-  //wifi["signal"] = xxx;
+  const int32_t rssi = WiFi.RSSI();
+  wifi["rssi"] = rssi;
+  wifi["signal"] = getWLEDSignalPercent(rssi);
   wifi["channel"] = WiFi.channel();
 
   JsonObject fs = info.createNestedObject("fs");
@@ -299,10 +344,10 @@ void getWLEDInfo(JsonObject& info) {
   info["freeheap"] = ESP.getFreeHeap();
   info["uptime"] = millis() / 1000;
   info["time"] = "2025-5-14, 18:18:29";
-  info["opt"] = 0;       // Optional features flags
+  info["opt"] = 79;
   info["brand"] = "WLED";  // Needed for app to recognize as valid WLED device
   info["product"] = "FOSS";  // Needed for app compatibility
-  info["mac"] = WiFi.macAddress();
+  info["mac"] = getWLEDMacString();
   info["ip"] = WiFi.localIP().toString();
 }
 
@@ -312,7 +357,7 @@ void handleWLEDInfo() {
   
   String output;
 
-  DynamicJsonDocument doc(1024);
+  DynamicJsonDocument doc(3072);
   JsonObject info = doc.to<JsonObject>();
   getWLEDInfo(info);
 
@@ -323,7 +368,7 @@ void handleWLEDInfo() {
 void handleWLEDSI() {
   String output;
 
-  DynamicJsonDocument doc(1024);
+  DynamicJsonDocument doc(6144);
 
   JsonObject state = doc.createNestedObject("state");
   getWLEDState(state);
@@ -337,7 +382,7 @@ void handleWLEDSI() {
 
 void sendWLEDState() {
     // Return current state in WLED-compatible JSON format
-  DynamicJsonDocument doc(1024);
+  DynamicJsonDocument doc(3072);
 
   // Create state object with WLED-compatible structure
   JsonObject state = doc.to<JsonObject>();
@@ -354,7 +399,7 @@ void handleWLEDPost() {
   }
 
   String body = server.arg("plain");
-  DynamicJsonDocument doc(1024);
+  DynamicJsonDocument doc(6144);
   DeserializationError error = deserializeJson(doc, body);
 
   if (error) {
@@ -369,9 +414,16 @@ void handleWLEDPost() {
 
   // Handle brightness
   if (doc.containsKey("bri")) {
-    uint8_t newBrightness = doc["bri"];
-    if (newBrightness >= 1 && newBrightness <= 255) {
-      maxBrightness = newBrightness;
+    const int newBrightness = doc["bri"].as<int>();
+    if (newBrightness <= 0) {
+      // WLED app slider to zero is treated as power off.
+      turnOff();
+      shouldSaveSettings = true;
+    } else if (newBrightness <= 255) {
+      maxBrightness = static_cast<uint8_t>(newBrightness);
+      if (!isReportedOn()) {
+        turnOn();
+      }
       shouldSaveSettings = true;
     }
   }
@@ -450,7 +502,7 @@ void handleWLEDPost() {
 }
 
 void sendWLEDJson() {
-  DynamicJsonDocument doc(1024);
+  DynamicJsonDocument doc(6144);
 
   JsonObject state = doc.createNestedObject("state");
   getWLEDState(state);

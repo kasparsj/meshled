@@ -228,14 +228,15 @@ RgbwColor handleWhite(RgbwColor color) {
 }
 
 RgbwColor getNeoPixelColor(uint16_t i) {
-  ColorRGB pixel = state->getPixel(state->object.translateToLogicalPixel(i), maxBrightness);
+  const uint8_t effectiveBrightness = wledMasterOn ? maxBrightness : 0;
+  ColorRGB pixel = state->getPixel(state->object.translateToLogicalPixel(i), effectiveBrightness);
   RgbwColor color = handleWhite(RgbwColor(pixel.R, pixel.G, pixel.B, 0));
   #ifdef DEBUGGER_ENABLED
   if (state->showConnections) {
-    color.G = (debugger->isConnection(i) ? 1.f : 0.f) * maxBrightness;
+    color.G = (debugger->isConnection(i) ? 1.f : 0.f) * effectiveBrightness;
   }
   if (state->showIntersections) {
-    color.B = (debugger->isIntersection(i) ? 1.f : 0.f) * maxBrightness;
+    color.B = (debugger->isIntersection(i) ? 1.f : 0.f) * effectiveBrightness;
   }
   #endif
   #ifdef COLORGAMMA_CORRECT
