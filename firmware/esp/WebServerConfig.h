@@ -2,6 +2,19 @@
 
 // Handle settings update
 void handleUpdateSettings() {
+  if (server.hasArg("max_brightness")) {
+    uint8_t newBrightness = server.arg("max_brightness").toInt();
+    if (newBrightness >= 1 && newBrightness <= 255) {
+      maxBrightness = newBrightness;
+    }
+  } else if (server.hasArg("maxBrightness")) {
+    // Legacy support
+    uint8_t newBrightness = server.arg("maxBrightness").toInt();
+    if (newBrightness >= 1 && newBrightness <= 255) {
+      maxBrightness = newBrightness;
+    }
+  }
+
   if (server.hasArg("hostname")) {
     deviceHostname = server.arg("hostname");
     if (deviceHostname.length() == 0) {

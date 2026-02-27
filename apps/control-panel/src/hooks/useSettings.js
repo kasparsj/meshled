@@ -106,6 +106,27 @@ const useSettings = () => {
         }
     }, [deviceFetch]);
 
+    const updateBrightness = useCallback(async (brightness) => {
+        try {
+            const formData = new FormData();
+            formData.append('value', brightness.toString());
+
+            const response = await deviceFetch('/update_brightness', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to update brightness');
+            }
+
+            return true;
+        } catch (err) {
+            setError(err.message);
+            throw err;
+        }
+    }, [deviceFetch]);
+
     const updateWifi = useCallback(async (ssid, password) => {
         setLoading(true);
         setError(null);
@@ -148,6 +169,7 @@ const useSettings = () => {
     return {
         getSettings,
         saveSettings,
+        updateBrightness,
         updateWifi,
         restartDevice,
         loading,

@@ -1,5 +1,5 @@
 import {Power, Wifi, Settings, Cpu, Radio} from "lucide-react";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import useDeviceInfo from "../hooks/useDeviceInfo";
 import useSettings from "../hooks/useSettings";
 import WifiModal from "../components/WifiModal";
@@ -9,6 +9,7 @@ const SettingsTab = () => {
     const { 
         getSettings, 
         saveSettings: saveSettingsHook, 
+        updateBrightness,
         updateWifi,
         restartDevice, 
         loading: settingsLoading, 
@@ -44,6 +45,7 @@ const SettingsTab = () => {
     
     const [saveMessage, setSaveMessage] = useState('');
     const [showWifiModal, setShowWifiModal] = useState(false);
+    const brightnessUpdateTimeoutRef = useRef(null);
 
     const toNumberOrNull = (value) => {
         const num = Number(value);
@@ -105,12 +107,39 @@ const SettingsTab = () => {
         }
     };
 
-    const updateSetting = (key, value) => {
+    const updateSetting = useCallback((key, value) => {
         setSettings(prev => ({
             ...prev,
             [key]: value
         }));
-    };
+    }, []);
+
+    const queueBrightnessUpdate = useCallback((value) => {
+        if (brightnessUpdateTimeoutRef.current) {
+            clearTimeout(brightnessUpdateTimeoutRef.current);
+        }
+        brightnessUpdateTimeoutRef.current = setTimeout(async () => {
+            try {
+                await updateBrightness(value);
+            } catch (error) {
+                console.error('Failed to update max brightness live:', error);
+            }
+        }, 120);
+    }, [updateBrightness]);
+
+    const handleMaxBrightnessChange = useCallback((event) => {
+        const value = parseInt(event.target.value, 10);
+        updateSetting('maxBrightness', value);
+        queueBrightnessUpdate(value);
+    }, [queueBrightnessUpdate, updateSetting]);
+
+    useEffect(() => {
+        return () => {
+            if (brightnessUpdateTimeoutRef.current) {
+                clearTimeout(brightnessUpdateTimeoutRef.current);
+            }
+        };
+    }, []);
 
     const powerWatts = toNumberOrNull(deviceInfo?.leds?.pwr);
     const activeLights = deviceInfo?.activeLights ?? deviceInfo?.leds?.count ?? 'N/A';
@@ -182,7 +211,7 @@ const SettingsTab = () => {
                             min="1"
                             max="255"
                             value={settings.maxBrightness}
-                            onChange={(e) => updateSetting('maxBrightness', parseInt(e.target.value))}
+                            onChange={handleMaxBrightnessChange}
                             className="w-full"
                         />
                         <span className="text-sky-400 text-sm">{settings.maxBrightness}</span>
