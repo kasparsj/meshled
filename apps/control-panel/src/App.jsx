@@ -206,11 +206,13 @@ const LEDController = () => {
     const [devices, setDevices] = useState(() => (isDirectDeviceMode ? [directDeviceHost] : []));
     const [selectedDevice, setSelectedDevice] = useState(() => (isDirectDeviceMode ? directDeviceHost : ''));
     const [showDeviceModal, setShowDeviceModal] = useState(false);
+    const [storageHydrated, setStorageHydrated] = useState(false);
 
     useEffect(() => {
         if (isDirectDeviceMode) {
             setDevices([directDeviceHost]);
             setSelectedDevice(directDeviceHost);
+            setStorageHydrated(true);
             return;
         }
 
@@ -236,10 +238,11 @@ const LEDController = () => {
         } else {
             setSelectedDevice('');
         }
+        setStorageHydrated(true);
     }, [isDirectDeviceMode, directDeviceHost]);
 
     useEffect(() => {
-        if (isDirectDeviceMode) {
+        if (isDirectDeviceMode || !storageHydrated) {
             return;
         }
 
@@ -248,10 +251,10 @@ const LEDController = () => {
         } else {
             localStorage.removeItem('ledController_devices');
         }
-    }, [devices, isDirectDeviceMode]);
+    }, [devices, isDirectDeviceMode, storageHydrated]);
 
     useEffect(() => {
-        if (isDirectDeviceMode) {
+        if (isDirectDeviceMode || !storageHydrated) {
             return;
         }
 
@@ -260,7 +263,7 @@ const LEDController = () => {
         } else {
             localStorage.removeItem('ledController_selectedDevice');
         }
-    }, [selectedDevice, isDirectDeviceMode]);
+    }, [selectedDevice, isDirectDeviceMode, storageHydrated]);
 
     const handleDevicesChange = (newDevices) => {
         if (isDirectDeviceMode) {
