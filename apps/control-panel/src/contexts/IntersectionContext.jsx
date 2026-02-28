@@ -106,6 +106,18 @@ export const IntersectionProvider = ({ children }) => {
         }
     };
 
+    const discoverPeers = async () => {
+        setIsLoading(true);
+        try {
+            return await postJson('/cross_device/discover_peers', {});
+        } catch (error) {
+            console.error('Error discovering peers:', error);
+            throw error;
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     const openAddModal = (pixelIndex) => {
         setSelectedPixel(pixelIndex);
         setShowAddModal(true);
@@ -137,6 +149,7 @@ export const IntersectionProvider = ({ children }) => {
         addExternalPort,
         updateExternalPort,
         removeExternalPort,
+        discoverPeers,
         openAddModal,
         closeAddModal,
         openRemoveModal,

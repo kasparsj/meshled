@@ -8,11 +8,7 @@ inline bool gESPNowTransportReady = false;
 
 inline bool initESPNowTransportAdapter() {
   gESPNowTransportReady = initESPNow();
-  if (!gESPNowTransportReady) {
-    return false;
-  }
-  scanForPeers();
-  return true;
+  return gESPNowTransportReady;
 }
 
 inline bool isESPNowTransportReady() {
@@ -24,8 +20,35 @@ inline bool sendESPNowTransport(const uint8_t* mac, uint8_t portId, RuntimeLight
   if (!gESPNowTransportReady) {
     return false;
   }
-  sendLightViaESPNow_impl(mac, portId, light, sendList);
-  return true;
+  return sendLightViaESPNow_impl(mac, portId, light, sendList);
+}
+
+inline void tickESPNowTransportAdapter() {
+  tickESPNow();
+}
+
+inline bool discoverESPNowTransportPeers() {
+  return scanForPeers();
+}
+
+inline bool isESPNowTransportDiscoveryInProgress() {
+  return isESPNowDiscoveryActive();
+}
+
+inline uint16_t getESPNowTransportPeerCount() {
+  return getKnownPeerCount();
+}
+
+inline bool getESPNowTransportPeerAt(uint16_t index, uint8_t mac[6], uint8_t* channel, bool* encrypted) {
+  return getKnownPeerAt(index, mac, channel, encrypted);
+}
+
+inline uint16_t getESPNowTransportDroppedPackets() {
+  return getESPNowDroppedPacketCount();
+}
+
+inline const char* getESPNowTransportLastError() {
+  return getESPNowLastError();
 }
 
 inline ExternalTransportAdapter gESPNowExternalTransport = {
@@ -33,6 +56,13 @@ inline ExternalTransportAdapter gESPNowExternalTransport = {
     initESPNowTransportAdapter,
     isESPNowTransportReady,
     sendESPNowTransport,
+    tickESPNowTransportAdapter,
+    discoverESPNowTransportPeers,
+    isESPNowTransportDiscoveryInProgress,
+    getESPNowTransportPeerCount,
+    getESPNowTransportPeerAt,
+    getESPNowTransportDroppedPackets,
+    getESPNowTransportLastError,
 };
 
 inline void setupExternalTransportAdapters() {

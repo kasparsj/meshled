@@ -22,4 +22,10 @@ inline void registerTopologyRoutes(WebServer& web, FirmwareContext& context) {
   web.on("/update_external_port", HTTP_OPTIONS, allowCORS("POST"));
   web.on("/remove_external_port", HTTP_POST, guardMutatingRoute(handleRemoveExternalPort));
   web.on("/remove_external_port", HTTP_OPTIONS, allowCORS("POST"));
+  web.on("/cross_device/discover_peers", HTTP_POST, guardMutatingRoute(handleCrossDeviceDiscoverPeers));
+  web.on("/cross_device/discover_peers", HTTP_OPTIONS, allowCORS("POST"));
+  web.on("/cross_device/peers", HTTP_GET, handleCrossDevicePeers);
+  web.on("/cross_device/peers", HTTP_OPTIONS, allowCORS("GET"));
+  web.on("/cross_device/status", HTTP_GET, handleCrossDeviceStatus);
+  web.on("/cross_device/status", HTTP_OPTIONS, allowCORS("GET"));
 }

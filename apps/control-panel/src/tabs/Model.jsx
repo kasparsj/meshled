@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useColors } from "../hooks/useColors.js";
 import { useModelData } from "../hooks/useModelData.js";
 import { IntersectionProvider, useIntersectionContext } from "../contexts/IntersectionContext.jsx";
@@ -38,8 +38,11 @@ const ModelTabContent = ({ devices }) => {
         addExternalPort,
         updateExternalPort,
         removeExternalPort,
+        discoverPeers,
     } = useIntersectionContext();
     const { remoteDevices, loading: remoteLoading, error: remoteError } = useRemoteTopology(devices);
+    const [discoveringPeers, setDiscoveringPeers] = useState(false);
+    const [discoverPeersError, setDiscoverPeersError] = useState('');
 
     const handleRefresh = async () => {
         await Promise.all([
@@ -87,6 +90,19 @@ const ModelTabContent = ({ devices }) => {
         await refreshModelData();
     };
 
+    const handleDiscoverPeers = async () => {
+        setDiscoverPeersError('');
+        setDiscoveringPeers(true);
+        try {
+            await discoverPeers();
+            await refreshModelData();
+        } catch (error) {
+            setDiscoverPeersError(error.message || 'Failed to start peer discovery');
+        } finally {
+            setDiscoveringPeers(false);
+        }
+    };
+
     const isLoading = colorsLoading || modelLoading;
 
     return (
@@ -111,6 +127,9 @@ const ModelTabContent = ({ devices }) => {
                 remoteDevices={remoteDevices}
                 remoteLoading={remoteLoading}
                 remoteError={!selectedDevice ? '' : remoteError}
+                onDiscoverPeers={handleDiscoverPeers}
+                discoveringPeers={discoveringPeers}
+                discoverPeersError={discoverPeersError}
             />
 
             <AddIntersectionModal onSuccess={handleModalSuccess} />

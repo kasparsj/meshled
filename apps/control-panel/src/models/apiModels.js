@@ -8,7 +8,7 @@
  * @typedef {{colors:string[],positions:number[],colorRule:number,interMode:number,wrapMode:number,segmentation:number}} ApiPalette
  * @typedef {{id:number,visible:boolean,brightness:number,speed:number,fadeSpeed:number,easing:number,blendMode:number,behaviourFlags:number,offset:number,palette:ApiPalette}} ApiLayer
  * @typedef {{colors:ApiColor[],step:number,totalPixels:number}} ApiColorsResponse
- * @typedef {{enabled:boolean,transport:string,ready:boolean}} ApiCrossDeviceCapabilities
+ * @typedef {{enabled:boolean,transport:string,ready:boolean,runtimeState:string,peerCount:number,discoveryInProgress:boolean,droppedPackets:number,consecutiveFailures:number,lastError:string}} ApiCrossDeviceCapabilities
  * @typedef {{crossDevice:ApiCrossDeviceCapabilities}} ApiCapabilities
  * @typedef {{id:number,group:number,numPorts:number,topPixel:number,bottomPixel:number,ports:Array<{id:number,type:string,direction:boolean,group:number,device?:string,targetId?:number,deviceMac?:string,targetPortId?:number}|null>}} ApiIntersection
  * @typedef {{group:number,fromPixel:number,toPixel:number,numLeds:number,pixelDir:number}} ApiConnection
@@ -36,6 +36,12 @@ const parseCapabilities = (payload) => ({
         enabled: asBoolean(payload?.crossDevice?.enabled, false),
         transport: String(payload?.crossDevice?.transport || 'none'),
         ready: asBoolean(payload?.crossDevice?.ready, false),
+        runtimeState: String(payload?.crossDevice?.runtimeState || 'disabled'),
+        peerCount: asNumber(payload?.crossDevice?.peerCount, 0),
+        discoveryInProgress: asBoolean(payload?.crossDevice?.discoveryInProgress, false),
+        droppedPackets: asNumber(payload?.crossDevice?.droppedPackets, 0),
+        consecutiveFailures: asNumber(payload?.crossDevice?.consecutiveFailures, 0),
+        lastError: String(payload?.crossDevice?.lastError || 'none'),
     },
 });
 

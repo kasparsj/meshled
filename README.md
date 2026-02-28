@@ -53,6 +53,7 @@ meshled, powered by [LightGraph](https://github.com/kasparsj/lightgraph), suppor
 - Simulator executes the same [LightGraph](https://github.com/kasparsj/lightgraph) engine for development/testing.
 - Control panel configures and orchestrates the engine across devices.
 - Topology schema v2 includes typed ports (`internal` / `external`) so cross-device intersections can be configured and round-tripped via firmware import/export APIs.
+- ESP-NOW cross-device transport is runtime-isolated from WLED services: discovery is on-demand and transport can auto-degrade without taking down WLED endpoints.
 
 LightGraph repository: [kasparsj/lightgraph](https://github.com/kasparsj/lightgraph)
 

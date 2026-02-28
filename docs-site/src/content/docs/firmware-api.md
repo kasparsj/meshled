@@ -76,6 +76,12 @@ Applies to: `firmware/esp` in this repository
   - `crossDevice.enabled`: whether external transport is compiled/registered.
   - `crossDevice.transport`: active transport label (currently `esp-now` or `none`).
   - `crossDevice.ready`: transport runtime readiness.
+  - `crossDevice.runtimeState`: `disabled` | `initializing` | `ready` | `degraded`.
+  - `crossDevice.peerCount`: currently known peer count.
+  - `crossDevice.discoveryInProgress`: async peer discovery state.
+  - `crossDevice.droppedPackets`: RX queue drops.
+  - `crossDevice.consecutiveFailures`: transport failure counter used for auto-degrade.
+  - `crossDevice.lastError`: last transport error string.
 
 ### `GET /ota_status` (when OTA feature is compiled in)
 
@@ -194,7 +200,10 @@ Applies to: `firmware/esp` in this repository
 - Returns model/editor payload used by control-panel.
 - `intersections[].group` and `connections[].group` are emitted as group bitmasks.
 - Includes `schemaVersion` (current value: `2`).
-- Includes `capabilities.crossDevice` with `enabled`, `transport`, `ready`.
+- Includes `capabilities.crossDevice` runtime diagnostics:
+  - `enabled`, `transport`, `ready`, `runtimeState`
+  - `peerCount`, `discoveryInProgress`
+  - `droppedPackets`, `consecutiveFailures`, `lastError`
 - `intersections[].ports[]` supports both:
   - internal ports: `{id,type:\"internal\",direction,group}`
   - external ports: `{id,type:\"external\",direction,group,device,targetId}`
@@ -249,6 +258,23 @@ Applies to: `firmware/esp` in this repository
 - `/remove_external_port` body JSON:
   - required: `portId`
 
+### Cross-device runtime (`POST/GET`)
+
+- `POST /cross_device/discover_peers`
+  - Starts async peer discovery.
+  - Does not block boot/runtime loops.
+  - Success: `202` with current transport state snapshot.
+- `GET /cross_device/peers`
+  - Returns known peers (`mac`, `channel`, `encrypted`) plus `peerCount`.
+- `GET /cross_device/status`
+  - Returns runtime diagnostics:
+    - `enabled`, `transport`, `runtimeState`, `ready`
+    - `peerCount`, `discoveryInProgress`
+    - `droppedPackets`, `consecutiveFailures`, `lastError`, `lastErrorAtMs`
+- Build note:
+  - Arduino IDE builds with the default ~1.2MB app partition can exceed flash size when full feature set is enabled.
+  - Use a larger app partition scheme (for example "No OTA (Large APP)" / huge app) for coexistence builds.
+
 ## WLED compatibility routes
 
 - `/json`, `/json/info`, `/json/state`, `/json/si`
@@ -262,3 +288,4 @@ Applies to: `firmware/esp` in this repository
 - `401`: unauthorized mutation while API auth enabled
 - `404`: missing model/resource
 - `500`: internal failure
+- `503`: transport unavailable / discovery start failed

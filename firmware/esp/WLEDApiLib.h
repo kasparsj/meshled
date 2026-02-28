@@ -361,6 +361,12 @@ void getWLEDInfo(JsonObject& info) {
   crossDevice["enabled"] = isExternalTransportEnabled();
   crossDevice["transport"] = externalTransportName();
   crossDevice["ready"] = externalTransportIsReady();
+  crossDevice["runtimeState"] = externalTransportRuntimeStateName(externalTransportRuntimeState());
+  crossDevice["peerCount"] = externalTransportPeerCount();
+  crossDevice["discoveryInProgress"] = externalTransportDiscoveryInProgress();
+  crossDevice["droppedPackets"] = externalTransportDroppedPackets();
+  crossDevice["consecutiveFailures"] = externalTransportConsecutiveFailures();
+  crossDevice["lastError"] = externalTransportLastError();
 }
 
 // Returns basic device info in JSON format

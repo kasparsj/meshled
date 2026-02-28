@@ -21,7 +21,7 @@
 #define WLEDAPI_ENABLED
 #define SSDP_ENABLED
 #define MDNS_ENABLED
-// #define ESPNOW_ENABLED
+#define ESPNOW_ENABLED
 
 // todo: logs crashed the esp once
 // #define LOG_FILE "/log.txt"
@@ -277,6 +277,8 @@ void loop() {
   #endif
 
   if (wifiConnected) {
+    tickExternalTransport();
+
     #ifdef OSC_ENABLED
     OscWiFi.update();
     #endif

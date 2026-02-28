@@ -10,6 +10,9 @@ const ModelInfo = ({
     onAddExternalPort,
     onUpdateExternalPort,
     onRemoveExternalPort,
+    onDiscoverPeers,
+    discoveringPeers = false,
+    discoverPeersError = '',
     remoteDevices = [],
     remoteLoading = false,
     remoteError = '',
@@ -24,7 +27,17 @@ const ModelInfo = ({
         port: null,
     });
 
-    const crossDevice = modelData?.capabilities?.crossDevice || { enabled: false, ready: false, transport: 'none' };
+    const crossDevice = modelData?.capabilities?.crossDevice || {
+        enabled: false,
+        ready: false,
+        transport: 'none',
+        runtimeState: 'disabled',
+        peerCount: 0,
+        discoveryInProgress: false,
+        droppedPackets: 0,
+        consecutiveFailures: 0,
+        lastError: 'none',
+    };
     const hasSchemaV2 = (modelData?.schemaVersion || 1) >= 2;
 
     const remoteLookup = useMemo(() => {
@@ -132,10 +145,38 @@ const ModelInfo = ({
                 <div className="bg-zinc-600 p-3 rounded">
                     <div className="text-sm text-zinc-400">Cross-device</div>
                     <div className="text-sm font-bold text-white">
-                        {crossDevice.enabled ? `${crossDevice.transport} (${crossDevice.ready ? 'ready' : 'not ready'})` : 'disabled'}
+                        {crossDevice.enabled ? `${crossDevice.transport} (${crossDevice.runtimeState || (crossDevice.ready ? 'ready' : 'not ready')})` : 'disabled'}
                     </div>
                 </div>
             </div>
+
+            {crossDevice.enabled && (
+                <div className="mb-4 bg-zinc-800/70 border border-zinc-600 px-3 py-3 rounded text-sm">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div className="text-zinc-200">
+                            Runtime: <span className="font-semibold">{crossDevice.runtimeState}</span> · Ready: <span className="font-semibold">{crossDevice.ready ? 'yes' : 'no'}</span> · Peers: <span className="font-semibold">{crossDevice.peerCount}</span>
+                        </div>
+                        {onDiscoverPeers && (
+                            <button
+                                onClick={onDiscoverPeers}
+                                disabled={discoveringPeers || crossDevice.discoveryInProgress}
+                                className="px-3 py-1 rounded bg-sky-700 hover:bg-sky-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {discoveringPeers || crossDevice.discoveryInProgress ? 'Discovering...' : 'Discover peers'}
+                            </button>
+                        )}
+                    </div>
+                    <div className="mt-1 text-zinc-400">
+                        Queue drops: {crossDevice.droppedPackets} · Failures: {crossDevice.consecutiveFailures} · Last error: {crossDevice.lastError || 'none'}
+                    </div>
+                </div>
+            )}
+
+            {(crossDevice.runtimeState === 'degraded' || discoverPeersError) && (
+                <div className="mb-4 bg-amber-900/40 border border-amber-500 text-amber-100 px-3 py-2 rounded">
+                    {discoverPeersError || `Cross-device transport is degraded (${crossDevice.lastError || 'unknown error'}). WLED controls remain available.`}
+                </div>
+            )}
 
             {!hasSchemaV2 && (
                 <div className="mb-4 bg-amber-900/40 border border-amber-500 text-amber-100 px-3 py-2 rounded">

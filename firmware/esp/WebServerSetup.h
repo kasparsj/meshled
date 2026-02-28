@@ -779,6 +779,93 @@ void handleRemoveExternalPort() {
   server.send(200, "application/json", "{\"success\":true}");
 }
 
+void handleCrossDeviceDiscoverPeers() {
+  sendCORSHeaders("POST");
+
+  if (!isExternalTransportEnabled()) {
+    server.send(409, "application/json",
+                "{\"error\":\"Cross-device transport is not enabled\",\"enabled\":false}");
+    return;
+  }
+
+  if (!externalTransportStartDiscovery()) {
+    server.send(503, "application/json",
+                "{\"error\":\"Failed to start discovery\",\"ready\":false,\"runtimeState\":\"" +
+                    String(externalTransportRuntimeStateName(externalTransportRuntimeState())) +
+                    "\",\"lastError\":\"" + String(externalTransportLastError()) + "\"}");
+    return;
+  }
+
+  DynamicJsonDocument doc(384);
+  doc["success"] = true;
+  doc["enabled"] = isExternalTransportEnabled();
+  doc["transport"] = externalTransportName();
+  doc["runtimeState"] = externalTransportRuntimeStateName(externalTransportRuntimeState());
+  doc["ready"] = externalTransportIsReady();
+  doc["discoveryInProgress"] = externalTransportDiscoveryInProgress();
+  doc["peerCount"] = externalTransportPeerCount();
+
+  String output;
+  serializeJson(doc, output);
+  server.send(202, "application/json", output);
+}
+
+void handleCrossDevicePeers() {
+  sendCORSHeaders("GET");
+
+  DynamicJsonDocument doc(4096);
+  doc["enabled"] = isExternalTransportEnabled();
+  doc["transport"] = externalTransportName();
+  doc["runtimeState"] = externalTransportRuntimeStateName(externalTransportRuntimeState());
+
+  JsonArray peers = doc.createNestedArray("peers");
+  if (isExternalTransportEnabled()) {
+    const uint16_t count = externalTransportPeerCount();
+    for (uint16_t i = 0; i < count; i++) {
+      uint8_t mac[6] = {0};
+      uint8_t channel = 0;
+      bool encrypted = false;
+      if (!externalTransportGetPeerAt(i, mac, &channel, &encrypted)) {
+        continue;
+      }
+
+      char macBuffer[18] = {0};
+      snprintf(macBuffer, sizeof(macBuffer), "%02X:%02X:%02X:%02X:%02X:%02X", mac[0], mac[1], mac[2], mac[3], mac[4],
+               mac[5]);
+
+      JsonObject peer = peers.createNestedObject();
+      peer["mac"] = macBuffer;
+      peer["channel"] = channel;
+      peer["encrypted"] = encrypted;
+    }
+  }
+  doc["peerCount"] = peers.size();
+
+  String output;
+  serializeJson(doc, output);
+  server.send(200, "application/json", output);
+}
+
+void handleCrossDeviceStatus() {
+  sendCORSHeaders("GET");
+
+  DynamicJsonDocument doc(512);
+  doc["enabled"] = isExternalTransportEnabled();
+  doc["transport"] = externalTransportName();
+  doc["runtimeState"] = externalTransportRuntimeStateName(externalTransportRuntimeState());
+  doc["ready"] = externalTransportIsReady();
+  doc["peerCount"] = externalTransportPeerCount();
+  doc["discoveryInProgress"] = externalTransportDiscoveryInProgress();
+  doc["droppedPackets"] = externalTransportDroppedPackets();
+  doc["consecutiveFailures"] = externalTransportConsecutiveFailures();
+  doc["lastError"] = externalTransportLastError();
+  doc["lastErrorAtMs"] = externalTransportLastErrorAt();
+
+  String output;
+  serializeJson(doc, output);
+  server.send(200, "application/json", output);
+}
+
 // Get LED colors as JSON for visualization
 void handleGetColors() {
   sendCORSHeaders("GET");
@@ -1009,10 +1096,19 @@ void handleGetModel() {
   client.printf("\"realPixelCount\":%d,", object->realPixelCount);
   client.printf("\"modelCount\":%d,", (int)object->models.size());
   client.printf("\"gapCount\":%d,", (int)object->gaps.size());
-  client.printf("\"capabilities\":{\"crossDevice\":{\"enabled\":%s,\"transport\":\"%s\",\"ready\":%s}},",
+  client.printf(
+      "\"capabilities\":{\"crossDevice\":{\"enabled\":%s,\"transport\":\"%s\",\"ready\":%s,\"runtimeState\":\"%s\","
+      "\"peerCount\":%u,\"discoveryInProgress\":%s,\"droppedPackets\":%u,\"consecutiveFailures\":%u,"
+      "\"lastError\":\"%s\"}},",
                 isExternalTransportEnabled() ? "true" : "false",
                 externalTransportName(),
-                externalTransportIsReady() ? "true" : "false");
+                externalTransportIsReady() ? "true" : "false",
+                externalTransportRuntimeStateName(externalTransportRuntimeState()),
+                static_cast<unsigned int>(externalTransportPeerCount()),
+                externalTransportDiscoveryInProgress() ? "true" : "false",
+                static_cast<unsigned int>(externalTransportDroppedPackets()),
+                static_cast<unsigned int>(externalTransportConsecutiveFailures()),
+                externalTransportLastError());
   
   // Intersections
   client.print("\"intersections\":[");

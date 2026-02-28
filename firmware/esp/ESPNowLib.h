@@ -4,15 +4,13 @@
 #include <esp_now.h>
 #include <esp_wifi.h>
 #include <esp_arduino_version.h>
-#include "lwip/err.h"
-#include "lwip/ip_addr.h"
-#include "lwip/etharp.h"
-#include <ESPping.h>  // For pinging devices to get MAC addresses
+#include <freertos/FreeRTOS.h>
+#include <freertos/portmacro.h>
 #include <map>
+#include <cstring>
 
 // Forward declarations
 class Port;
-class Light;
 class Intersection;
 
 // Maximum size for ESP-NOW payload (250 bytes)
@@ -54,80 +52,164 @@ typedef struct {
 
 // For storing discovered peers during scanning
 #define MAX_PEERS 20
-esp_now_peer_info_t knownPeers[MAX_PEERS];
-int peerCount = 0;
-
-// LightList ID mapping for ESP-NOW received lists (old ID -> new ID)
-static std::map<uint16_t, uint16_t> lightListIdMap;
+inline esp_now_peer_info_t knownPeers[MAX_PEERS] = {};
+inline uint16_t peerCount = 0;
 
 // Broadcast MAC address for ESP-NOW discovery
-uint8_t broadcastMAC[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+inline uint8_t broadcastMAC[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 
 // Discovery state
-bool discoveryActive = false;
-unsigned long discoveryStartTime = 0;
+inline bool discoveryActive = false;
+inline unsigned long discoveryStartTime = 0;
 #define DISCOVERY_TIMEOUT_MS 5000
 
-// Function to lookup MAC from IP using LwIP ARP cache
-bool getMacFromArpCache(const IPAddress& ip, uint8_t* mac) {
-    ip4_addr_t ip4;
-    ip4.addr = ip; // convert IPAddress to ip4_addr_t
+inline const char* gESPNowLastError = "none";
+inline bool gESPNowInitialized = false;
 
-    struct eth_addr* eth_ret;
-    err_t res = etharp_find_addr(netif_default, &ip4, &eth_ret, NULL);
-    if (res == ERR_OK && eth_ret != NULL) {
-        memcpy(mac, eth_ret->addr, 6);
-        return true;
-    }
-    return false;
-}
+constexpr uint8_t MAX_ESPNOW_RX_QUEUE = 24;
+constexpr uint8_t MAX_ESPNOW_PROCESS_PER_TICK = 8;
 
-// Your getMacFromIP function fixed
-bool getMacFromIP(const IPAddress& ip, uint8_t* mac) {
-    // 1) If device is in station list (SoftAP mode), get MAC from connected stations
-    if (WiFi.getMode() & WIFI_MODE_AP) {
-        wifi_sta_list_t stationList;
-        esp_err_t result = esp_wifi_ap_get_sta_list(&stationList);
-        if (result == ESP_OK) {
-            for (int i = 0; i < stationList.num; i++) {
-                wifi_sta_info_t station = stationList.sta[i];
-                // We don't have IP here, only MAC - so try ARP cache for IP to MAC mapping
-                if (getMacFromArpCache(ip, mac)) {
-                    if (memcmp(mac, station.mac, 6) == 0) {
-                        // MAC matches connected station MAC
-                        return true;
-                    }
-          }
-        }
-        } else {
-            LP_LOGLN("Failed to get station list");
-        }
-      }
+struct ESPNowQueuedPacket {
+  uint8_t type = 0;
+  uint8_t src[6] = {0};
+  uint8_t len = 0;
+  uint8_t payload[sizeof(LightListMessage)] = {0};
+};
 
-    // 2) If not found yet, try ARP cache directly
-    if (getMacFromArpCache(ip, mac)) {
-        return true;
-    }
+inline ESPNowQueuedPacket gESPNowRxQueue[MAX_ESPNOW_RX_QUEUE];
+inline volatile uint8_t gESPNowRxHead = 0;
+inline volatile uint8_t gESPNowRxTail = 0;
+inline volatile uint8_t gESPNowRxCount = 0;
+inline volatile uint16_t gESPNowDroppedPackets = 0;
+inline portMUX_TYPE gESPNowQueueMux = portMUX_INITIALIZER_UNLOCKED;
 
-    // 3) If not in ARP cache, try pinging the IP to populate ARP cache
-    if (Ping.ping(ip, 1)) {
-        LP_LOGF("Pinged %s successfully\n", ip.toString().c_str());
-        // After ping, try ARP cache again
-        if (getMacFromArpCache(ip, mac)) {
-            return true;
+constexpr size_t MAX_REMOTE_LIGHT_LISTS = 24;
+inline std::map<uint16_t, LightList*> gRemoteLightLists;
+
+inline void setESPNowLastError(const char* error) {
+  if (error != nullptr && error[0] != '\0') {
+    gESPNowLastError = error;
   }
-    } else {
-        LP_LOGF("Failed to ping %s\n", ip.toString().c_str());
 }
 
-    // 4) If still not found, you cannot get MAC (IP might be offline or unreachable)
+inline const char* getESPNowLastError() {
+  return gESPNowLastError;
+}
+
+inline uint16_t getESPNowDroppedPacketCount() {
+  return gESPNowDroppedPackets;
+}
+
+inline bool isESPNowDiscoveryActive() {
+  return discoveryActive;
+}
+
+inline uint16_t getKnownPeerCount() {
+  return peerCount;
+}
+
+inline bool getKnownPeerAt(uint16_t index, uint8_t mac[6], uint8_t* channel, bool* encrypted) {
+  if (index >= peerCount) {
     return false;
+  }
+  if (mac != nullptr) {
+    std::memcpy(mac, knownPeers[index].peer_addr, 6);
+  }
+  if (channel != nullptr) {
+    *channel = knownPeers[index].channel;
+  }
+  if (encrypted != nullptr) {
+    *encrypted = knownPeers[index].encrypt;
+  }
+  return true;
+}
+
+inline bool enqueueESPNowPacketFromISR(const uint8_t* src_addr, uint8_t type, const uint8_t* payload,
+                                       uint8_t payloadLen) {
+  if (src_addr == nullptr || payload == nullptr || payloadLen > sizeof(ESPNowQueuedPacket::payload)) {
+    return false;
+  }
+
+  bool queued = false;
+  portENTER_CRITICAL_ISR(&gESPNowQueueMux);
+  if (gESPNowRxCount < MAX_ESPNOW_RX_QUEUE) {
+    ESPNowQueuedPacket& slot = gESPNowRxQueue[gESPNowRxHead];
+    slot.type = type;
+    slot.len = payloadLen;
+    std::memcpy(slot.src, src_addr, sizeof(slot.src));
+    std::memcpy(slot.payload, payload, payloadLen);
+
+    gESPNowRxHead = static_cast<uint8_t>((gESPNowRxHead + 1) % MAX_ESPNOW_RX_QUEUE);
+    gESPNowRxCount++;
+    queued = true;
+  } else {
+    gESPNowDroppedPackets++;
+  }
+  portEXIT_CRITICAL_ISR(&gESPNowQueueMux);
+
+  return queued;
+}
+
+inline bool dequeueESPNowPacket(ESPNowQueuedPacket& packet) {
+  bool hasPacket = false;
+  portENTER_CRITICAL(&gESPNowQueueMux);
+  if (gESPNowRxCount > 0) {
+    packet = gESPNowRxQueue[gESPNowRxTail];
+    gESPNowRxTail = static_cast<uint8_t>((gESPNowRxTail + 1) % MAX_ESPNOW_RX_QUEUE);
+    gESPNowRxCount--;
+    hasPacket = true;
+  }
+  portEXIT_CRITICAL(&gESPNowQueueMux);
+  return hasPacket;
+}
+
+inline bool isKnownPeer(const uint8_t* mac_addr) {
+  for (uint16_t i = 0; i < peerCount; i++) {
+    if (std::memcmp(knownPeers[i].peer_addr, mac_addr, 6) == 0) {
+      return true;
+    }
+  }
+  return false;
+}
+
+inline bool rememberKnownPeer(const uint8_t* mac_addr, uint8_t channel, bool encrypted) {
+  if (mac_addr == nullptr) {
+    return false;
+  }
+
+  for (uint16_t i = 0; i < peerCount; i++) {
+    if (std::memcmp(knownPeers[i].peer_addr, mac_addr, 6) == 0) {
+      knownPeers[i].channel = channel;
+      knownPeers[i].encrypt = encrypted;
+      return true;
+    }
+  }
+
+  if (peerCount >= MAX_PEERS) {
+    setESPNowLastError("peer_list_full");
+    return false;
+  }
+
+  std::memcpy(knownPeers[peerCount].peer_addr, mac_addr, 6);
+  knownPeers[peerCount].channel = channel;
+  knownPeers[peerCount].encrypt = encrypted;
+  peerCount++;
+  return true;
 }
 
 // Register a peer with ESP-NOW
-bool addPeer(const uint8_t* mac_addr, uint8_t channel) {
+inline bool addPeer(const uint8_t* mac_addr, uint8_t channel) {
+  if (mac_addr == nullptr) {
+    setESPNowLastError("peer_null_mac");
+    return false;
+  }
+
+  if (esp_now_is_peer_exist(mac_addr)) {
+    return true;
+  }
+
   esp_now_peer_info_t peer = {};
-  memcpy(peer.peer_addr, mac_addr, 6);
+  std::memcpy(peer.peer_addr, mac_addr, 6);
   peer.channel = channel;
   peer.encrypt = false;
   peer.ifidx = WIFI_IF_STA;
@@ -141,375 +223,330 @@ bool addPeer(const uint8_t* mac_addr, uint8_t channel) {
     }
   }
 
-  // Check if peer exists before adding
-  if (!esp_now_is_peer_exist(mac_addr)) {
-    esp_err_t result = esp_now_add_peer(&peer);
-    if (result != ESP_OK) {
-      LP_LOGLN("Failed to add ESP-NOW peer");
-      return false;
+  const esp_err_t result = esp_now_add_peer(&peer);
+  if (result != ESP_OK) {
+    setESPNowLastError("peer_add_failed");
+    return false;
+  }
+  return true;
+}
+
+inline uint8_t resolvePeerChannel(const uint8_t* mac_addr) {
+  if (mac_addr != nullptr) {
+    for (uint16_t i = 0; i < peerCount; i++) {
+      if (std::memcmp(knownPeers[i].peer_addr, mac_addr, 6) == 0) {
+        return knownPeers[i].channel;
+      }
     }
+  }
+  return WiFi.channel();
+}
+
+inline bool ensurePeerForSend(const uint8_t* mac_addr) {
+  if (mac_addr == nullptr) {
+    setESPNowLastError("peer_null_mac");
+    return false;
+  }
+  if (esp_now_is_peer_exist(mac_addr)) {
     return true;
   }
-  return true; // Already added
+
+  const uint8_t channel = resolvePeerChannel(mac_addr);
+  if (!addPeer(mac_addr, channel)) {
+    setESPNowLastError("peer_add_before_send_failed");
+    return false;
+  }
+  rememberKnownPeer(mac_addr, channel, false);
+  return true;
 }
 
-void mdnsDiscoverPeers() {
-  // Discover devices on the network
-  std::vector<IPAddress> deviceIPs = getDevices();
-  LP_LOGF("Discovered %d potential devices\n", deviceIPs.size());
+inline LightList* getOrCreateRemoteLightList(uint16_t remoteListId) {
+  auto it = gRemoteLightLists.find(remoteListId);
+  if (it != gRemoteLightLists.end()) {
+    return it->second;
+  }
 
-  // Get MAC addresses for each device
-  for (const IPAddress& ip : deviceIPs) {
-    if (peerCount >= MAX_PEERS) {
-      LP_LOGLN("Maximum peer count reached");
-      break;
+  if (gRemoteLightLists.size() >= MAX_REMOTE_LIGHT_LISTS) {
+    auto evict = gRemoteLightLists.begin();
+    if (evict->second != nullptr) {
+      delete evict->second;
     }
-
-    uint8_t mac[6];
-    if (getMacFromIP(ip, mac)) {
-      // Don't add our own MAC address
-      uint8_t ourMac[6];
-      WiFi.macAddress(ourMac);
-      if (memcmp(mac, ourMac, 6) == 0) {
-        LP_LOGLN("Skipping our own MAC address");
-        continue;
+    gRemoteLightLists.erase(evict);
   }
 
-      // Store peer info
-      memcpy(knownPeers[peerCount].peer_addr, mac, 6);
-      knownPeers[peerCount].channel = WiFi.channel();
-      knownPeers[peerCount].encrypt = false;
-
-      char macStr[18];
-      snprintf(macStr, sizeof(macStr), "%02X:%02X:%02X:%02X:%02X:%02X",
-              mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
-      LP_LOGF("Added peer %s at %s\n", macStr, ip.toString().c_str());
-
-      peerCount++;
-    } else {
-      LP_LOGF("Could not resolve MAC for %s\n", ip.toString().c_str());
-}
-  }
+  auto* created = new LightList();
+  gRemoteLightLists[remoteListId] = created;
+  return created;
 }
 
-void espNowDiscoverPeers() {
-  // Disconnect from WiFi to scan
-  WiFi.disconnect();
-  delay(100);
-
-  // Scan for networks
-  int n = WiFi.scanNetworks();
-  LP_LOGF("ESP-NOW scan found %d networks\n", n);
-
-  if (n <= 0) {
-    LP_LOGLN("No networks found");
-  } else {
-  // Add devices with open/no security as potential ESP-NOW peers
-  for (int i = 0; i < n && peerCount < MAX_PEERS; i++) {
-    // Check if this is a no security network
-    if (WiFi.encryptionType(i) == WIFI_AUTH_OPEN) {
-      // Get BSSID (MAC address) of this network
-      memcpy(knownPeers[peerCount].peer_addr, WiFi.BSSID(i), 6);
-      knownPeers[peerCount].channel = WiFi.channel(i);
-      knownPeers[peerCount].encrypt = false;
-
-      peerCount++;
-    }
-  }
-  }
-
-  // Reconnect to WiFi if needed
-  if (!apMode) {
-    WiFi.begin(savedSSID.c_str(), savedPassword.c_str());
-  }
-}
-
-// Broadcast discovery request to find ESP-NOW peers
-void broadcastDiscoveryRequest() {
-  DiscoveryRequest request;
-  request.header.messageType = DISCOVERY_REQUEST;
-  WiFi.macAddress(request.header.deviceId);
-  request.channel = WiFi.channel();
-
-  // Add broadcast peer if not already added
-  if (!esp_now_is_peer_exist(broadcastMAC)) {
-    addPeer(broadcastMAC, 0);
-  }
-
-  // Send discovery request
-  esp_err_t result = esp_now_send(broadcastMAC, (uint8_t*)&request, sizeof(request));
-  if (result == ESP_OK) {
-    LP_LOGLN("Discovery request broadcasted");
-    discoveryActive = true;
-    discoveryStartTime = millis();
-  } else {
-    LP_LOGF("Failed to broadcast discovery request: %d\n", result);
-  }
-}
-
-// Start ESP-NOW peer discovery using broadcast
-void scanForPeers() {
-  peerCount = 0;
-  LP_LOGLN("Starting ESP-NOW broadcast discovery...");
-  
-  broadcastDiscoveryRequest();
-  
-  // Wait for replies
-  while (discoveryActive && (millis() - discoveryStartTime < DISCOVERY_TIMEOUT_MS)) {
-    delay(100);
-  }
-  
-  discoveryActive = false;
-  LP_LOGF("Discovery completed. Found %d ESP-NOW peers\n", peerCount);
-}
-
-// Handle received light message
-void handleReceivedLight(const LightMessage* lightMsg) {
-  LP_LOGF("Received light message for port %d, light idx %d\n", lightMsg->portId, lightMsg->lightIdx);
-  
-  // Find the target port by ID
-  Port* port = Port::findById(lightMsg->portId);
-  if (port == nullptr) {
-    LP_LOGF("Port %d not found\n", lightMsg->portId);
+inline void handleReceivedLight(const LightMessage* lightMsg) {
+  if (lightMsg == nullptr) {
     return;
   }
-  
-  // Check if it's an internal port (only internal ports should receive lights)
-  if (port->isExternal()) {
-    LP_LOGF("Port %d is an external port, cannot receive lights\n", lightMsg->portId);
+
+  Port* port = Port::findById(lightMsg->portId);
+  if (port == nullptr || port->isExternal()) {
     return;
   }
   InternalPort* targetPort = static_cast<InternalPort*>(port);
-  
-  // Create a new light with received data
-  // Note: This requires access to the light creation system
-  // Implementation depends on how lights are managed in the main application
-  LP_LOGF("Light received: pos=%.2f, speed=%.2f, RGB=(%d,%d,%d), brightness=%d\n", 
-          lightMsg->speed, 
-          lightMsg->colorR, lightMsg->colorG, lightMsg->colorB, 
-          lightMsg->brightness);
-  
-  // Create a new light with received properties
-  LightList* lightList = state->findListById(lightListIdMap[lightMsg->listId]);
+
+  LightList* lightList = getOrCreateRemoteLightList(lightMsg->listId);
+  if (lightList == nullptr) {
+    setESPNowLastError("remote_list_alloc_failed");
+    return;
+  }
+
   RuntimeLight* light = lightList->addLightFromMsg(lightMsg);
-  
-  // Set color
+  if (light == nullptr) {
+    setESPNowLastError("remote_light_alloc_failed");
+    return;
+  }
+
   ColorRGB color;
   color.r = lightMsg->colorR;
   color.g = lightMsg->colorG;
   color.b = lightMsg->colorB;
   light->setColor(color);
-  
-  // Add light to the target port's connection
+
   targetPort->sendOut(light);
 }
 
-// Handle received light list message
-void handleReceivedLightList(const LightListMessage* lightListMsg) {
-  Port* port = Port::findById(lightListMsg->light.portId);
-  if (port == nullptr) {
-    LP_LOGF("Port %d not found\n", lightListMsg->light.portId);
+inline void handleReceivedLightList(const LightListMessage* lightListMsg) {
+  if (lightListMsg == nullptr) {
     return;
   }
-  
-  // Check if it's an internal port (only internal ports should receive lights)
-  if (port->isExternal()) {
-    LP_LOGF("Port %d is an external port, cannot receive lights\n", lightListMsg->light.portId);
+
+  LightMessage translated = lightListMsg->light;
+  translated.listId = lightListMsg->id;
+  handleReceivedLight(&translated);
+}
+
+inline void handleDiscoveryRequestPacket(const uint8_t* src_addr) {
+  if (src_addr == nullptr) {
     return;
   }
-  InternalPort* targetPort = static_cast<InternalPort*>(port);
-  
-  // Create a new LightList to hold the received lights
-  LightList* receivedLightList = new LightList();
-  //receivedLightList->setup(lightListMsg->numLights, 255);
-  
-  // Map the old LightList ID to the new one
-  uint16_t oldId = lightListMsg->id;
-  uint16_t newId = receivedLightList->id;
-  lightListIdMap[oldId] = newId;
-  LP_LOGF("Mapping LightList ID: old=%d -> new=%d\n", oldId, newId);
-  
-  RuntimeLight* light = receivedLightList->addLightFromMsg(&lightListMsg->light);
-  
-  // Add main light to the target port's connection
-  targetPort->sendOut(light);
+
+  DiscoveryReply reply;
+  reply.header.messageType = DISCOVERY_REPLY;
+  WiFi.macAddress(reply.header.deviceId);
+  reply.channel = WiFi.channel();
+  std::strncpy(reply.deviceName, "ESP32_Device", sizeof(reply.deviceName) - 1);
+  reply.deviceName[sizeof(reply.deviceName) - 1] = '\0';
+
+  if (!addPeer(src_addr, WiFi.channel())) {
+    return;
+  }
+  rememberKnownPeer(src_addr, WiFi.channel(), false);
+
+  if (esp_now_send(src_addr, reinterpret_cast<const uint8_t*>(&reply), sizeof(reply)) != ESP_OK) {
+    setESPNowLastError("discovery_reply_send_failed");
+  }
+}
+
+inline void handleDiscoveryReplyPacket(const uint8_t* src_addr, const DiscoveryReply* reply) {
+  if (src_addr == nullptr || reply == nullptr) {
+    return;
+  }
+
+  rememberKnownPeer(src_addr, reply->channel, false);
+  addPeer(src_addr, reply->channel);
+}
+
+inline void processQueuedESPNowPackets() {
+  ESPNowQueuedPacket packet;
+  for (uint8_t i = 0; i < MAX_ESPNOW_PROCESS_PER_TICK; i++) {
+    if (!dequeueESPNowPacket(packet)) {
+      break;
+    }
+
+    switch (packet.type) {
+      case DISCOVERY_REQUEST:
+        if (packet.len >= sizeof(DiscoveryRequest)) {
+          handleDiscoveryRequestPacket(packet.src);
+        }
+        break;
+      case DISCOVERY_REPLY:
+        if (packet.len >= sizeof(DiscoveryReply)) {
+          const auto* reply = reinterpret_cast<const DiscoveryReply*>(packet.payload);
+          handleDiscoveryReplyPacket(packet.src, reply);
+        }
+        break;
+      case LIGHT_MESSAGE:
+        if (packet.len >= sizeof(LightMessage)) {
+          const auto* lightMsg = reinterpret_cast<const LightMessage*>(packet.payload);
+          handleReceivedLight(lightMsg);
+        }
+        break;
+      case LIGHTLIST_MESSAGE:
+        if (packet.len >= sizeof(LightListMessage)) {
+          const auto* lightListMsg = reinterpret_cast<const LightListMessage*>(packet.payload);
+          handleReceivedLightList(lightListMsg);
+        }
+        break;
+      default:
+        break;
+    }
+  }
 }
 
 // Callback function for when data is sent
 #if defined(ESP_ARDUINO_VERSION_MAJOR) && (ESP_ARDUINO_VERSION_MAJOR >= 3)
-void onDataSent(const esp_now_send_info_t* tx_info, esp_now_send_status_t status) {
-  const uint8_t* mac_addr = (tx_info != nullptr) ? tx_info->des_addr : nullptr;
-  char macStr[18] = "??:??:??:??:??:??";
-  if (mac_addr != nullptr) {
-    snprintf(macStr, sizeof(macStr), "%02X:%02X:%02X:%02X:%02X:%02X",
-             mac_addr[0], mac_addr[1], mac_addr[2], mac_addr[3], mac_addr[4], mac_addr[5]);
-  }
+inline void onDataSent(const esp_now_send_info_t* /*tx_info*/, esp_now_send_status_t status) {
 #else
-void onDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
-  char macStr[18];
-  snprintf(macStr, sizeof(macStr), "%02X:%02X:%02X:%02X:%02X:%02X",
-           mac_addr[0], mac_addr[1], mac_addr[2], mac_addr[3], mac_addr[4], mac_addr[5]);
+inline void onDataSent(const uint8_t* /*mac_addr*/, esp_now_send_status_t status) {
 #endif
-
-  if (status == ESP_NOW_SEND_SUCCESS) {
-    LP_LOGF("ESP-NOW data sent to %s: SUCCESS\n", macStr);
-  } else {
-    LP_LOGF("ESP-NOW data sent to %s: FAILED\n", macStr);
+  if (status != ESP_NOW_SEND_SUCCESS) {
+    setESPNowLastError("send_failed");
   }
 }
 
 // Callback function for when data is received
 #if defined(ESP_IDF_VERSION) && (ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0))
-void onDataReceived(const esp_now_recv_info_t *esp_now_info, const uint8_t *data, int data_len) {
-  const uint8_t *src_addr = esp_now_info->src_addr;
+inline void onDataReceived(const esp_now_recv_info_t* esp_now_info, const uint8_t* data, int data_len) {
+  const uint8_t* src_addr = (esp_now_info != nullptr) ? esp_now_info->src_addr : nullptr;
 #else
-void onDataReceived(const uint8_t *src_addr, const uint8_t *data, int data_len) {
+inline void onDataReceived(const uint8_t* src_addr, const uint8_t* data, int data_len) {
 #endif
-  char macStr[18];
-  snprintf(macStr, sizeof(macStr), "%02X:%02X:%02X:%02X:%02X:%02X",
-           src_addr[0], src_addr[1], src_addr[2],
-           src_addr[3], src_addr[4], src_addr[5]);
-
-  LP_LOGF("ESP-NOW data received from %s, length: %d\n", macStr, data_len);
-
-  if (data_len < sizeof(ESPNowHeader)) {
-    LP_LOGLN("ESP-NOW received data too short");
+  if (src_addr == nullptr || data == nullptr || data_len < static_cast<int>(sizeof(ESPNowHeader))) {
     return;
   }
 
-  const ESPNowHeader* header = (const ESPNowHeader*)data;
+  const auto* header = reinterpret_cast<const ESPNowHeader*>(data);
+  uint8_t messageLen = 0;
 
   switch (header->messageType) {
-    case DISCOVERY_REQUEST: {
-      LP_LOGF("Received discovery request from %s\n", macStr);
-      
-      // Send reply
-      DiscoveryReply reply;
-      reply.header.messageType = DISCOVERY_REPLY;
-      WiFi.macAddress(reply.header.deviceId);
-      reply.channel = WiFi.channel();
-      strncpy(reply.deviceName, "ESP32_Device", sizeof(reply.deviceName) - 1);
-      reply.deviceName[sizeof(reply.deviceName) - 1] = '\0';
-      
-      // Add sender as peer and reply
-      if (addPeer(src_addr, WiFi.channel())) {
-        esp_now_send(src_addr, (uint8_t*)&reply, sizeof(reply));
-        LP_LOGF("Sent discovery reply to %s\n", macStr);
-      }
+    case DISCOVERY_REQUEST:
+      if (data_len < static_cast<int>(sizeof(DiscoveryRequest))) return;
+      messageLen = static_cast<uint8_t>(sizeof(DiscoveryRequest));
       break;
-    }
-    
-    case DISCOVERY_REPLY: {
-      if (data_len >= sizeof(DiscoveryReply)) {
-        const DiscoveryReply* reply = (const DiscoveryReply*)data;
-        LP_LOGF("Received discovery reply from %s (device: %s, channel: %d)\n", 
-                macStr, reply->deviceName, reply->channel);
-        
-        // Add peer to known peers list if not already there
-        bool peerExists = false;
-        for (int i = 0; i < peerCount; i++) {
-          if (memcmp(knownPeers[i].peer_addr, src_addr, 6) == 0) {
-            peerExists = true;
-            break;
-          }
-        }
-        
-        if (!peerExists && peerCount < MAX_PEERS) {
-          memcpy(knownPeers[peerCount].peer_addr, src_addr, 6);
-          knownPeers[peerCount].channel = reply->channel;
-          knownPeers[peerCount].encrypt = false;
-          
-          // Also add as ESP-NOW peer for communication
-          addPeer(src_addr, reply->channel);
-          
-          peerCount++;
-          LP_LOGF("Added peer %s to known peers list\n", macStr);
-        }
-      }
+    case DISCOVERY_REPLY:
+      if (data_len < static_cast<int>(sizeof(DiscoveryReply))) return;
+      messageLen = static_cast<uint8_t>(sizeof(DiscoveryReply));
       break;
-    }
-    
-    case LIGHT_MESSAGE: {
-      if (data_len >= sizeof(LightMessage)) {
-        const LightMessage* lightMsg = (const LightMessage*)data;
-        LP_LOGF("Received light message from %s\n", macStr);
-        handleReceivedLight(lightMsg);
-      } else {
-        LP_LOGLN("Light message too short");
-      }
+    case LIGHT_MESSAGE:
+      if (data_len < static_cast<int>(sizeof(LightMessage))) return;
+      messageLen = static_cast<uint8_t>(sizeof(LightMessage));
       break;
-    }
-    
-    case LIGHTLIST_MESSAGE: {
-      if (data_len >= sizeof(LightListMessage)) {
-        const LightListMessage* lightListMsg = (const LightListMessage*)data;
-        LP_LOGF("Received light list message from %s\n", macStr);
-        handleReceivedLightList(lightListMsg);
-      } else {
-        LP_LOGLN("Light list message too short");
-      }
+    case LIGHTLIST_MESSAGE:
+      if (data_len < static_cast<int>(sizeof(LightListMessage))) return;
+      messageLen = static_cast<uint8_t>(sizeof(LightListMessage));
       break;
-    }
-
     default:
-      LP_LOGF("Unknown ESP-NOW message type: %d\n", header->messageType);
-      break;
-    }
+      return;
+  }
+
+  enqueueESPNowPacketFromISR(src_addr, header->messageType, data, messageLen);
 }
 
 // Initialize ESP-NOW
-bool initESPNow() {
-  // Init ESP-NOW
+inline bool initESPNow() {
+  if (gESPNowInitialized) {
+    return true;
+  }
+
   if (esp_now_init() != ESP_OK) {
-    LP_LOGLN("Error initializing ESP-NOW");
+    setESPNowLastError("init_failed");
     return false;
   }
 
-  // Register callbacks
   esp_now_register_send_cb(onDataSent);
   esp_now_register_recv_cb(onDataReceived);
 
-  LP_LOGLN("ESP-NOW initialized successfully");
+  gESPNowInitialized = true;
+  setESPNowLastError("none");
   return true;
 }
 
-LightMessage packLight(uint8_t portId, RuntimeLight* const light) {
+inline bool broadcastDiscoveryRequest() {
+  if (!gESPNowInitialized) {
+    setESPNowLastError("not_initialized");
+    return false;
+  }
+
+  DiscoveryRequest request;
+  request.header.messageType = DISCOVERY_REQUEST;
+  WiFi.macAddress(request.header.deviceId);
+  request.channel = WiFi.channel();
+
+  if (!esp_now_is_peer_exist(broadcastMAC) && !addPeer(broadcastMAC, 0)) {
+    return false;
+  }
+
+  const esp_err_t result = esp_now_send(broadcastMAC, reinterpret_cast<const uint8_t*>(&request), sizeof(request));
+  if (result != ESP_OK) {
+    setESPNowLastError("discovery_broadcast_failed");
+    return false;
+  }
+
+  discoveryActive = true;
+  discoveryStartTime = millis();
+  return true;
+}
+
+// Start ESP-NOW peer discovery in non-blocking mode.
+inline bool scanForPeers() {
+  peerCount = 0;
+  discoveryActive = false;
+  discoveryStartTime = 0;
+  return broadcastDiscoveryRequest();
+}
+
+inline void tickESPNow() {
+  processQueuedESPNowPackets();
+
+  if (discoveryActive && (millis() - discoveryStartTime > DISCOVERY_TIMEOUT_MS)) {
+    discoveryActive = false;
+  }
+}
+
+inline LightMessage packLight(uint8_t portId, RuntimeLight* const light) {
   LightMessage msg;
   msg.messageType = LIGHT_MESSAGE;
   msg.portId = portId;
   msg.listId = light->list ? light->list->id : 0;
   msg.lightIdx = light->idx;
   msg.brightness = light->getBrightness();
-  
+
   ColorRGB color = light->getColor();
   msg.colorR = color.r;
   msg.colorG = color.g;
   msg.colorB = color.b;
-  
+
   msg.speed = light->getSpeed();
   msg.life = light->getLife();
-  
+
   return msg;
 }
 
-void sendLightViaESPNow_impl(const uint8_t* mac, uint8_t portId, RuntimeLight* const light, bool sendList = false) {
-    if (sendList && light->list) {
-        LightListMessage msg;
-        msg.messageType = LIGHTLIST_MESSAGE;
-        msg.id = light->list->id;
-        msg.light = packLight(portId, light);
-        
-        esp_err_t result = esp_now_send(mac, (uint8_t*)&msg, sizeof(msg));
-        if (result != ESP_OK) {
-            LP_LOGF("Failed to send LightList message: %d\n", result);
-        }
-    } else {
-        LightMessage msg = packLight(portId, light);
-        esp_err_t result = esp_now_send(mac, (uint8_t*)&msg, sizeof(msg));
-        if (result != ESP_OK) {
-            LP_LOGF("Failed to send Light message: %d\n", result);
-        }
+inline bool sendLightViaESPNow_impl(const uint8_t* mac, uint8_t portId, RuntimeLight* const light,
+                                    bool sendList = false) {
+  if (mac == nullptr || light == nullptr) {
+    setESPNowLastError("send_invalid_args");
+    return false;
+  }
+
+  if (!ensurePeerForSend(mac)) {
+    return false;
+  }
+
+  if (sendList && light->list) {
+    LightListMessage msg;
+    msg.messageType = LIGHTLIST_MESSAGE;
+    msg.id = light->list->id;
+    msg.light = packLight(portId, light);
+
+    if (esp_now_send(mac, reinterpret_cast<const uint8_t*>(&msg), sizeof(msg)) != ESP_OK) {
+      setESPNowLastError("send_lightlist_failed");
+      return false;
     }
+  } else {
+    LightMessage msg = packLight(portId, light);
+    if (esp_now_send(mac, reinterpret_cast<const uint8_t*>(&msg), sizeof(msg)) != ESP_OK) {
+      setESPNowLastError("send_light_failed");
+      return false;
+    }
+  }
+  return true;
 }
 
 // Forward declaration of function pointer from Port.h
