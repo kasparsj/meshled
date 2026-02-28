@@ -1,5 +1,31 @@
-import {useCallback, useEffect, useState} from "react";
-import {useDevice} from "../contexts/DeviceContext.jsx";
+import { useCallback, useEffect, useState } from 'react';
+import { useDevice } from '../contexts/DeviceContext.jsx';
+
+const isAbortError = (error) => error?.name === 'AbortError';
+
+const parseResponseError = async (response, fallbackMessage) => {
+    const contentType = response.headers.get('content-type') || '';
+    try {
+        if (contentType.includes('application/json')) {
+            const payload = await response.json();
+            if (typeof payload?.error === 'string' && payload.error.trim().length > 0) {
+                return payload.error;
+            }
+            if (typeof payload?.message === 'string' && payload.message.trim().length > 0) {
+                return payload.message;
+            }
+        }
+
+        const text = await response.text();
+        if (text.trim().length > 0) {
+            return text;
+        }
+    } catch {
+        // Ignore parse errors and use fallback.
+    }
+
+    return `${fallbackMessage} (${response.status})`;
+};
 
 const usePalettes = () => {
     const [palettes, setPalettes] = useState([]);
@@ -7,49 +33,53 @@ const usePalettes = () => {
     const [error, setError] = useState(null);
     const { deviceFetch, selectedDevice } = useDevice();
 
-    // Fetch palettes from the server
-    const fetchPalettes = useCallback(async (verbose = true, paletteName = null) => {
+    const fetchPalettes = useCallback(async ({ verbose = true, paletteName = null, signal } = {}) => {
+        if (!selectedDevice) {
+            setPalettes([]);
+            setLoading(false);
+            setError('No device selected');
+            return [];
+        }
+
+        setLoading(true);
+        setError(null);
+
         try {
-            setLoading(true);
-            setError(null);
-            
             let url = '/get_palettes';
             const params = new URLSearchParams();
-            
+
             if (verbose) {
                 params.append('v', 'true');
             }
-            
+
             if (paletteName) {
                 params.append('name', paletteName);
             }
-            
+
             if (params.toString()) {
-                url += '?' + params.toString();
+                url += `?${params.toString()}`;
             }
-            
-            const response = await deviceFetch(url);
-            
-            if (response.ok) {
-                const data = await response.json();
-                setPalettes(data);
-                return data;
-            } else {
-                const errorText = await response.text();
-                console.error("Failed to fetch palettes:", errorText);
-                setError("Failed to fetch palettes: " + errorText);
-                return null;
+
+            const response = await deviceFetch(url, { signal });
+            if (!response.ok) {
+                throw new Error(await parseResponseError(response, 'Failed to fetch palettes'));
             }
+
+            const data = await response.json();
+            const parsed = Array.isArray(data) ? data : [];
+            setPalettes(parsed);
+            return parsed;
         } catch (err) {
-            console.error("Error fetching palettes:", err);
-            setError("Error fetching palettes");
+            if (isAbortError(err)) {
+                return [];
+            }
+            setError(err.message || 'Failed to fetch palettes');
             return null;
         } finally {
             setLoading(false);
         }
-    }, [deviceFetch]);
+    }, [deviceFetch, selectedDevice]);
 
-    // Delete a palette by index
     const deletePalette = useCallback(async (paletteIndex) => {
         try {
             const formData = new FormData();
@@ -58,67 +88,61 @@ const usePalettes = () => {
                 method: 'POST',
                 body: formData,
             });
-            
-            if (response.ok) {
-                const result = await response.json();
-                console.log("Palette deleted successfully:", result.message);
-                
-                // Refresh palettes list after deletion
-                await fetchPalettes();
-                
-                return result;
-            } else {
-                const error = await response.json();
-                console.error("Failed to delete palette:", error.error);
-                setError("Failed to delete palette: " + error.error);
-                return null;
+
+            if (!response.ok) {
+                throw new Error(await parseResponseError(response, 'Failed to delete palette'));
             }
+
+            const result = await response.json().catch(() => ({ success: true }));
+            await fetchPalettes();
+            setError(null);
+            return result;
         } catch (err) {
-            console.error("Error deleting palette:", err);
-            setError("Error deleting palette");
+            setError(err.message || 'Failed to delete palette');
             return null;
         }
     }, [deviceFetch, fetchPalettes]);
 
-    // Sync palettes with server (push/pull)
     const syncPalettes = useCallback(async (palettesData, push = false, pull = false) => {
         try {
             const params = new URLSearchParams();
             if (push) params.append('push', 'true');
             if (pull) params.append('pull', 'true');
-            
+
             const response = await deviceFetch(`/sync_palettes?${params.toString()}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(palettesData)
+                body: JSON.stringify(palettesData),
             });
-            
-            if (response.ok) {
-                const result = await response.json();
-                console.log("Palettes synced successfully");
-                
-                // If pulling, update local palettes with the result
-                if (pull && result.length > 0) {
-                    setPalettes(prev => [...prev, ...result]);
-                }
-                
-                return result;
-            } else {
-                const error = await response.json();
-                console.error("Failed to sync palettes:", error.error);
-                setError("Failed to sync palettes: " + error.error);
-                return null;
+
+            if (!response.ok) {
+                throw new Error(await parseResponseError(response, 'Failed to sync palettes'));
             }
+
+            const result = await response.json();
+
+            if (pull && Array.isArray(result) && result.length > 0) {
+                setPalettes((prev) => {
+                    const byName = new Map(prev.map((palette) => [palette.name, palette]));
+                    for (const palette of result) {
+                        if (palette?.name) {
+                            byName.set(palette.name, palette);
+                        }
+                    }
+                    return Array.from(byName.values());
+                });
+            }
+
+            setError(null);
+            return result;
         } catch (err) {
-            console.error("Error syncing palettes:", err);
-            setError("Error syncing palettes");
+            setError(err.message || 'Failed to sync palettes');
             return null;
         }
     }, [deviceFetch]);
 
-    // Save/Create a palette
     const savePalette = useCallback(async (paletteData) => {
         try {
             const response = await deviceFetch('/save_palette', {
@@ -126,31 +150,23 @@ const usePalettes = () => {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(paletteData)
+                body: JSON.stringify(paletteData),
             });
-            
-            if (response.ok) {
-                const result = await response.json();
-                console.log("Palette saved successfully:", result.message);
-                
-                // Refresh palettes list after saving
-                await fetchPalettes();
-                
-                return result;
-            } else {
-                const error = await response.json();
-                console.error("Failed to save palette:", error.error);
-                setError("Failed to save palette: " + error.error);
-                return null;
+
+            if (!response.ok) {
+                throw new Error(await parseResponseError(response, 'Failed to save palette'));
             }
+
+            const result = await response.json().catch(() => ({ success: true }));
+            await fetchPalettes();
+            setError(null);
+            return result;
         } catch (err) {
-            console.error("Error saving palette:", err);
-            setError("Error saving palette");
+            setError(err.message || 'Failed to save palette');
             return null;
         }
     }, [deviceFetch, fetchPalettes]);
 
-    // Auto-fetch palettes when device changes
     useEffect(() => {
         if (!selectedDevice) {
             setPalettes([]);
@@ -159,7 +175,12 @@ const usePalettes = () => {
             return;
         }
 
-        fetchPalettes();
+        const controller = new AbortController();
+        fetchPalettes({ signal: controller.signal });
+
+        return () => {
+            controller.abort();
+        };
     }, [selectedDevice, fetchPalettes]);
 
     return {

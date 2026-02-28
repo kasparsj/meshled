@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { X, Link2 } from 'lucide-react';
 
 const directionFromPort = (port) => Boolean(port?.direction);
+const GROUP_OPTIONS = [1, 2, 4, 8, 16];
 
 const ExternalPortModal = ({
     isOpen,
@@ -28,7 +29,8 @@ const ExternalPortModal = ({
     useEffect(() => {
         if (!isOpen) return;
 
-        const initialGroup = String(port?.group ?? intersection?.group ?? 1);
+        const resolvedGroup = Number(port?.group ?? intersection?.group ?? 1);
+        const initialGroup = GROUP_OPTIONS.includes(resolvedGroup) ? String(resolvedGroup) : '1';
         setGroup(initialGroup);
         setDirection(directionFromPort(port));
 
@@ -68,8 +70,8 @@ const ExternalPortModal = ({
             setError('Select a valid target internal port');
             return;
         }
-        if (!Number.isFinite(groupNum) || groupNum < 1 || groupNum > 255) {
-            setError('Group must be between 1 and 255');
+        if (!Number.isFinite(groupNum) || !GROUP_OPTIONS.includes(groupNum)) {
+            setError('Group must be one of 1, 2, 4, 8, or 16');
             return;
         }
 
@@ -167,16 +169,19 @@ const ExternalPortModal = ({
 
                     <div className="grid grid-cols-2 gap-3">
                         <div>
-                            <label className="block text-sm font-medium text-zinc-300 mb-2">Group</label>
-                            <input
-                                type="number"
-                                min="1"
-                                max="255"
+                            <label className="block text-sm font-medium text-zinc-300 mb-2">Group Bit</label>
+                            <select
                                 value={group}
                                 onChange={(e) => setGroup(e.target.value)}
                                 className="w-full bg-zinc-700 border border-zinc-600 text-white rounded px-3 py-2"
                                 disabled={loading}
-                            />
+                            >
+                                {GROUP_OPTIONS.map((groupValue) => (
+                                    <option key={groupValue} value={groupValue}>
+                                        {groupValue}
+                                    </option>
+                                ))}
+                            </select>
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-zinc-300 mb-2">Direction</label>

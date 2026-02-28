@@ -1,17 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { Suspense, lazy, useEffect, useMemo, useState } from 'react';
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
-import { Settings, Layers, Palette, Zap, Eye, Clock } from 'lucide-react';
-import LayersTab from "./tabs/Layers.jsx";
-import PalettesTab from "./tabs/Palettes.jsx";
-import EmitterTab from "./tabs/Emitter.jsx";
-import ModelTab from "./tabs/Model.jsx";
-import SettingsTab from "./tabs/Settings.jsx";
-import TimelineTab from "./tabs/Timeline.jsx";
-import TabButton from "./components/TabButton.jsx";
-import DeviceSelector from "./components/DeviceSelector.jsx";
-import DeviceManagementModal from "./components/DeviceManagementModal.jsx";
-import { DeviceProvider } from "./contexts/DeviceContext.jsx";
-//import useDeviceInfo from "./hooks/useDeviceInfo.js";
+import { Settings, Layers, Palette, Zap, Eye, KeyRound } from 'lucide-react';
+import TabButton from './components/TabButton.jsx';
+import DeviceSelector from './components/DeviceSelector.jsx';
+import DeviceManagementModal from './components/DeviceManagementModal.jsx';
+import ApiTokenModal from './components/ApiTokenModal.jsx';
+import { DeviceProvider, useDevice } from './contexts/DeviceContext.jsx';
+
+const LayersTab = lazy(() => import('./tabs/Layers.jsx'));
+const PalettesTab = lazy(() => import('./tabs/Palettes.jsx'));
+const EmitterTab = lazy(() => import('./tabs/Emitter.jsx'));
+const ModelTab = lazy(() => import('./tabs/Model.jsx'));
+const SettingsTab = lazy(() => import('./tabs/Settings.jsx'));
+
+const TIMELINE_ENABLED = false;
+const TimelineTab = TIMELINE_ENABLED ? lazy(() => import('./tabs/Timeline.jsx')) : null;
 
 const isIpv4Host = (value) => {
     const parts = String(value || '').split('.');
@@ -49,25 +52,161 @@ const detectDirectDeviceHost = () => {
     return String(window.location.host || hostname).trim();
 };
 
+const sanitizeDeviceList = (raw) => {
+    if (!Array.isArray(raw)) {
+        return [];
+    }
+
+    const seen = new Set();
+    const sanitized = [];
+    for (const entry of raw) {
+        const value = String(entry || '').trim();
+        if (!value || seen.has(value)) {
+            continue;
+        }
+        seen.add(value);
+        sanitized.push(value);
+    }
+
+    return sanitized;
+};
+
+const ControllerContent = ({
+    activeTab,
+    devices,
+    selectedDevice,
+    setSelectedDevice,
+    isDirectDeviceMode,
+    directDeviceHost,
+    showDeviceModal,
+    setShowDeviceModal,
+    handleDevicesChange,
+    navigate,
+}) => {
+    const {
+        authRequired,
+        authError,
+        hasApiToken,
+        apiToken,
+        setApiToken,
+        clearApiToken,
+    } = useDevice();
+
+    const [showApiTokenModal, setShowApiTokenModal] = useState(false);
+    const forceApiTokenModal = authRequired && !hasApiToken;
+    const timelineEnabled = TIMELINE_ENABLED;
+
+    return (
+        <>
+            <div className="min-h-screen bg-zinc-900 text-white">
+                <div className="container mx-auto px-4 py-6 max-w-6xl">
+                    <div className="mb-8 grid grid-cols-1 lg:grid-cols-4 gap-6">
+                        <div className="lg:col-span-3 flex flex-col">
+                            <h1 className="text-3xl font-bold mb-2 flex-1">MeshLED</h1>
+                            <div className="flex flex-wrap gap-2">
+                                <TabButton id="layers" icon={Layers} label="Layers" active={activeTab === 'layers'} onClick={(tab) => navigate(`/${tab}`)} />
+                                <TabButton id="palettes" icon={Palette} label="Palettes" active={activeTab === 'palettes'} onClick={(tab) => navigate(`/${tab}`)} />
+                                <TabButton id="emitter" icon={Zap} label="Emitter" active={activeTab === 'emitter'} onClick={(tab) => navigate(`/${tab}`)} />
+                                <TabButton id="model" icon={Eye} label="Model" active={activeTab === 'model'} onClick={(tab) => navigate(`/${tab}`)} />
+                                {timelineEnabled && (
+                                    <TabButton id="timeline" icon={Zap} label="Timeline" active={activeTab === 'timeline'} onClick={(tab) => navigate(`/${tab}`)} />
+                                )}
+                                <TabButton id="settings" icon={Settings} label="Settings" active={activeTab === 'settings'} onClick={(tab) => navigate(`/${tab}`)} />
+                            </div>
+                        </div>
+                        <div className="lg:col-span-1 space-y-3">
+                            {isDirectDeviceMode ? (
+                                <div className="bg-zinc-800 rounded-lg p-4">
+                                    <div className="text-xs uppercase tracking-wide text-zinc-400 mb-2">Connected Device</div>
+                                    <div className="font-mono text-sky-400 break-all">{selectedDevice || directDeviceHost}</div>
+                                </div>
+                            ) : (
+                                <>
+                                    <DeviceSelector
+                                        devices={devices}
+                                        selectedDevice={selectedDevice}
+                                        onDeviceSelect={setSelectedDevice}
+                                        onManageDevices={() => setShowDeviceModal(true)}
+                                    />
+                                    <DeviceManagementModal
+                                        isOpen={showDeviceModal}
+                                        onClose={() => setShowDeviceModal(false)}
+                                        devices={devices}
+                                        setDevices={handleDevicesChange}
+                                    />
+                                </>
+                            )}
+
+                            <div className="bg-zinc-800 rounded-lg p-3 border border-zinc-700">
+                                <button
+                                    onClick={() => setShowApiTokenModal(true)}
+                                    className="w-full bg-zinc-700 hover:bg-zinc-600 text-sm px-3 py-2 rounded flex items-center justify-center gap-2"
+                                >
+                                    <KeyRound size={14} />
+                                    {hasApiToken ? 'Update API Token' : 'Set API Token'}
+                                </button>
+                                <p className="mt-2 text-xs text-zinc-400">
+                                    {hasApiToken ? 'Token is configured for protected routes.' : 'No token configured.'}
+                                </p>
+                                {authError && (
+                                    <p className="mt-2 text-xs text-red-300">{authError}</p>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-zinc-800 rounded-lg p-6">
+                        <Suspense fallback={<div className="text-zinc-400 animate-pulse">Loading tab...</div>}>
+                            <Routes>
+                                <Route path="/layers" element={<LayersTab />} />
+                                <Route path="/palettes" element={<PalettesTab />} />
+                                <Route path="/emitter" element={<EmitterTab />} />
+                                <Route path="/model" element={<ModelTab devices={devices} />} />
+                                {timelineEnabled && TimelineTab && <Route path="/timeline" element={<TimelineTab />} />}
+                                <Route path="/settings" element={<SettingsTab />} />
+                                <Route path="*" element={<LayersTab />} />
+                            </Routes>
+                        </Suspense>
+                    </div>
+                </div>
+            </div>
+
+            <ApiTokenModal
+                isOpen={showApiTokenModal || forceApiTokenModal}
+                onClose={() => setShowApiTokenModal(false)}
+                onSave={setApiToken}
+                onClear={clearApiToken}
+                currentToken={apiToken}
+                authError={authError}
+                requireToken={forceApiTokenModal}
+            />
+        </>
+    );
+};
+
 const LEDController = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const directDeviceHost = detectDirectDeviceHost();
     const isDirectDeviceMode = Boolean(directDeviceHost);
-    
-    // Get current tab from URL path
-    const getCurrentTab = () => {
-        const path = location.pathname.substring(1) || 'layers'; // Remove leading slash, default to layers
-        return ['layers', 'palettes', 'emitter', 'model', 'timeline', 'settings'].includes(path) ? path : 'layers';
-    };
-    
-    const activeTab = getCurrentTab();
+
+    const validTabs = useMemo(() => {
+        const tabs = ['layers', 'palettes', 'emitter', 'model', 'settings'];
+        if (TIMELINE_ENABLED) {
+            tabs.push('timeline');
+        }
+        return tabs;
+    }, []);
+
+    const activeTab = (() => {
+        const path = location.pathname.substring(1) || 'layers';
+        return validTabs.includes(path) ? path : 'layers';
+    })();
+
     const [devices, setDevices] = useState(() => (isDirectDeviceMode ? [directDeviceHost] : []));
     const [selectedDevice, setSelectedDevice] = useState(() => (isDirectDeviceMode ? directDeviceHost : ''));
     const [showDeviceModal, setShowDeviceModal] = useState(false);
-    //const {deviceInfo, loading, error} = useDeviceInfo();
 
-    // Load devices from localStorage on mount
     useEffect(() => {
         if (isDirectDeviceMode) {
             setDevices([directDeviceHost]);
@@ -77,20 +216,28 @@ const LEDController = () => {
 
         const savedDevices = localStorage.getItem('ledController_devices');
         const savedSelectedDevice = localStorage.getItem('ledController_selectedDevice');
-        
+
+        let parsedDevices = [];
         if (savedDevices) {
-            const parsedDevices = JSON.parse(savedDevices);
-            setDevices(parsedDevices);
-            
-            if (savedSelectedDevice && parsedDevices.includes(savedSelectedDevice)) {
-                setSelectedDevice(savedSelectedDevice);
-            } else if (parsedDevices.length > 0) {
-                setSelectedDevice(parsedDevices[0]);
+            try {
+                parsedDevices = sanitizeDeviceList(JSON.parse(savedDevices));
+            } catch {
+                localStorage.removeItem('ledController_devices');
+                localStorage.removeItem('ledController_selectedDevice');
             }
+        }
+
+        setDevices(parsedDevices);
+
+        if (savedSelectedDevice && parsedDevices.includes(savedSelectedDevice)) {
+            setSelectedDevice(savedSelectedDevice);
+        } else if (parsedDevices.length > 0) {
+            setSelectedDevice(parsedDevices[0]);
+        } else {
+            setSelectedDevice('');
         }
     }, [isDirectDeviceMode, directDeviceHost]);
 
-    // Save devices to localStorage when devices change
     useEffect(() => {
         if (isDirectDeviceMode) {
             return;
@@ -103,7 +250,6 @@ const LEDController = () => {
         }
     }, [devices, isDirectDeviceMode]);
 
-    // Save selected device to localStorage when it changes
     useEffect(() => {
         if (isDirectDeviceMode) {
             return;
@@ -121,83 +267,45 @@ const LEDController = () => {
             return;
         }
 
-        setDevices(newDevices);
-        // If current selected device is removed, select first available or clear
-        if (selectedDevice && !newDevices.includes(selectedDevice)) {
-            setSelectedDevice(newDevices.length > 0 ? newDevices[0] : '');
+        const sanitized = sanitizeDeviceList(newDevices);
+        setDevices(sanitized);
+
+        if (selectedDevice && !sanitized.includes(selectedDevice)) {
+            setSelectedDevice(sanitized.length > 0 ? sanitized[0] : '');
             return;
         }
 
-        // Auto-select the first device when none is currently selected.
-        if (!selectedDevice && newDevices.length > 0) {
-            setSelectedDevice(newDevices[0]);
+        if (!selectedDevice && sanitized.length > 0) {
+            setSelectedDevice(sanitized[0]);
         }
     };
 
-    // Redirect to /layers if on root path
     useEffect(() => {
         if (location.pathname === '/') {
+            navigate('/layers', { replace: true });
+            return;
+        }
+
+        if (!TIMELINE_ENABLED && location.pathname === '/timeline') {
             navigate('/layers', { replace: true });
         }
     }, [location.pathname, navigate]);
 
     return (
-        <div className="min-h-screen bg-zinc-900 text-white">
-            <div className="container mx-auto px-4 py-6 max-w-6xl">
-                {/* Header */}
-                <div className="mb-8 grid grid-cols-4 gap-6">
-                    <div className="col-span-3 flex flex-col">
-                        <h1 className="text-3xl font-bold mb-2 flex-1">MeshLED</h1>
-                        <div className="flex flex-wrap gap-2">
-                            <TabButton id="layers" icon={Layers} label="Layers" active={activeTab === 'layers'} onClick={(tab) => navigate(`/${tab}`)} />
-                            <TabButton id="palettes" icon={Palette} label="Palettes" active={activeTab === 'palettes'} onClick={(tab) => navigate(`/${tab}`)} />
-                            <TabButton id="emitter" icon={Zap} label="Emitter" active={activeTab === 'emitter'} onClick={(tab) => navigate(`/${tab}`)} />
-                            <TabButton id="model" icon={Eye} label="Model" active={activeTab === 'model'} onClick={(tab) => navigate(`/${tab}`)} />
-                            <TabButton id="timeline" icon={Clock} label="Timeline" active={activeTab === 'timeline'} onClick={(tab) => navigate(`/${tab}`)} />
-                            <TabButton id="settings" icon={Settings} label="Settings" active={activeTab === 'settings'} onClick={(tab) => navigate(`/${tab}`)} />
-                        </div>
-                    </div>
-                    <div className="col-span-1">
-                        {isDirectDeviceMode ? (
-                            <div className="bg-zinc-800 rounded-lg p-4">
-                                <div className="text-xs uppercase tracking-wide text-zinc-400 mb-2">Connected Device</div>
-                                <div className="font-mono text-sky-400 break-all">{selectedDevice || directDeviceHost}</div>
-                            </div>
-                        ) : (
-                            <>
-                                <DeviceSelector
-                                    devices={devices}
-                                    selectedDevice={selectedDevice}
-                                    onDeviceSelect={setSelectedDevice}
-                                    onManageDevices={() => setShowDeviceModal(true)}
-                                />
-                                <DeviceManagementModal
-                                    isOpen={showDeviceModal}
-                                    onClose={() => setShowDeviceModal(false)}
-                                    devices={devices}
-                                    setDevices={handleDevicesChange}
-                                />
-                            </>
-                        )}
-                    </div>
-                </div>
-
-                {/* Main Content */}
-                <div className="bg-zinc-800 rounded-lg p-6">
-                    <DeviceProvider selectedDevice={selectedDevice}>
-                        <Routes>
-                            <Route path="/layers" element={<LayersTab />} />
-                            <Route path="/palettes" element={<PalettesTab />} />
-                            <Route path="/emitter" element={<EmitterTab />} />
-                            <Route path="/model" element={<ModelTab devices={devices} />} />
-                            <Route path="/timeline" element={<TimelineTab />} />
-                            <Route path="/settings" element={<SettingsTab />} />
-                            <Route path="*" element={<LayersTab />} />
-                        </Routes>
-                    </DeviceProvider>
-                </div>
-            </div>
-        </div>
+        <DeviceProvider selectedDevice={selectedDevice}>
+            <ControllerContent
+                activeTab={activeTab}
+                devices={devices}
+                selectedDevice={selectedDevice}
+                setSelectedDevice={setSelectedDevice}
+                isDirectDeviceMode={isDirectDeviceMode}
+                directDeviceHost={directDeviceHost}
+                showDeviceModal={showDeviceModal}
+                setShowDeviceModal={setShowDeviceModal}
+                handleDevicesChange={handleDevicesChange}
+                navigate={navigate}
+            />
+        </DeviceProvider>
     );
 };
 

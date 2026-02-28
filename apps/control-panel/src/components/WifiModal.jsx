@@ -1,11 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { X, Wifi, Eye, EyeOff } from 'lucide-react';
+import { useToast } from '../contexts/ToastContext.jsx';
 
 const WifiModal = ({ isOpen, onClose, onSave, currentSSID = '', currentPassword = '' }) => {
+    const { showToast } = useToast();
     const [ssid, setSsid] = useState(currentSSID);
     const [password, setPassword] = useState(currentPassword);
     const [showPassword, setShowPassword] = useState(false);
     const [saving, setSaving] = useState(false);
+    const [error, setError] = useState('');
+
+    useEffect(() => {
+        if (!isOpen) {
+            return;
+        }
+        setSsid(currentSSID || '');
+        setPassword(currentPassword || '');
+        setError('');
+    }, [isOpen, currentSSID, currentPassword]);
 
     // Handle ESC key to close modal
     useEffect(() => {
@@ -25,17 +37,20 @@ const WifiModal = ({ isOpen, onClose, onSave, currentSSID = '', currentPassword 
 
     const handleSave = async () => {
         if (!ssid.trim()) {
-            alert('SSID is required');
+            setError('SSID is required.');
             return;
         }
 
+        setError('');
         setSaving(true);
         try {
             await onSave(ssid, password);
+            showToast('WiFi settings saved. Device is restarting.', 'info', 4000);
             onClose();
         } catch (error) {
             console.error('Failed to save WiFi settings:', error);
-            alert('Failed to save WiFi settings. Please try again.');
+            setError(error.message || 'Failed to save WiFi settings. Please try again.');
+            showToast('Failed to save WiFi settings.', 'error');
         } finally {
             setSaving(false);
         }
@@ -105,6 +120,11 @@ const WifiModal = ({ isOpen, onClose, onSave, currentSSID = '', currentPassword 
                             Make sure you can connect to the new network to regain access.
                         </p>
                     </div>
+                    {error && (
+                        <div className="bg-red-900/30 border border-red-500/50 rounded p-3 text-sm text-red-200">
+                            {error}
+                        </div>
+                    )}
                 </div>
 
                 <div className="flex justify-end gap-3 mt-6">

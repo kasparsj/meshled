@@ -1,30 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useDevice } from '../contexts/DeviceContext.jsx';
 import { parseModelDataResponse } from '../models/apiModels';
-
-const sanitizeHost = (value) => String(value || '').trim();
+import { fetchDeviceJsonWithTimeout, sanitizeHost } from '../utils/deviceRequest';
 
 const normalizeMac = (value) => {
     const raw = String(value || '').replace(/[^a-fA-F0-9]/g, '').toUpperCase();
     if (raw.length !== 12) return null;
     return raw.match(/.{1,2}/g).join(':');
-};
-
-const fetchJsonWithTimeout = async (url, timeoutMs = 2000) => {
-    const controller = new AbortController();
-    const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
-    try {
-        const headers = new Headers();
-        const apiToken = localStorage.getItem('ledController_apiToken');
-        if (apiToken) {
-            headers.set('Authorization', `Bearer ${apiToken}`);
-        }
-        const response = await fetch(url, { signal: controller.signal, headers });
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        return await response.json();
-    } finally {
-        window.clearTimeout(timeoutId);
-    }
 };
 
 const extractMac = (info) => normalizeMac(info?.mac || info?.wifi?.bssid || info?.wifi?.mac);
@@ -47,7 +29,7 @@ const collectInternalPorts = (modelData) => {
 };
 
 export const useRemoteTopology = (devices = []) => {
-    const { selectedDevice } = useDevice();
+    const { selectedDevice, apiToken } = useDevice();
     const [remoteDevices, setRemoteDevices] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -73,8 +55,8 @@ export const useRemoteTopology = (devices = []) => {
             const loaded = await Promise.all(candidateDevices.map(async (host) => {
                 try {
                     const [deviceInfoRaw, modelRaw] = await Promise.all([
-                        fetchJsonWithTimeout(`http://${host}/device_info`, 1600),
-                        fetchJsonWithTimeout(`http://${host}/get_model`, 2200),
+                        fetchDeviceJsonWithTimeout(host, '/device_info', { timeoutMs: 1600, apiToken }),
+                        fetchDeviceJsonWithTimeout(host, '/get_model', { timeoutMs: 2200, apiToken }),
                     ]);
                     const modelData = parseModelDataResponse(modelRaw);
                     const ports = collectInternalPorts(modelData);
@@ -113,7 +95,7 @@ export const useRemoteTopology = (devices = []) => {
         return () => {
             cancelled = true;
         };
-    }, [candidateDevices]);
+    }, [candidateDevices, apiToken]);
 
     return {
         remoteDevices,

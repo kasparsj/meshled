@@ -1,50 +1,33 @@
 import React, { useState, useEffect } from 'react';
 import { X, Plus, Trash2, Search } from 'lucide-react';
+import { useDevice } from '../contexts/DeviceContext.jsx';
+import { fetchDeviceJsonWithTimeout, sanitizeHost } from '../utils/deviceRequest';
 
-const sanitizeAddress = (value) => {
-    if (!value) {
-        return '';
-    }
-
-    return String(value)
-        .trim()
-        .replace(/^https?:\/\//i, '')
-        .replace(/\/.*$/, '')
-        .replace(/\s+/g, '');
-};
+const sanitizeAddress = (value) => sanitizeHost(value).replace(/\s+/g, '');
 
 const isSeedHostAllowed = (value) => {
     const host = sanitizeAddress(value).toLowerCase();
     return host.length > 0 && host !== 'localhost' && host !== '127.0.0.1' && host !== '::1';
 };
 
-const fetchJsonWithTimeout = async (url, timeoutMs = 2000) => {
-    const controller = new AbortController();
-    const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
-
-    try {
-        const response = await fetch(url, { signal: controller.signal });
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
-        }
-        return await response.json();
-    } finally {
-        window.clearTimeout(timeoutId);
-    }
-};
-
-const probeDeviceInfo = async (address) => {
+const probeDeviceInfo = async (address, apiToken) => {
     const cleanAddress = sanitizeAddress(address);
     if (!cleanAddress) {
         return null;
     }
 
     try {
-        const info = await fetchJsonWithTimeout(`http://${cleanAddress}/device_info`, 1600);
+        const info = await fetchDeviceJsonWithTimeout(cleanAddress, '/device_info', {
+            timeoutMs: 1600,
+            apiToken,
+        });
         return sanitizeAddress(info?.ip) || cleanAddress;
     } catch {
         try {
-            const info = await fetchJsonWithTimeout(`http://${cleanAddress}/json/info`, 1600);
+            const info = await fetchDeviceJsonWithTimeout(cleanAddress, '/json/info', {
+                timeoutMs: 1600,
+                apiToken,
+            });
             return sanitizeAddress(info?.ip) || cleanAddress;
         } catch {
             return null;
@@ -56,6 +39,7 @@ const sortDevices = (devices) =>
     [...devices].sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
 
 const DeviceManagementModal = ({ isOpen, onClose, devices, setDevices }) => {
+    const { apiToken } = useDevice();
     const [newDeviceIP, setNewDeviceIP] = useState('');
     const [isDiscovering, setIsDiscovering] = useState(false);
     const [discoveryMessage, setDiscoveryMessage] = useState('');
@@ -113,7 +97,10 @@ const DeviceManagementModal = ({ isOpen, onClose, devices, setDevices }) => {
             await Promise.all(
                 Array.from(seedDevices).map(async (seed) => {
                     try {
-                        const discovered = await fetchJsonWithTimeout(`http://${seed}/get_devices`, 2200);
+                        const discovered = await fetchDeviceJsonWithTimeout(seed, '/get_devices', {
+                            timeoutMs: 2200,
+                            apiToken,
+                        });
                         if (!Array.isArray(discovered)) {
                             return;
                         }
@@ -130,7 +117,7 @@ const DeviceManagementModal = ({ isOpen, onClose, devices, setDevices }) => {
 
             setDiscoveryMessage(`Validating ${candidates.size} discovered endpoint(s)...`);
             const validatedDevices = await Promise.all(
-                Array.from(candidates).map((candidate) => probeDeviceInfo(candidate))
+                Array.from(candidates).map((candidate) => probeDeviceInfo(candidate, apiToken))
             );
 
             const discoveredDevices = sortDevices(Array.from(new Set(validatedDevices.filter(Boolean))));

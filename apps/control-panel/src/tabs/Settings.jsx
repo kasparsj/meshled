@@ -3,6 +3,8 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import useDeviceInfo from "../hooks/useDeviceInfo";
 import useSettings from "../hooks/useSettings";
 import WifiModal from "../components/WifiModal";
+import { useDevice } from "../contexts/DeviceContext.jsx";
+import { useToast } from "../contexts/ToastContext.jsx";
 
 const SETTINGS_FIELD_KEYS = [
     'maxBrightness',
@@ -32,6 +34,8 @@ const SETTINGS_FIELD_KEYS = [
 const LED_LIBRARY_ORDER = [0, 1];
 
 const SettingsTab = () => {
+    const { setApiToken, clearApiToken } = useDevice();
+    const { showToast } = useToast();
     const { deviceInfo, loading: deviceInfoLoading, error: deviceInfoError } = useDeviceInfo();
     const { 
         getSettings, 
@@ -209,15 +213,16 @@ const SettingsTab = () => {
 
     const handleWifiSave = async (ssid, password) => {
         await updateWifi(ssid, password);
-        // Device will restart automatically after WiFi update
+        showToast('WiFi update sent. Device will restart.', 'info', 4000);
     };
 
     const handleRestartDevice = async () => {
         try {
             await restartDevice();
-            console.log('Restart command sent');
+            showToast('Restart command sent.', 'info');
         } catch (error) {
             console.error('Failed to restart device:', error);
+            showToast(error.message || 'Failed to restart device', 'error');
         }
     };
 
@@ -225,6 +230,31 @@ const SettingsTab = () => {
         setSaveMessage('');
         
         try {
+            const numericFieldRules = [
+                { key: 'maxBrightness', min: 1, max: 255 },
+                { key: 'pixelCount1', min: 1, max: 65535 },
+                { key: 'pixelCount2', min: 0, max: 65535 },
+                { key: 'pixelPin1', min: 0, max: 255 },
+                { key: 'pixelPin2', min: 0, max: 255 },
+                { key: 'pixelDensity', min: 1, max: 255 },
+                { key: 'ledType', min: 0, max: 255 },
+                { key: 'colorOrder', min: 0, max: 255 },
+                { key: 'ledLibrary', min: 0, max: 255 },
+                { key: 'objectType', min: 0, max: 255 },
+            ];
+            if (oscSupported) {
+                numericFieldRules.push({ key: 'oscPort', min: 1, max: 65535 });
+            }
+            if (otaSupported) {
+                numericFieldRules.push({ key: 'otaPort', min: 1, max: 65535 });
+            }
+            for (const rule of numericFieldRules) {
+                const value = Number(settings[rule.key]);
+                if (!Number.isFinite(value) || value < rule.min || value > rule.max) {
+                    throw new Error(`Invalid value for ${rule.key}`);
+                }
+            }
+
             let settingsToSave = { ...settings };
             if (!oscSupported) {
                 settingsToSave = Object.fromEntries(
@@ -246,15 +276,18 @@ const SettingsTab = () => {
 
             await saveSettingsHook(settingsToSave);
             if (settings.apiAuthEnabled && settings.apiAuthToken) {
-                localStorage.setItem('ledController_apiToken', settings.apiAuthToken);
+                setApiToken(settings.apiAuthToken);
             } else if (!settings.apiAuthEnabled) {
-                localStorage.removeItem('ledController_apiToken');
+                clearApiToken();
             }
             setSaveMessage('Settings saved successfully!');
+            showToast('Settings saved successfully.', 'success');
             setTimeout(() => setSaveMessage(''), 3000);
         } catch (error) {
             console.error('Failed to save settings:', error);
-            setSaveMessage('Error saving settings');
+            const message = error.message || 'Error saving settings';
+            setSaveMessage(message);
+            showToast(message, 'error');
         }
     };
 
@@ -265,8 +298,28 @@ const SettingsTab = () => {
         }));
     }, []);
 
+    const updateIntegerSetting = useCallback((key, rawValue, { min, max } = {}) => {
+        const parsed = Number.parseInt(rawValue, 10);
+        if (!Number.isFinite(parsed)) {
+            return;
+        }
+
+        let nextValue = parsed;
+        if (Number.isFinite(min)) {
+            nextValue = Math.max(min, nextValue);
+        }
+        if (Number.isFinite(max)) {
+            nextValue = Math.min(max, nextValue);
+        }
+
+        updateSetting(key, nextValue);
+    }, [updateSetting]);
+
     const handleLedTypeChange = useCallback((event) => {
-        const nextLedType = parseInt(event.target.value, 10);
+        const nextLedType = Number.parseInt(event.target.value, 10);
+        if (!Number.isFinite(nextLedType)) {
+            return;
+        }
         setSettings(prev => {
             const nextSettings = {
                 ...prev,
@@ -296,7 +349,10 @@ const SettingsTab = () => {
     }, [updateBrightness]);
 
     const handleMaxBrightnessChange = useCallback((event) => {
-        const value = parseInt(event.target.value, 10);
+        const value = Number.parseInt(event.target.value, 10);
+        if (!Number.isFinite(value)) {
+            return;
+        }
         updateSetting('maxBrightness', value);
         queueBrightnessUpdate(value);
     }, [queueBrightnessUpdate, updateSetting]);
@@ -448,7 +504,7 @@ const SettingsTab = () => {
                         <label className="block text-sm text-zinc-300 mb-2">Pixel Density</label>
                         <select
                             value={settings.pixelDensity}
-                            onChange={(e) => updateSetting('pixelDensity', parseInt(e.target.value))}
+                            onChange={(event) => updateIntegerSetting('pixelDensity', event.target.value, { min: 1, max: 255 })}
                             className="w-full bg-zinc-600 border border-zinc-500 rounded px-3 py-2"
                         >
                             <option value="30">30 pixels/m</option>
@@ -463,7 +519,7 @@ const SettingsTab = () => {
                             min="1"
                             max="1000"
                             value={settings.pixelCount1}
-                            onChange={(e) => updateSetting('pixelCount1', parseInt(e.target.value))}
+                            onChange={(event) => updateIntegerSetting('pixelCount1', event.target.value, { min: 1, max: 65535 })}
                             className="w-full bg-zinc-600 border border-zinc-500 rounded px-3 py-2"
                         />
                     </div>
@@ -474,7 +530,7 @@ const SettingsTab = () => {
                             min="0"
                             max="1000"
                             value={settings.pixelCount2}
-                            onChange={(e) => updateSetting('pixelCount2', parseInt(e.target.value))}
+                            onChange={(event) => updateIntegerSetting('pixelCount2', event.target.value, { min: 0, max: 65535 })}
                             className="w-full bg-zinc-600 border border-zinc-500 rounded px-3 py-2"
                         />
                     </div>
@@ -485,7 +541,7 @@ const SettingsTab = () => {
                             min="0"
                             max="33"
                             value={settings.pixelPin1}
-                            onChange={(e) => updateSetting('pixelPin1', parseInt(e.target.value))}
+                            onChange={(event) => updateIntegerSetting('pixelPin1', event.target.value, { min: 0, max: 255 })}
                             className="w-full bg-zinc-600 border border-zinc-500 rounded px-3 py-2"
                         />
                     </div>
@@ -496,7 +552,7 @@ const SettingsTab = () => {
                             min="0"
                             max="33"
                             value={settings.pixelPin2}
-                            onChange={(e) => updateSetting('pixelPin2', parseInt(e.target.value))}
+                            onChange={(event) => updateIntegerSetting('pixelPin2', event.target.value, { min: 0, max: 255 })}
                             className="w-full bg-zinc-600 border border-zinc-500 rounded px-3 py-2"
                         />
                     </div>
@@ -504,7 +560,7 @@ const SettingsTab = () => {
                         <label className="block text-sm text-zinc-300 mb-2">Color Order</label>
                         <select
                             value={settings.colorOrder}
-                            onChange={(e) => updateSetting('colorOrder', parseInt(e.target.value))}
+                            onChange={(event) => updateIntegerSetting('colorOrder', event.target.value, { min: 0, max: 255 })}
                             className="w-full bg-zinc-600 border border-zinc-500 rounded px-3 py-2"
                         >
                             {Object.entries(COLOR_ORDERS).map(([value, label]) => (
@@ -516,7 +572,7 @@ const SettingsTab = () => {
                         <label className="block text-sm text-zinc-300 mb-2">LED Library</label>
                         <select
                             value={settings.ledLibrary}
-                            onChange={(e) => updateSetting('ledLibrary', parseInt(e.target.value))}
+                            onChange={(event) => updateIntegerSetting('ledLibrary', event.target.value, { min: 0, max: 255 })}
                             className="w-full bg-zinc-600 border border-zinc-500 rounded px-3 py-2"
                         >
                             {Object.entries(LED_LIBRARIES).map(([value, label]) => {
@@ -544,7 +600,7 @@ const SettingsTab = () => {
                         <label className="block text-sm text-zinc-300 mb-2">Object Type</label>
                         <select
                             value={settings.objectType}
-                            onChange={(e) => updateSetting('objectType', parseInt(e.target.value))}
+                            onChange={(event) => updateIntegerSetting('objectType', event.target.value, { min: 0, max: 255 })}
                             className="w-full bg-zinc-600 border border-zinc-500 rounded px-3 py-2"
                         >
                             {Object.entries(OBJECT_TYPES).map(([value, label]) => (
@@ -584,7 +640,7 @@ const SettingsTab = () => {
                                         min="1024"
                                         max="65535"
                                         value={settings.oscPort}
-                                        onChange={(e) => updateSetting('oscPort', parseInt(e.target.value))}
+                                        onChange={(event) => updateIntegerSetting('oscPort', event.target.value, { min: 1, max: 65535 })}
                                         className="w-full bg-zinc-600 border border-zinc-500 rounded px-3 py-2"
                                     />
                                 </div>
@@ -614,7 +670,7 @@ const SettingsTab = () => {
                                             min="1024"
                                             max="65535"
                                             value={settings.otaPort}
-                                            onChange={(e) => updateSetting('otaPort', parseInt(e.target.value))}
+                                            onChange={(event) => updateIntegerSetting('otaPort', event.target.value, { min: 1, max: 65535 })}
                                             className="w-full bg-zinc-600 border border-zinc-500 rounded px-3 py-2"
                                         />
                                     </div>

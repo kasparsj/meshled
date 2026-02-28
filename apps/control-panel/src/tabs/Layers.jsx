@@ -3,8 +3,10 @@ import React, { useState, useEffect } from "react";
 import useLayers from "../hooks/useLayers";
 import LayerPalette from "../components/LayerPalette";
 import ColorPreviewStripe from "../components/ColorPreviewStripe";
+import { useToast } from "../contexts/ToastContext.jsx";
 
 const LayersTab = () => {
+    const { showToast } = useToast();
     const {
         layers,
         loading,
@@ -23,6 +25,8 @@ const LayersTab = () => {
         updateLayerColor,
         updateColorPosition,
         updateEasing,
+        updateFadeSpeed,
+        updateBlendMode,
         updateBehaviourFlags,
         resetLayer
     } = useLayers();
@@ -96,13 +100,30 @@ const LayersTab = () => {
         });
     };
 
+    const toInteger = (rawValue, fallback) => {
+        const parsed = Number.parseInt(rawValue, 10);
+        return Number.isFinite(parsed) ? parsed : fallback;
+    };
+
+    const toFloat = (rawValue, fallback) => {
+        const parsed = Number.parseFloat(rawValue);
+        return Number.isFinite(parsed) ? parsed : fallback;
+    };
+
+    const runMutation = async (operation, fallbackMessage) => {
+        try {
+            await operation();
+        } catch (mutationError) {
+            showToast(mutationError.message || fallbackMessage, 'error');
+        }
+    };
 
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
                 <h2 className="text-2xl font-bold">Layer Control</h2>
                 <button 
-                    onClick={addLayer}
+                    onClick={() => runMutation(addLayer, 'Failed to add layer')}
                     className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg flex items-center gap-2"
                 >
                     <Layers size={18} />
@@ -134,7 +155,10 @@ const LayersTab = () => {
                             </div>
                             <div className="flex items-center gap-2">
                                 <button
-                                    onClick={() => toggleLayerVisibility(layer.id)}
+                                    onClick={() => runMutation(
+                                        () => toggleLayerVisibility(layer.id),
+                                        'Failed to toggle layer visibility',
+                                    )}
                                     className={`px-3 py-1 rounded-full text-sm ${
                                         layer.visible
                                             ? 'bg-green-600 text-white'
@@ -144,7 +168,10 @@ const LayersTab = () => {
                                     {layer.visible ? 'Visible' : 'Hidden'}
                                 </button>
                                 <button
-                                    onClick={() => resetLayer(layer.id)}
+                                    onClick={() => runMutation(
+                                        () => resetLayer(layer.id),
+                                        'Failed to reset layer',
+                                    )}
                                     className="text-blue-400 hover:text-blue-300 p-1"
                                     title="Reset Layer"
                                 >
@@ -152,7 +179,10 @@ const LayersTab = () => {
                                 </button>
                                 {layer.id > 0 && (
                                     <button
-                                        onClick={() => removeLayer(layer.id)}
+                                        onClick={() => runMutation(
+                                            () => removeLayer(layer.id),
+                                            'Failed to remove layer',
+                                        )}
                                         className="text-red-400 hover:text-red-300 p-1"
                                         title="Remove Layer"
                                     >
@@ -178,7 +208,13 @@ const LayersTab = () => {
                                             min="1"
                                             max="255"
                                             value={layer.brightness}
-                                            onChange={(e) => updateLayerBrightness(layer.id, parseInt(e.target.value))}
+                                            onChange={(event) => runMutation(
+                                                () => updateLayerBrightness(
+                                                    layer.id,
+                                                    toInteger(event.target.value, layer.brightness),
+                                                ),
+                                                'Failed to update brightness',
+                                            )}
                                             className="w-full"
                                         />
                                         <span className="text-sky-400 text-sm">{layer.brightness}</span>
@@ -192,7 +228,13 @@ const LayersTab = () => {
                                             max="10"
                                             step="0.1"
                                             value={layer.speed}
-                                            onChange={(e) => updateLayerSpeed(layer.id, parseFloat(e.target.value))}
+                                            onChange={(event) => runMutation(
+                                                () => updateLayerSpeed(
+                                                    layer.id,
+                                                    toFloat(event.target.value, layer.speed),
+                                                ),
+                                                'Failed to update speed',
+                                            )}
                                             className="w-full bg-zinc-600 border border-zinc-500 rounded px-3 py-2"
                                         />
                                     </div>
@@ -203,7 +245,13 @@ const LayersTab = () => {
                                             type="number"
                                             step="0.1"
                                             value={layer.offset || 0}
-                                            onChange={(e) => updateLayerOffset(layer.id, parseFloat(e.target.value))}
+                                            onChange={(event) => runMutation(
+                                                () => updateLayerOffset(
+                                                    layer.id,
+                                                    toFloat(event.target.value, layer.offset || 0),
+                                                ),
+                                                'Failed to update offset',
+                                            )}
                                             className="w-full bg-zinc-600 border border-zinc-500 rounded px-3 py-2"
                                         />
                                     </div>
@@ -216,7 +264,13 @@ const LayersTab = () => {
                                             max="255"
                                             step="1"
                                             value={layer.fadeSpeed || 0}
-                                            onChange={() => {}}
+                                            onChange={(event) => runMutation(
+                                                () => updateFadeSpeed(
+                                                    layer.id,
+                                                    toInteger(event.target.value, layer.fadeSpeed || 0),
+                                                ),
+                                                'Failed to update fade speed',
+                                            )}
                                             className="w-full bg-zinc-600 border border-zinc-500 rounded px-3 py-2"
                                         />
                                     </div>
@@ -225,7 +279,10 @@ const LayersTab = () => {
                                         <label className="block text-sm text-zinc-300 mb-2">Easing</label>
                                         <select
                                             value={layer.easing || 0}
-                                            onChange={(e) => updateEasing(layer.id, parseInt(e.target.value))}
+                                            onChange={(event) => runMutation(
+                                                () => updateEasing(layer.id, toInteger(event.target.value, layer.easing || 0)),
+                                                'Failed to update easing',
+                                            )}
                                             className="w-full bg-zinc-600 border border-zinc-500 rounded px-3 py-2"
                                         >
                                             <option value="0">None</option>
@@ -291,7 +348,10 @@ const LayersTab = () => {
                                         <label className="block text-sm text-zinc-300 mb-2">Blend Mode</label>
                                         <select
                                             value={layer.blendMode || 0}
-                                            onChange={() => {}}
+                                            onChange={(event) => runMutation(
+                                                () => updateBlendMode(layer.id, toInteger(event.target.value, layer.blendMode || 0)),
+                                                'Failed to update blend mode',
+                                            )}
                                             className="w-full bg-zinc-600 border border-zinc-500 rounded px-3 py-2"
                                         >
                                             <optgroup label="Basic">
@@ -323,7 +383,13 @@ const LayersTab = () => {
                                         <label className="block text-sm text-zinc-300 mb-2">Behaviour</label>
                                         <select
                                             value={layer.behaviourFlags || 0}
-                                            onChange={(e) => updateBehaviourFlags(layer.id, parseInt(e.target.value))}
+                                            onChange={(event) => runMutation(
+                                                () => updateBehaviourFlags(
+                                                    layer.id,
+                                                    toInteger(event.target.value, layer.behaviourFlags || 0),
+                                                ),
+                                                'Failed to update behaviour flags',
+                                            )}
                                             className="w-full bg-zinc-600 border border-zinc-500 rounded px-3 py-2"
                                         >
                                             <option value="0">None</option>

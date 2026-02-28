@@ -1,5 +1,5 @@
 import React from 'react';
-import { Monitor, Settings } from 'lucide-react';
+import { Settings } from 'lucide-react';
 
 const DeviceSelector = ({ devices, selectedDevice, onDeviceSelect, onManageDevices }) => {
     return (

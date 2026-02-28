@@ -1,12 +1,57 @@
 import { useState, useCallback } from 'react';
 import { useDevice } from '../contexts/DeviceContext';
 
+const parseResponseError = async (response, fallbackMessage) => {
+    const contentType = response.headers.get('content-type') || '';
+    try {
+        if (contentType.includes('application/json')) {
+            const payload = await response.json();
+            if (typeof payload?.error === 'string' && payload.error.trim().length > 0) {
+                return payload.error;
+            }
+            if (typeof payload?.message === 'string' && payload.message.trim().length > 0) {
+                return payload.message;
+            }
+        }
+
+        const text = await response.text();
+        if (text.trim().length > 0) {
+            return text;
+        }
+    } catch {
+        // Ignore parse errors and use status fallback.
+    }
+
+    return `${fallbackMessage} (${response.status})`;
+};
+
+const ensureOk = async (response, fallbackMessage) => {
+    if (!response.ok) {
+        throw new Error(await parseResponseError(response, fallbackMessage));
+    }
+    return response;
+};
+
+const toParamString = (value, key) => {
+    if (typeof value === 'boolean') {
+        return value ? '1' : '0';
+    }
+
+    if (typeof value === 'number') {
+        if (!Number.isFinite(value)) {
+            throw new Error(`Invalid numeric value for ${key}`);
+        }
+        return `${value}`;
+    }
+
+    return String(value ?? '');
+};
+
 const useSettings = () => {
     const { deviceFetch } = useDevice();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
-    // Constants to match C++ enums
     const LED_TYPES = {
         0: 'WS2812',
         1: 'WS2811',
@@ -38,40 +83,37 @@ const useSettings = () => {
         27: 'PL9823',
         28: 'UCS1912',
         29: 'SM16703',
-        30: 'SM16824E'
+        30: 'SM16824E',
     };
 
     const COLOR_ORDERS = {
         6: 'RGB',
         18: 'GRB',
         155: 'RGBW',
-        203: 'GRBW'
+        203: 'GRBW',
     };
 
     const LED_LIBRARIES = {
         0: 'NeoPixelBus',
-        1: 'FastLED'
+        1: 'FastLED',
     };
 
     const OBJECT_TYPES = {
         0: 'Heptagon919',
         1: 'Line',
-        2: 'Triangle', 
+        2: 'Triangle',
         3: 'Heptagon3024',
-        4: 'Custom (Imported Topology)'
+        4: 'Custom (Imported Topology)',
     };
 
     const getSettings = useCallback(async () => {
         setLoading(true);
         setError(null);
-        
+
         try {
             const response = await deviceFetch('/get_settings');
-            if (!response.ok) {
-                throw new Error('Failed to fetch settings');
-            }
-            const data = await response.json();
-            return data;
+            await ensureOk(response, 'Failed to fetch settings');
+            return await response.json();
         } catch (err) {
             setError(err.message);
             throw err;
@@ -83,11 +125,10 @@ const useSettings = () => {
     const saveSettings = useCallback(async (settings) => {
         setLoading(true);
         setError(null);
-        
+
         try {
             const formData = new FormData();
-            
-            // Map React field names to C++ parameter names
+
             const fieldMapping = {
                 maxBrightness: 'max_brightness',
                 deviceHostname: 'hostname',
@@ -106,33 +147,29 @@ const useSettings = () => {
                 otaPort: 'ota_port',
                 otaPassword: 'ota_password',
                 apiAuthEnabled: 'api_auth_enabled',
-                apiAuthToken: 'api_auth_token'
+                apiAuthToken: 'api_auth_token',
             };
 
             const optionalSecretFields = new Set(['otaPassword', 'apiAuthToken']);
 
-            Object.entries(settings).forEach(([key, value]) => {
+            for (const [key, value] of Object.entries(settings)) {
                 if (optionalSecretFields.has(key)) {
                     const raw = value == null ? '' : String(value).trim();
                     if (raw.length === 0) {
-                        return;
+                        continue;
                     }
                 }
+
                 const paramName = fieldMapping[key] || key;
-                // Convert boolean to 1/0 for C++ compatibility
-                const paramValue = typeof value === 'boolean' ? (value ? '1' : '0') : value.toString();
-                formData.append(paramName, paramValue);
-            });
+                formData.append(paramName, toParamString(value, key));
+            }
 
             const response = await deviceFetch('/update_settings', {
                 method: 'POST',
-                body: formData
+                body: formData,
             });
 
-            if (!response.ok) {
-                throw new Error('Failed to save settings');
-            }
-
+            await ensureOk(response, 'Failed to save settings');
             return true;
         } catch (err) {
             setError(err.message);
@@ -145,17 +182,14 @@ const useSettings = () => {
     const updateBrightness = useCallback(async (brightness) => {
         try {
             const formData = new FormData();
-            formData.append('value', brightness.toString());
+            formData.append('value', toParamString(brightness, 'maxBrightness'));
 
             const response = await deviceFetch('/update_brightness', {
                 method: 'POST',
-                body: formData
+                body: formData,
             });
 
-            if (!response.ok) {
-                throw new Error('Failed to update brightness');
-            }
-
+            await ensureOk(response, 'Failed to update brightness');
             return true;
         } catch (err) {
             setError(err.message);
@@ -166,21 +200,18 @@ const useSettings = () => {
     const updateWifi = useCallback(async (ssid, password) => {
         setLoading(true);
         setError(null);
-        
+
         try {
             const formData = new FormData();
-            formData.append('ssid', ssid);
-            formData.append('password', password);
+            formData.append('ssid', String(ssid || ''));
+            formData.append('password', String(password || ''));
 
             const response = await deviceFetch('/update_wifi', {
                 method: 'POST',
-                body: formData
+                body: formData,
             });
 
-            if (!response.ok) {
-                throw new Error('Failed to update WiFi settings');
-            }
-
+            await ensureOk(response, 'Failed to update WiFi settings');
             return true;
         } catch (err) {
             setError(err.message);
@@ -192,9 +223,10 @@ const useSettings = () => {
 
     const restartDevice = useCallback(async () => {
         try {
-            await deviceFetch('/restart', {
-                method: 'POST'
+            const response = await deviceFetch('/restart', {
+                method: 'POST',
             });
+            await ensureOk(response, 'Failed to restart device');
             return true;
         } catch (err) {
             setError(err.message);
@@ -214,8 +246,8 @@ const useSettings = () => {
             LED_TYPES,
             COLOR_ORDERS,
             LED_LIBRARIES,
-            OBJECT_TYPES
-        }
+            OBJECT_TYPES,
+        },
     };
 };
 

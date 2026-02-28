@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { X, Plus } from 'lucide-react';
 import { useIntersectionContext } from '../contexts/IntersectionContext';
 
+const GROUP_OPTIONS = [1, 2, 4, 8, 16];
+
 const AddIntersectionModal = ({ onSuccess }) => {
     const { showAddModal, selectedPixel, closeAddModal, addIntersection, isLoading } = useIntersectionContext();
     const [numPorts, setNumPorts] = useState(4);
@@ -19,10 +21,15 @@ const AddIntersectionModal = ({ onSuccess }) => {
         }
 
         try {
+            const parsedGroup = parseInt(group, 10);
+            if (!GROUP_OPTIONS.includes(parsedGroup)) {
+                throw new Error('Group must be one of 1, 2, 4, 8, or 16');
+            }
+
             const intersectionData = {
                 numPorts: parseInt(numPorts),
                 topPixel: selectedPixel,
-                group: parseInt(group),
+                group: parsedGroup,
             };
 
             // Add bottomPixel if provided
@@ -91,17 +98,23 @@ const AddIntersectionModal = ({ onSuccess }) => {
 
                     <div>
                         <label className="block text-sm font-medium text-zinc-300 mb-2">
-                            Group
+                            Group Bit
                         </label>
-                        <input
-                            type="number"
-                            min="1"
-                            max="31"
+                        <select
                             value={group}
                             onChange={(e) => setGroup(e.target.value)}
                             className="w-full bg-zinc-700 border border-zinc-600 text-white rounded px-3 py-2 focus:outline-none focus:border-blue-500"
                             disabled={isLoading}
-                        />
+                        >
+                            {GROUP_OPTIONS.map((groupValue) => (
+                                <option key={groupValue} value={groupValue}>
+                                    {groupValue}
+                                </option>
+                            ))}
+                        </select>
+                        <p className="text-xs text-zinc-400 mt-1">
+                            Firmware expects a single group bit (1, 2, 4, 8, or 16).
+                        </p>
                     </div>
 
                     <div>

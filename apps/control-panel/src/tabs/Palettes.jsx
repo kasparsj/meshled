@@ -1,10 +1,13 @@
 import {Palette, Edit3} from "lucide-react";
 import React, { useState, useEffect } from "react";
 import usePalettes from "../hooks/usePalettes";
+import { useToast } from "../contexts/ToastContext.jsx";
 
 const PalettesTab = () => {
-    const { palettes, loading, error, deletePalette } = usePalettes();
+    const { showToast } = useToast();
+    const { palettes, loading, error, deletePalette, savePalette } = usePalettes();
     const [editingPalette, setEditingPalette] = useState(null);
+    const [paletteToDelete, setPaletteToDelete] = useState(null);
 
     // Handle ESC key to close modal
     useEffect(() => {
@@ -20,10 +23,18 @@ const PalettesTab = () => {
         }
     }, [editingPalette]);
 
-    const handleDeletePalette = async (paletteIndex) => {
-        if (window.confirm('Are you sure you want to delete this palette?')) {
-            await deletePalette(paletteIndex);
+    const handleDeletePalette = async () => {
+        if (paletteToDelete == null) {
+            return;
         }
+
+        const result = await deletePalette(paletteToDelete);
+        if (result) {
+            showToast('Palette deleted.', 'success');
+        } else {
+            showToast('Failed to delete palette.', 'error');
+        }
+        setPaletteToDelete(null);
     };
 
     const handleEditPalette = (palette, index) => {
@@ -92,7 +103,7 @@ const PalettesTab = () => {
                                 Edit
                             </button>
                             <button 
-                                onClick={() => handleDeletePalette(index)}
+                                onClick={() => setPaletteToDelete(index)}
                                 className="bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-sm"
                             >
                                 Delete
@@ -118,7 +129,32 @@ const PalettesTab = () => {
                             </button>
                         </div>
                         
-                        <PaletteEditor palette={editingPalette} onClose={handleCloseEdit} />
+                        <PaletteEditor palette={editingPalette} onClose={handleCloseEdit} savePalette={savePalette} />
+                    </div>
+                </div>
+            )}
+
+            {paletteToDelete != null && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-zinc-800 p-6 rounded-lg w-full max-w-md mx-4">
+                        <h3 className="text-lg font-semibold mb-3">Delete Palette</h3>
+                        <p className="text-sm text-zinc-300 mb-4">
+                            Are you sure you want to delete this palette? This action cannot be undone.
+                        </p>
+                        <div className="flex justify-end gap-2">
+                            <button
+                                onClick={() => setPaletteToDelete(null)}
+                                className="px-4 py-2 rounded bg-zinc-700 hover:bg-zinc-600"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleDeletePalette}
+                                className="px-4 py-2 rounded bg-red-600 hover:bg-red-700"
+                            >
+                                Delete
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
@@ -127,8 +163,8 @@ const PalettesTab = () => {
 };
 
 // Palette Editor Component
-const PaletteEditor = ({ palette, onClose }) => {
-    const { savePalette } = usePalettes();
+const PaletteEditor = ({ palette, onClose, savePalette }) => {
+    const { showToast } = useToast();
     const [name, setName] = useState(palette.name || 'New Palette');
     const [colors, setColors] = useState(palette.colors || ['#FF0000']);
     const [positions, setPositions] = useState(palette.positions || [0]);
@@ -227,7 +263,10 @@ const PaletteEditor = ({ palette, onClose }) => {
         
         const result = await savePalette(paletteData);
         if (result) {
+            showToast(palette.index === -1 ? 'Palette created.' : 'Palette updated.', 'success');
             onClose();
+        } else {
+            showToast('Failed to save palette.', 'error');
         }
     };
 
