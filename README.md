@@ -52,6 +52,7 @@ meshled, powered by [LightGraph](https://github.com/kasparsj/lightgraph), suppor
 - Firmware executes [LightGraph](https://github.com/kasparsj/lightgraph) for live hardware output.
 - Simulator executes the same [LightGraph](https://github.com/kasparsj/lightgraph) engine for development/testing.
 - Control panel configures and orchestrates the engine across devices.
+- Topology schema v2 includes typed ports (`internal` / `external`) so cross-device intersections can be configured and round-tripped via firmware import/export APIs.
 
 LightGraph repository: [kasparsj/lightgraph](https://github.com/kasparsj/lightgraph)
 

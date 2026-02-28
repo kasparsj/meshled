@@ -19,24 +19,37 @@ export const IntersectionProvider = ({ children }) => {
     const [selectedPixel, setSelectedPixel] = useState(null);
     const [selectedIntersection, setSelectedIntersection] = useState(null);
 
+    const postJson = async (path, body) => {
+        const response = await deviceFetch(path, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(body),
+        });
+
+        if (!response.ok) {
+            let message = `Request failed (${response.status})`;
+            try {
+                const errorData = await response.json();
+                message = errorData.error || message;
+            } catch {
+                // Keep default message when body is not JSON.
+            }
+            throw new Error(message);
+        }
+
+        try {
+            return await response.json();
+        } catch {
+            return { success: true };
+        }
+    };
+
     const addIntersection = async (intersectionData) => {
         setIsLoading(true);
         try {
-            const response = await deviceFetch('/add_intersection', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(intersectionData),
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Failed to add intersection');
-            }
-
-            const result = await response.json();
-            return result;
+            return await postJson('/add_intersection', intersectionData);
         } catch (error) {
             console.error('Error adding intersection:', error);
             throw error;
@@ -48,23 +61,45 @@ export const IntersectionProvider = ({ children }) => {
     const removeIntersection = async (intersectionId, group) => {
         setIsLoading(true);
         try {
-            const response = await deviceFetch('/remove_intersection', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ id: intersectionId, group }),
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Failed to remove intersection');
-            }
-
-            const result = await response.json();
-            return result;
+            return await postJson('/remove_intersection', { id: intersectionId, group });
         } catch (error) {
             console.error('Error removing intersection:', error);
+            throw error;
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const addExternalPort = async (payload) => {
+        setIsLoading(true);
+        try {
+            return await postJson('/add_external_port', payload);
+        } catch (error) {
+            console.error('Error adding external port:', error);
+            throw error;
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const updateExternalPort = async (payload) => {
+        setIsLoading(true);
+        try {
+            return await postJson('/update_external_port', payload);
+        } catch (error) {
+            console.error('Error updating external port:', error);
+            throw error;
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const removeExternalPort = async (portId) => {
+        setIsLoading(true);
+        try {
+            return await postJson('/remove_external_port', { portId });
+        } catch (error) {
+            console.error('Error removing external port:', error);
             throw error;
         } finally {
             setIsLoading(false);
@@ -99,6 +134,9 @@ export const IntersectionProvider = ({ children }) => {
         selectedIntersection,
         addIntersection,
         removeIntersection,
+        addExternalPort,
+        updateExternalPort,
+        removeExternalPort,
         openAddModal,
         closeAddModal,
         openRemoveModal,

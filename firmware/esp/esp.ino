@@ -53,6 +53,7 @@
 
 #include "LightGraph.h"
 #include "FirmwareContext.h"
+#include "ExternalTransport.h"
 
 FirmwareContext gCtx = []() {
   FirmwareContext ctx;
@@ -198,6 +199,7 @@ std::vector<IPAddress> getDevices(String service = MDNS_XLED_SERVICE, String pro
 
 #ifdef ESPNOW_ENABLED
 #include "ESPNowLib.h"
+#include "ExternalTransportESPNow.h"
 #endif
 
 #ifdef WEB_ENABLED

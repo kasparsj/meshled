@@ -26,10 +26,10 @@ String generateUUID() {
   
   // Format: "38323636-4558-4dda-9188-cda0e6" + MAC last 6 characters
   char uuidBuffer[48];
-  sprintf(uuidBuffer, "%s%02x%02x%s", 
-          SSDP_UUID_PREFIX, 
-          mac[4], mac[5],
-          SSDP_UUID_SUFFIX);
+  snprintf(uuidBuffer, sizeof(uuidBuffer), "%s%02x%02x%s",
+           SSDP_UUID_PREFIX,
+           mac[4], mac[5],
+           SSDP_UUID_SUFFIX);
   
   return String(uuidBuffer);
 }
@@ -51,19 +51,18 @@ void sendSSDPNotify() {
   char notifyPacket[512];
   String uuid = generateUUID();
 
-  sprintf(notifyPacket,
-    "NOTIFY * HTTP/1.1\r\n"
-    "HOST: 239.255.255.250:1900\r\n"
-    "CACHE-CONTROL: max-age=60\r\n"
-    "LOCATION: http://%s/description.xml\r\n"
-    "NT: urn:schemas-upnp-org:device:wled:1\r\n"
-    "NTS: ssdp:alive\r\n"
-    "SERVER: Arduino/1.0 UPnP/1.1 MeshLED/1.0\r\n"
-    "USN: uuid:%s::urn:schemas-upnp-org:device:wled:1\r\n"
-    "\r\n",
-    WiFi.localIP().toString().c_str(),
-    uuid.c_str()
-  );
+  snprintf(notifyPacket, sizeof(notifyPacket),
+           "NOTIFY * HTTP/1.1\r\n"
+           "HOST: 239.255.255.250:1900\r\n"
+           "CACHE-CONTROL: max-age=60\r\n"
+           "LOCATION: http://%s/description.xml\r\n"
+           "NT: urn:schemas-upnp-org:device:wled:1\r\n"
+           "NTS: ssdp:alive\r\n"
+           "SERVER: Arduino/1.0 UPnP/1.1 MeshLED/1.0\r\n"
+           "USN: uuid:%s::urn:schemas-upnp-org:device:wled:1\r\n"
+           "\r\n",
+           WiFi.localIP().toString().c_str(),
+           uuid.c_str());
 
   ssdpUDP.beginPacket(IPAddress(239, 255, 255, 250), SSDP_PORT);
   ssdpUDP.write((uint8_t*)notifyPacket, strlen(notifyPacket));
@@ -79,9 +78,10 @@ void handleSSDPDiscovery() {
   
   if (packetSize) {
     // Read the packet into the buffer
-    int len = ssdpUDP.read(packetBuffer, SSDP_MAX_PACKET_SIZE);
+    // Keep one byte for null terminator to avoid OOB writes on full packets.
+    int len = ssdpUDP.read(packetBuffer, SSDP_MAX_PACKET_SIZE - 1);
     if (len > 0) {
-      packetBuffer[len] = 0; // Null-terminate the received data
+      packetBuffer[len] = '\0'; // Null-terminate the received data safely
       
       // Convert to String for easier parsing
       String request = String(packetBuffer);
@@ -111,18 +111,17 @@ void handleSSDPDiscovery() {
           
           // Build WLED response
           if (respondAsWLED) {
-            sprintf(responseBuffer, 
-              "HTTP/1.1 200 OK\r\n"
-              "EXT:\r\n"
-              "CACHE-CONTROL: max-age=60\r\n"
-              "LOCATION: http://%s/win\r\n"
-              "SERVER: WLED 0.15.0\r\n"
-              "ST: urn:schemas-upnp-org:device:wled:1\r\n"
-              "USN: uuid:%s::urn:schemas-upnp-org:device:wled:1\r\n"
-              "\r\n",
-              WiFi.localIP().toString().c_str(),
-              uuid.c_str()
-            );
+            snprintf(responseBuffer, sizeof(responseBuffer),
+                     "HTTP/1.1 200 OK\r\n"
+                     "EXT:\r\n"
+                     "CACHE-CONTROL: max-age=60\r\n"
+                     "LOCATION: http://%s/win\r\n"
+                     "SERVER: WLED 0.15.0\r\n"
+                     "ST: urn:schemas-upnp-org:device:wled:1\r\n"
+                     "USN: uuid:%s::urn:schemas-upnp-org:device:wled:1\r\n"
+                     "\r\n",
+                     WiFi.localIP().toString().c_str(),
+                     uuid.c_str());
             
             // Send WLED response
             ssdpUDP.beginPacket(remoteIP, remotePort);
@@ -134,21 +133,20 @@ void handleSSDPDiscovery() {
           if (respondAsHue) {
             uint8_t mac[6];
             WiFi.macAddress(mac);
-            sprintf(responseBuffer, 
-              "HTTP/1.1 200 OK\r\n"
-              "EXT:\r\n"
-              "CACHE-CONTROL: max-age=60\r\n"
-              "LOCATION: http://%s/description.xml\r\n"
-              "SERVER: Linux/3.14.0 UPnP/1.0 IpBridge/1.24.0\r\n"
-              "hue-bridgeid: %02X%02X%02X%02X%02X%02X\r\n"
-              "ST: urn:schemas-upnp-org:device:basic:1\r\n"
-              "USN: uuid:%s::upnp:rootdevice\r\n"
-              "\r\n",
-              WiFi.localIP().toString().c_str(),
-              mac[0], mac[1], mac[2], 
-              mac[3], mac[4], mac[5],
-              uuid.c_str()
-            );
+            snprintf(responseBuffer, sizeof(responseBuffer),
+                     "HTTP/1.1 200 OK\r\n"
+                     "EXT:\r\n"
+                     "CACHE-CONTROL: max-age=60\r\n"
+                     "LOCATION: http://%s/description.xml\r\n"
+                     "SERVER: Linux/3.14.0 UPnP/1.0 IpBridge/1.24.0\r\n"
+                     "hue-bridgeid: %02X%02X%02X%02X%02X%02X\r\n"
+                     "ST: urn:schemas-upnp-org:device:basic:1\r\n"
+                     "USN: uuid:%s::upnp:rootdevice\r\n"
+                     "\r\n",
+                     WiFi.localIP().toString().c_str(),
+                     mac[0], mac[1], mac[2],
+                     mac[3], mac[4], mac[5],
+                     uuid.c_str());
             
             // Send Hue response
             ssdpUDP.beginPacket(remoteIP, remotePort);
@@ -188,8 +186,8 @@ void handleDescriptionXML() {
   
   // Create bridgeid from MAC
   char bridgeID[13];
-  sprintf(bridgeID, "%02X%02X%02X%02X%02X%02X", 
-          mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+  snprintf(bridgeID, sizeof(bridgeID), "%02X%02X%02X%02X%02X%02X",
+           mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
   
   // Send HTTP headers
   client.println("HTTP/1.1 200 OK");

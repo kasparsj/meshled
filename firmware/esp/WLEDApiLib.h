@@ -9,6 +9,7 @@
 #else
 #define MESHLED_HAS_OTA_SHA_HELPER 0
 #endif
+#include "ExternalTransport.h"
 
 // WLED API endpoint handlers
 
@@ -355,6 +356,11 @@ void getWLEDInfo(JsonObject& info) {
   info["product"] = "FOSS";  // Needed for app compatibility
   info["mac"] = getWLEDMacString();
   info["ip"] = WiFi.localIP().toString();
+
+  JsonObject crossDevice = info.createNestedObject("crossDevice");
+  crossDevice["enabled"] = isExternalTransportEnabled();
+  crossDevice["transport"] = externalTransportName();
+  crossDevice["ready"] = externalTransportIsReady();
 }
 
 // Returns basic device info in JSON format

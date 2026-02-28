@@ -2,7 +2,7 @@
 title: "UI/Firmware Compatibility Matrix"
 ---
 
-Date: 2026-02-22  
+Date: 2026-02-28  
 UI target: `apps/control-panel` (package version `0.0.0`)  
 Firmware target: `firmware/esp` on `meshled/main`
 
@@ -25,12 +25,13 @@ Define which firmware endpoints are required by the React control panel and what
 | Settings read/write | `apps/control-panel/src/hooks/useSettings.js` | `GET /get_settings`, `POST /update_settings` | `get_settings` JSON keys expected by settings UI (including `activeSSID`, `apMode`); `update_settings` accepts form args | Compatible |
 | WiFi + reboot actions | `apps/control-panel/src/hooks/useSettings.js` | `POST /update_wifi`, `POST /restart` | Commands trigger restart; response may be interrupted by reboot | Partially compatible (client should tolerate disconnect) |
 | LED stream for model view | `apps/control-panel/src/hooks/useColors.js` | `GET /get_colors` | JSON with `colors[]`, `step`, `totalPixels` | Compatible |
-| Model topology | `apps/control-panel/src/hooks/useModelData.js` | `GET /get_model` | JSON with intersections/connections/models/gaps arrays | Compatible |
+| Model topology | `apps/control-panel/src/hooks/useModelData.js` | `GET /get_model` | JSON with `schemaVersion` (`>=2` for external editing), `capabilities.crossDevice`, and intersections/connections/models/gaps arrays | Compatible |
 | Intersection editing | `apps/control-panel/src/contexts/IntersectionContext.jsx` | `POST /add_intersection`, `POST /remove_intersection` | JSON request/response, clear error payloads (`group` is group bitmask) | Compatible |
+| External port editing | `apps/control-panel/src/contexts/IntersectionContext.jsx`, `apps/control-panel/src/components/ModelInfo.jsx` | `POST /add_external_port`, `POST /update_external_port`, `POST /remove_external_port` | JSON body contract for external port CRUD, strict validation errors on bad slot/MAC/IDs | Compatible |
 
 ## Known Gaps and Risks
 
-1. `useDeviceInfo` now normalizes sparse payloads (including WLED-style `freeheap`, `fs.u`, `fs.t`) for all consumers, but firmware still does not expose dedicated keys for:
+1. `useDeviceInfo` now normalizes sparse payloads (including WLED-style `freeheap`, `fs.u`, `fs.t`) for most consumers, but firmware still does not expose dedicated keys for:
    - `activeLights`, `freeMemory`, `fps`, `storageUsed`, `storageTotal`
    - A normalized firmware payload would simplify UI logic.
 2. `POST /update_wifi` reboots immediately; UI can see fetch/network errors even when operation succeeded.
@@ -55,6 +56,7 @@ For endpoints used by React UI:
    - Palette save/load/delete
    - Settings load/save
    - Model fetch and intersection add/remove
+   - External port add/update/remove with two configured devices
 3. If any contract change is unavoidable, update:
    - `/firmware-api/`
    - this file

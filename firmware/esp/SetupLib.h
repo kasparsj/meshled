@@ -64,10 +64,11 @@ void setupWiFi() {
       #endif
 
       #ifdef ESPNOW_ENABLED
-      if (initESPNow()) {
-        scanForPeers();
-      }
+      setupExternalTransportAdapters();
+      #else
+      registerExternalTransportAdapter(nullptr);
       #endif
+      initExternalTransport();
     }
     else {
       // WiFi connection failed

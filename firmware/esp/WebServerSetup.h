@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <ArduinoJson.h>
 #include <functional>
+#include "ExternalTransport.h"
 #include "SecurityLib.h"
 #include "WebServerValidation.h"
 
@@ -13,12 +14,22 @@
 #define WEBSERVER_CONFIG
 #define WEBSERVER_EMITTER
 
+#ifndef DEV_ENABLED
 #ifndef MESHLED_WEB_UI_CSS_URL
 #define MESHLED_WEB_UI_CSS_URL "https://meshled-ui.pages.dev/assets/app.css"
 #endif
 
 #ifndef MESHLED_WEB_UI_JS_URL
 #define MESHLED_WEB_UI_JS_URL "https://meshled-ui.pages.dev/assets/app.js"
+#endif
+#else
+#ifndef MESHLED_WEB_UI_CSS_URL
+#define MESHLED_WEB_UI_CSS_URL "https://kasparsj.github.io/meshled/control-panel-test/assets/app.css"
+#endif
+
+#ifndef MESHLED_WEB_UI_JS_URL
+#define MESHLED_WEB_UI_JS_URL "https://kasparsj.github.io/meshled/control-panel-test/assets/app.js"
+#endif
 #endif
 
 void sendCORSHeaders(String methods);
@@ -264,18 +275,14 @@ bool hasIntersectionBetween(Intersection* inter1, Intersection* inter2) {
 // Helper function to check if intersection has available ports
 bool hasAvailablePort(Intersection* intersection) {
   if (!intersection) return false;
-  
+
   uint8_t usedPorts = 0;
-  
-  // Count used ports by checking all connections
-  for (uint8_t g = 0; g < MAX_GROUPS; g++) {
-    for (Connection* conn : object->conn[g]) {
-      if (conn && (conn->from == intersection || conn->to == intersection)) {
-        usedPorts++;
-      }
+  for (uint8_t i = 0; i < intersection->numPorts; i++) {
+    if (intersection->ports[i] != nullptr) {
+      usedPorts++;
     }
   }
-  
+
   return usedPorts < intersection->numPorts;
 }
 
@@ -287,6 +294,49 @@ uint8_t getGroupIndex(uint8_t group) {
     }
   }
   return MAX_GROUPS; // Invalid
+}
+
+Intersection* findIntersectionById(uint8_t intersectionId) {
+  if (!object) {
+    return nullptr;
+  }
+  for (uint8_t group = 0; group < MAX_GROUPS; group++) {
+    for (Intersection* intersection : object->inter[group]) {
+      if (intersection && intersection->id == intersectionId) {
+        return intersection;
+      }
+    }
+  }
+  return nullptr;
+}
+
+bool parseMacAddress(const String& input, uint8_t out[6]) {
+  String normalized = input;
+  normalized.replace(":", "");
+  normalized.replace("-", "");
+  normalized.trim();
+  if (normalized.length() != 12) {
+    return false;
+  }
+
+  for (int i = 0; i < 6; i++) {
+    const int idx = i * 2;
+    char c1 = normalized.charAt(idx);
+    char c2 = normalized.charAt(idx + 1);
+    auto hexValue = [](char c) -> int {
+      if (c >= '0' && c <= '9') return c - '0';
+      if (c >= 'a' && c <= 'f') return 10 + (c - 'a');
+      if (c >= 'A' && c <= 'F') return 10 + (c - 'A');
+      return -1;
+    };
+    const int h1 = hexValue(c1);
+    const int h2 = hexValue(c2);
+    if (h1 < 0 || h2 < 0) {
+      return false;
+    }
+    out[i] = static_cast<uint8_t>((h1 << 4) | h2);
+  }
+  return true;
 }
 
 // Helper function to check if group has space for new connection
@@ -538,6 +588,197 @@ void handleRemoveIntersection() {
   server.send(200, "application/json", "{\"success\":true}");
 }
 
+void handleAddExternalPort() {
+  sendCORSHeaders("POST");
+
+  if (!object) {
+    server.send(404, "application/json", "{\"error\":\"No model object available\"}");
+    return;
+  }
+
+  String body = server.arg("plain");
+  DynamicJsonDocument doc(1024);
+  DeserializationError error = deserializeJson(doc, body);
+  if (error) {
+    server.send(400, "application/json", "{\"error\":\"Invalid JSON\"}");
+    return;
+  }
+
+  if (!doc.containsKey("intersectionId") || !doc.containsKey("slotIndex") || !doc.containsKey("group") ||
+      !doc.containsKey("deviceMac") || !doc.containsKey("targetPortId")) {
+    server.send(400, "application/json",
+                "{\"error\":\"Missing required parameters: intersectionId, slotIndex, group, deviceMac, targetPortId\"}");
+    return;
+  }
+
+  long intersectionId = doc["intersectionId"];
+  long slotIndex = doc["slotIndex"];
+  long group = doc["group"];
+  long targetPortId = doc["targetPortId"];
+  const bool direction = doc.containsKey("direction") ? static_cast<bool>(doc["direction"]) : false;
+
+  if (intersectionId < 0 || intersectionId > 255 || slotIndex < 0 || slotIndex > 255 ||
+      group < 1 || group > 255 || targetPortId < 0 || targetPortId > 255) {
+    server.send(400, "application/json", "{\"error\":\"Invalid numeric parameter range\"}");
+    return;
+  }
+
+  const uint8_t maxGroupMask = static_cast<uint8_t>((1u << MAX_GROUPS) - 1u);
+  if ((group & (group - 1)) != 0 || group > maxGroupMask) {
+    server.send(400, "application/json", "{\"error\":\"group must be a single valid group bit\"}");
+    return;
+  }
+
+  Intersection* intersection = findIntersectionById(static_cast<uint8_t>(intersectionId));
+  if (!intersection) {
+    server.send(404, "application/json", "{\"error\":\"Intersection not found\"}");
+    return;
+  }
+  if (slotIndex >= static_cast<long>(intersection->numPorts)) {
+    server.send(400, "application/json", "{\"error\":\"slotIndex out of range for intersection\"}");
+    return;
+  }
+  if (intersection->ports[slotIndex] != nullptr) {
+    server.send(400, "application/json", "{\"error\":\"Requested slot is already occupied\"}");
+    return;
+  }
+
+  uint8_t deviceMac[6] = {0};
+  if (!parseMacAddress(String(doc["deviceMac"].as<const char*>()), deviceMac)) {
+    server.send(400, "application/json", "{\"error\":\"Invalid deviceMac format\"}");
+    return;
+  }
+
+  ExternalPort* created = object->addExternalPort(intersection, static_cast<uint8_t>(slotIndex), direction,
+                                                  static_cast<uint8_t>(group), deviceMac,
+                                                  static_cast<uint8_t>(targetPortId));
+  if (!created) {
+    server.send(500, "application/json", "{\"error\":\"Failed to create external port\"}");
+    return;
+  }
+
+  server.send(200, "application/json", "{\"success\":true,\"id\":" + String(created->id) + "}");
+}
+
+void handleUpdateExternalPort() {
+  sendCORSHeaders("POST");
+
+  if (!object) {
+    server.send(404, "application/json", "{\"error\":\"No model object available\"}");
+    return;
+  }
+
+  String body = server.arg("plain");
+  DynamicJsonDocument doc(1024);
+  DeserializationError error = deserializeJson(doc, body);
+  if (error) {
+    server.send(400, "application/json", "{\"error\":\"Invalid JSON\"}");
+    return;
+  }
+
+  if (!doc.containsKey("portId")) {
+    server.send(400, "application/json", "{\"error\":\"Missing required parameter: portId\"}");
+    return;
+  }
+
+  long portId = doc["portId"];
+  if (portId < 0 || portId > 255) {
+    server.send(400, "application/json", "{\"error\":\"Invalid portId\"}");
+    return;
+  }
+
+  Port* rawPort = Port::findById(static_cast<uint8_t>(portId));
+  if (!rawPort || !rawPort->isExternal()) {
+    server.send(404, "application/json", "{\"error\":\"External port not found\"}");
+    return;
+  }
+
+  auto* port = static_cast<ExternalPort*>(rawPort);
+
+  if (doc.containsKey("direction")) {
+    port->direction = static_cast<bool>(doc["direction"]);
+  }
+
+  if (doc.containsKey("group")) {
+    long group = doc["group"];
+    const uint8_t maxGroupMask = static_cast<uint8_t>((1u << MAX_GROUPS) - 1u);
+    if (group < 1 || group > maxGroupMask || (group & (group - 1)) != 0) {
+      server.send(400, "application/json", "{\"error\":\"group must be a single valid group bit\"}");
+      return;
+    }
+    port->group = static_cast<uint8_t>(group);
+  }
+
+  if (doc.containsKey("targetPortId")) {
+    long targetPortId = doc["targetPortId"];
+    if (targetPortId < 0 || targetPortId > 255) {
+      server.send(400, "application/json", "{\"error\":\"Invalid targetPortId\"}");
+      return;
+    }
+    port->targetId = static_cast<uint8_t>(targetPortId);
+  }
+
+  if (doc.containsKey("deviceMac")) {
+    uint8_t deviceMac[6] = {0};
+    if (!parseMacAddress(String(doc["deviceMac"].as<const char*>()), deviceMac)) {
+      server.send(400, "application/json", "{\"error\":\"Invalid deviceMac format\"}");
+      return;
+    }
+    for (uint8_t i = 0; i < 6; i++) {
+      port->device[i] = deviceMac[i];
+    }
+  }
+
+  server.send(200, "application/json", "{\"success\":true}");
+}
+
+void handleRemoveExternalPort() {
+  sendCORSHeaders("POST");
+
+  if (!object) {
+    server.send(404, "application/json", "{\"error\":\"No model object available\"}");
+    return;
+  }
+
+  String body = server.arg("plain");
+  DynamicJsonDocument doc(512);
+  DeserializationError error = deserializeJson(doc, body);
+  if (error) {
+    server.send(400, "application/json", "{\"error\":\"Invalid JSON\"}");
+    return;
+  }
+
+  if (!doc.containsKey("portId")) {
+    server.send(400, "application/json", "{\"error\":\"Missing required parameter: portId\"}");
+    return;
+  }
+
+  long portId = doc["portId"];
+  if (portId < 0 || portId > 255) {
+    server.send(400, "application/json", "{\"error\":\"Invalid portId\"}");
+    return;
+  }
+
+  Port* port = Port::findById(static_cast<uint8_t>(portId));
+  if (!port || !port->isExternal()) {
+    server.send(404, "application/json", "{\"error\":\"External port not found\"}");
+    return;
+  }
+
+  for (Model* model : object->models) {
+    if (model) {
+      model->removePort(port);
+    }
+  }
+
+  if (!object->removeExternalPort(port)) {
+    server.send(500, "application/json", "{\"error\":\"Failed to remove external port\"}");
+    return;
+  }
+
+  server.send(200, "application/json", "{\"success\":true}");
+}
+
 // Get LED colors as JSON for visualization
 void handleGetColors() {
   sendCORSHeaders("GET");
@@ -761,12 +1002,17 @@ void handleGetModel() {
 
   // Start JSON object
   client.print("{");
+  client.print("\"schemaVersion\":2,");
   
   // Basic object information
   client.printf("\"pixelCount\":%d,", object->pixelCount);
   client.printf("\"realPixelCount\":%d,", object->realPixelCount);
   client.printf("\"modelCount\":%d,", (int)object->models.size());
   client.printf("\"gapCount\":%d,", (int)object->gaps.size());
+  client.printf("\"capabilities\":{\"crossDevice\":{\"enabled\":%s,\"transport\":\"%s\",\"ready\":%s}},",
+                isExternalTransportEnabled() ? "true" : "false",
+                externalTransportName(),
+                externalTransportIsReady() ? "true" : "false");
   
   // Intersections
   client.print("\"intersections\":[");
@@ -887,6 +1133,17 @@ bool parseBoundedLong(JsonVariantConst value, long minValue, long maxValue, long
 }
 
 bool parseTopologySnapshotFromJson(JsonObjectConst root, TopologySnapshot& snapshot, String& error) {
+  long schemaVersion = 0;
+  if (!parseBoundedLong(root["schemaVersion"], 0, 255, schemaVersion)) {
+    error = "Missing schemaVersion";
+    return false;
+  }
+  if (schemaVersion != 2) {
+    error = "Unsupported schemaVersion; expected 2";
+    return false;
+  }
+  snapshot.schemaVersion = static_cast<uint8_t>(schemaVersion);
+
   long pixelCount = 0;
   if (!parseBoundedLong(root["pixelCount"], 1, 65535, pixelCount)) {
     error = "Invalid or missing pixelCount";
@@ -961,16 +1218,51 @@ bool parseTopologySnapshotFromJson(JsonObjectConst root, TopologySnapshot& snaps
     long id = 0;
     long intersectionId = 0;
     long slotIndex = 0;
+    long group = 0;
     if (!parseBoundedLong(portJson["id"], 0, 255, id) ||
         !parseBoundedLong(portJson["intersectionId"], 0, 255, intersectionId) ||
-        !parseBoundedLong(portJson["slotIndex"], 0, 255, slotIndex)) {
+        !parseBoundedLong(portJson["slotIndex"], 0, 255, slotIndex) ||
+        !parseBoundedLong(portJson["group"], 1, 255, group)) {
       error = "Invalid port entry";
       return false;
     }
+
+    String type = String(portJson["type"] | "internal");
+    type.toLowerCase();
+    const TopologyPortType portType =
+        (type == "external") ? TopologyPortType::External : TopologyPortType::Internal;
+    const bool direction = portJson["direction"].isNull() ? false : portJson["direction"].as<bool>();
+
+    std::array<uint8_t, 6> deviceMac = {0, 0, 0, 0, 0, 0};
+    long targetPortId = 0;
+    if (portType == TopologyPortType::External) {
+      if (!portJson.containsKey("deviceMac")) {
+        error = "External port missing deviceMac";
+        return false;
+      }
+      uint8_t parsedMac[6] = {0};
+      if (!parseMacAddress(String(portJson["deviceMac"].as<const char*>()), parsedMac)) {
+        error = "Invalid external port deviceMac";
+        return false;
+      }
+      for (uint8_t i = 0; i < 6; i++) {
+        deviceMac[i] = parsedMac[i];
+      }
+      if (!parseBoundedLong(portJson["targetPortId"], 0, 255, targetPortId)) {
+        error = "Invalid external port targetPortId";
+        return false;
+      }
+    }
+
     snapshot.ports.push_back({
       static_cast<uint8_t>(id),
       static_cast<uint8_t>(intersectionId),
       static_cast<uint8_t>(slotIndex),
+      portType,
+      direction,
+      static_cast<uint8_t>(group),
+      deviceMac,
+      static_cast<uint8_t>(targetPortId),
     });
   }
 
@@ -1080,7 +1372,7 @@ void streamTopologySnapshot(const TopologySnapshot& snapshot) {
   client.println("Connection: close");
   client.println();
 
-  client.print("{\"schemaVersion\":1,");
+  client.printf("{\"schemaVersion\":%d,", snapshot.schemaVersion);
   client.printf("\"pixelCount\":%d,", snapshot.pixelCount);
 
   client.print("\"intersections\":[");
@@ -1148,11 +1440,21 @@ void streamTopologySnapshot(const TopologySnapshot& snapshot) {
   for (size_t i = 0; i < snapshot.ports.size(); i++) {
     if (i > 0) client.print(",");
     const TopologyPortSnapshot& port = snapshot.ports[i];
-    client.printf(
-        "{\"id\":%d,\"intersectionId\":%d,\"slotIndex\":%d}",
-        port.id,
-        port.intersectionId,
-        port.slotIndex);
+    const bool isExternal = port.type == TopologyPortType::External;
+    client.printf("{\"id\":%d,\"intersectionId\":%d,\"slotIndex\":%d,\"type\":\"%s\",\"direction\":%s,\"group\":%d",
+                  port.id,
+                  port.intersectionId,
+                  port.slotIndex,
+                  isExternal ? "external" : "internal",
+                  port.direction ? "true" : "false",
+                  port.group);
+    if (isExternal) {
+      client.printf(",\"deviceMac\":\"%02X:%02X:%02X:%02X:%02X:%02X\",\"targetPortId\":%d",
+                    port.deviceMac[0], port.deviceMac[1], port.deviceMac[2],
+                    port.deviceMac[3], port.deviceMac[4], port.deviceMac[5],
+                    port.targetPortId);
+    }
+    client.print("}");
   }
   client.print("],");
 

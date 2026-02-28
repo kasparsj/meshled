@@ -3,6 +3,7 @@
 #include <WiFi.h>
 #include <esp_now.h>
 #include <esp_wifi.h>
+#include <esp_arduino_version.h>
 #include "lwip/err.h"
 #include "lwip/ip_addr.h"
 #include "lwip/etharp.h"
@@ -125,10 +126,20 @@ bool getMacFromIP(const IPAddress& ip, uint8_t* mac) {
 
 // Register a peer with ESP-NOW
 bool addPeer(const uint8_t* mac_addr, uint8_t channel) {
-  esp_now_peer_info_t peer;
+  esp_now_peer_info_t peer = {};
   memcpy(peer.peer_addr, mac_addr, 6);
   peer.channel = channel;
   peer.encrypt = false;
+  peer.ifidx = WIFI_IF_STA;
+
+  wifi_mode_t mode = WIFI_MODE_NULL;
+  if (esp_wifi_get_mode(&mode) == ESP_OK) {
+    if (mode & WIFI_MODE_STA) {
+      peer.ifidx = WIFI_IF_STA;
+    } else if (mode & WIFI_MODE_AP) {
+      peer.ifidx = WIFI_IF_AP;
+    }
+  }
 
   // Check if peer exists before adding
   if (!esp_now_is_peer_exist(mac_addr)) {
@@ -325,10 +336,20 @@ void handleReceivedLightList(const LightListMessage* lightListMsg) {
 }
 
 // Callback function for when data is sent
+#if defined(ESP_ARDUINO_VERSION_MAJOR) && (ESP_ARDUINO_VERSION_MAJOR >= 3)
+void onDataSent(const esp_now_send_info_t* tx_info, esp_now_send_status_t status) {
+  const uint8_t* mac_addr = (tx_info != nullptr) ? tx_info->des_addr : nullptr;
+  char macStr[18] = "??:??:??:??:??:??";
+  if (mac_addr != nullptr) {
+    snprintf(macStr, sizeof(macStr), "%02X:%02X:%02X:%02X:%02X:%02X",
+             mac_addr[0], mac_addr[1], mac_addr[2], mac_addr[3], mac_addr[4], mac_addr[5]);
+  }
+#else
 void onDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
   char macStr[18];
   snprintf(macStr, sizeof(macStr), "%02X:%02X:%02X:%02X:%02X:%02X",
            mac_addr[0], mac_addr[1], mac_addr[2], mac_addr[3], mac_addr[4], mac_addr[5]);
+#endif
 
   if (status == ESP_NOW_SEND_SUCCESS) {
     LP_LOGF("ESP-NOW data sent to %s: SUCCESS\n", macStr);
@@ -493,8 +514,3 @@ void sendLightViaESPNow_impl(const uint8_t* mac, uint8_t portId, RuntimeLight* c
 
 // Forward declaration of function pointer from Port.h
 extern void (*sendLightViaESPNow)(const uint8_t* mac, uint8_t id, RuntimeLight* const light, bool sendList);
-
-// Auto-assign the implementation when this header is included
-static void __attribute__((constructor)) assignESPNowFunction() {
-    sendLightViaESPNow = sendLightViaESPNow_impl;
-}

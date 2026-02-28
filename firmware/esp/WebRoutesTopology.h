@@ -16,5 +16,10 @@ inline void registerTopologyRoutes(WebServer& web, FirmwareContext& context) {
   web.on("/add_intersection", HTTP_OPTIONS, allowCORS("POST"));
   web.on("/remove_intersection", HTTP_POST, guardMutatingRoute(handleRemoveIntersection));
   web.on("/remove_intersection", HTTP_OPTIONS, allowCORS("POST"));
+  web.on("/add_external_port", HTTP_POST, guardMutatingRoute(handleAddExternalPort));
+  web.on("/add_external_port", HTTP_OPTIONS, allowCORS("POST"));
+  web.on("/update_external_port", HTTP_POST, guardMutatingRoute(handleUpdateExternalPort));
+  web.on("/update_external_port", HTTP_OPTIONS, allowCORS("POST"));
+  web.on("/remove_external_port", HTTP_POST, guardMutatingRoute(handleRemoveExternalPort));
+  web.on("/remove_external_port", HTTP_OPTIONS, allowCORS("POST"));
 }
-

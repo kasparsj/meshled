@@ -124,7 +124,7 @@ const LEDController = () => {
                             <Route path="/layers" element={<LayersTab />} />
                             <Route path="/palettes" element={<PalettesTab />} />
                             <Route path="/emitter" element={<EmitterTab />} />
-                            <Route path="/model" element={<ModelTab />} />
+                            <Route path="/model" element={<ModelTab devices={devices} />} />
                             <Route path="/timeline" element={<TimelineTab />} />
                             <Route path="/settings" element={<SettingsTab />} />
                             <Route path="*" element={<LayersTab />} />

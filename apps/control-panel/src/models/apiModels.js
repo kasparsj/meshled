@@ -8,11 +8,13 @@
  * @typedef {{colors:string[],positions:number[],colorRule:number,interMode:number,wrapMode:number,segmentation:number}} ApiPalette
  * @typedef {{id:number,visible:boolean,brightness:number,speed:number,fadeSpeed:number,easing:number,blendMode:number,behaviourFlags:number,offset:number,palette:ApiPalette}} ApiLayer
  * @typedef {{colors:ApiColor[],step:number,totalPixels:number}} ApiColorsResponse
- * @typedef {{id:number,group:number,numPorts:number,topPixel:number,bottomPixel:number,ports:Array<{id:number,type:string,direction:boolean,group:number,device?:string,targetId?:number}|null>}} ApiIntersection
+ * @typedef {{enabled:boolean,transport:string,ready:boolean}} ApiCrossDeviceCapabilities
+ * @typedef {{crossDevice:ApiCrossDeviceCapabilities}} ApiCapabilities
+ * @typedef {{id:number,group:number,numPorts:number,topPixel:number,bottomPixel:number,ports:Array<{id:number,type:string,direction:boolean,group:number,device?:string,targetId?:number,deviceMac?:string,targetPortId?:number}|null>}} ApiIntersection
  * @typedef {{group:number,fromPixel:number,toPixel:number,numLeds:number,pixelDir:number}} ApiConnection
  * @typedef {{id:number,defaultW:number,emitGroups:number,maxLength:number}|null} ApiModel
  * @typedef {{fromPixel:number,toPixel:number}} ApiGap
- * @typedef {{pixelCount:number,realPixelCount:number,modelCount:number,gapCount:number,intersections:ApiIntersection[],connections:ApiConnection[],models:ApiModel[],gaps:ApiGap[]}} ApiModelData
+ * @typedef {{schemaVersion:number,capabilities:ApiCapabilities,pixelCount:number,realPixelCount:number,modelCount:number,gapCount:number,intersections:ApiIntersection[],connections:ApiConnection[],models:ApiModel[],gaps:ApiGap[]}} ApiModelData
  */
 
 const asNumber = (value, fallback = 0) => {
@@ -28,6 +30,14 @@ const asBoolean = (value, fallback = false) => {
 };
 
 const asArray = (value) => (Array.isArray(value) ? value : []);
+
+const parseCapabilities = (payload) => ({
+    crossDevice: {
+        enabled: asBoolean(payload?.crossDevice?.enabled, false),
+        transport: String(payload?.crossDevice?.transport || 'none'),
+        ready: asBoolean(payload?.crossDevice?.ready, false),
+    },
+});
 
 const parsePalette = (value = {}) => ({
     colors: asArray(value.colors).map((color) => String(color)),
@@ -80,6 +90,8 @@ export const parseColorsResponse = (payload) => {
  * @returns {ApiModelData}
  */
 export const parseModelDataResponse = (payload) => ({
+    schemaVersion: asNumber(payload?.schemaVersion, 1),
+    capabilities: parseCapabilities(payload?.capabilities),
     pixelCount: asNumber(payload?.pixelCount, 0),
     realPixelCount: asNumber(payload?.realPixelCount, 0),
     modelCount: asNumber(payload?.modelCount, 0),
@@ -99,6 +111,8 @@ export const parseModelDataResponse = (payload) => ({
                 group: asNumber(port.group, 0),
                 device: port.device ? String(port.device) : undefined,
                 targetId: port.targetId == null ? undefined : asNumber(port.targetId, 0),
+                deviceMac: port.deviceMac ? String(port.deviceMac) : undefined,
+                targetPortId: port.targetPortId == null ? undefined : asNumber(port.targetPortId, 0),
             };
         }),
     })),

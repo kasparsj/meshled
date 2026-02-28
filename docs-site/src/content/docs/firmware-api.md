@@ -72,6 +72,10 @@ Applies to: `firmware/esp` in this repository
   - `meshledReleaseSha`: backward-compatible alias for `meshledBuildSha`.
 - `wifi.ssid` is the active network SSID (`AP` SSID in AP mode, STA SSID in station mode).
 - `wifi.mode` is `"ap"` or `"sta"`.
+- Cross-device capability keys:
+  - `crossDevice.enabled`: whether external transport is compiled/registered.
+  - `crossDevice.transport`: active transport label (currently `esp-now` or `none`).
+  - `crossDevice.ready`: transport runtime readiness.
 
 ### `GET /ota_status` (when OTA feature is compiled in)
 
@@ -189,6 +193,11 @@ Applies to: `firmware/esp` in this repository
 
 - Returns model/editor payload used by control-panel.
 - `intersections[].group` and `connections[].group` are emitted as group bitmasks.
+- Includes `schemaVersion` (current value: `2`).
+- Includes `capabilities.crossDevice` with `enabled`, `transport`, `ready`.
+- `intersections[].ports[]` supports both:
+  - internal ports: `{id,type:\"internal\",direction,group}`
+  - external ports: `{id,type:\"external\",direction,group,device,targetId}`
 
 ### `GET /get_colors[?maxColors=<int>][&layer=<id>]`
 
@@ -208,23 +217,37 @@ Applies to: `firmware/esp` in this repository
 
 #### `GET /export_topology`
 
-- Exports normalized topology schema:
+- Exports normalized topology schema (`schemaVersion: 2`):
   - `schemaVersion`, `pixelCount`
   - `intersections[]`
   - `connections[]`
   - `models[]` (including routing strategy and conditional weights)
-  - `ports[]` (port-id to intersection/slot mapping)
+  - `ports[]` with typed metadata:
+    - `id`, `intersectionId`, `slotIndex`, `type`, `direction`, `group`
+    - external-only: `deviceMac`, `targetPortId`
   - `gaps[]`
 
 #### `POST /import_topology`
 
-- Input JSON must match exported schema.
+- Input JSON must match exported schema and include `schemaVersion: 2`.
+- Schema versions other than `2` are rejected with `400`.
 - Replaces current topology in-memory and rebuilds runtime `State`.
 - Success response:
 
 ```json
 {"success":true,"intersectionCount":12,"connectionCount":11}
 ```
+
+### External ports (`POST`)
+
+- `/add_external_port` body JSON:
+  - required: `intersectionId`, `slotIndex`, `group`, `deviceMac`, `targetPortId`
+  - optional: `direction` (default `false`)
+- `/update_external_port` body JSON:
+  - required: `portId`
+  - optional mutable fields: `group`, `direction`, `deviceMac`, `targetPortId`
+- `/remove_external_port` body JSON:
+  - required: `portId`
 
 ## WLED compatibility routes
 

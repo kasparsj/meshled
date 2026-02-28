@@ -2,20 +2,23 @@ import React from "react";
 import { useColors } from "../hooks/useColors.js";
 import { useModelData } from "../hooks/useModelData.js";
 import { IntersectionProvider, useIntersectionContext } from "../contexts/IntersectionContext.jsx";
+import { useDevice } from "../contexts/DeviceContext.jsx";
+import useRemoteTopology from "../hooks/useRemoteTopology.js";
 import LEDVisualization from "../components/LEDVisualization.jsx";
 import ModelInfo from "../components/ModelInfo.jsx";
 import AddIntersectionModal from "../components/AddIntersectionModal.jsx";
 import RemoveIntersectionModal from "../components/RemoveIntersectionModal.jsx";
 
-const ModelTab = () => {
+const ModelTab = ({ devices = [] }) => {
     return (
         <IntersectionProvider>
-            <ModelTabContent />
+            <ModelTabContent devices={devices} />
         </IntersectionProvider>
     );
 };
 
-const ModelTabContent = () => {
+const ModelTabContent = ({ devices }) => {
+    const { selectedDevice } = useDevice();
     const { 
         allPixels, 
         loading: colorsLoading, 
@@ -31,8 +34,12 @@ const ModelTabContent = () => {
     const {
         openAddModal,
         openRemoveModal,
-        removeIntersection
+        removeIntersection,
+        addExternalPort,
+        updateExternalPort,
+        removeExternalPort,
     } = useIntersectionContext();
+    const { remoteDevices, loading: remoteLoading, error: remoteError } = useRemoteTopology(devices);
 
     const handleRefresh = async () => {
         await Promise.all([
@@ -65,6 +72,21 @@ const ModelTabContent = () => {
         await refreshModelData();
     };
 
+    const handleAddExternalPort = async (payload) => {
+        await addExternalPort(payload);
+        await refreshModelData();
+    };
+
+    const handleUpdateExternalPort = async (payload) => {
+        await updateExternalPort(payload);
+        await refreshModelData();
+    };
+
+    const handleRemoveExternalPort = async (portId) => {
+        await removeExternalPort(portId);
+        await refreshModelData();
+    };
+
     const isLoading = colorsLoading || modelLoading;
 
     return (
@@ -83,6 +105,12 @@ const ModelTabContent = () => {
             <ModelInfo 
                 modelData={modelData}
                 onRemoveIntersection={handleDirectRemoveIntersection}
+                onAddExternalPort={handleAddExternalPort}
+                onUpdateExternalPort={handleUpdateExternalPort}
+                onRemoveExternalPort={handleRemoveExternalPort}
+                remoteDevices={remoteDevices}
+                remoteLoading={remoteLoading}
+                remoteError={!selectedDevice ? '' : remoteError}
             />
 
             <AddIntersectionModal onSuccess={handleModalSuccess} />
