@@ -17,6 +17,14 @@ npm run lint
 npm run build
 ```
 
+## Cloudflare Pages Deploy
+
+```bash
+CLOUDFLARE_API_TOKEN=<token> \
+CLOUDFLARE_ACCOUNT_ID=<account-id> \
+./scripts/deploy-installer-cloudflare.sh --project-name meshled-installer --branch production
+```
+
 ## Firmware Manifest Files
 
 The installer currently reads:

@@ -7,6 +7,7 @@ on:
     paths:
       - docs-site/**
       - apps/control-panel/**
+      - apps/installer/**
       - .github/workflows/docs-pages.yml
   workflow_dispatch:
 
@@ -39,6 +40,7 @@ jobs:
           cache-dependency-path: |
             docs-site/package-lock.json
             apps/control-panel/package-lock.json
+            apps/installer/package-lock.json
 
       - name: Install control panel dependencies
         run: npm ci --legacy-peer-deps
@@ -53,6 +55,23 @@ jobs:
           rm -rf docs-site/public/control-panel-test
           mkdir -p docs-site/public/control-panel-test
           cp -R apps/control-panel/dist/assets docs-site/public/control-panel-test/assets
+
+      - name: Install installer dependencies
+        run: npm ci
+        working-directory: apps/installer
+
+      - name: Build installer for GitHub Pages
+        shell: bash
+        working-directory: apps/installer
+        run: |
+          REPO_NAME="${GITHUB_REPOSITORY#*/}"
+          npm run build -- --base "/${REPO_NAME}/installer/"
+
+      - name: Stage installer app
+        run: |
+          rm -rf docs-site/public/installer
+          mkdir -p docs-site/public/installer
+          cp -R apps/installer/dist/* docs-site/public/installer/
 
       - name: Install dependencies
         run: npm ci

@@ -1,0 +1,72 @@
+name: Deploy Installer (Cloudflare Pages)
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - apps/installer/**
+      - scripts/deploy-installer-cloudflare.sh
+      - .github/workflows/deploy-installer-cloudflare.yml
+  workflow_dispatch:
+    inputs:
+      project_name:
+        description: "Cloudflare Pages project name override"
+        required: false
+        type: string
+      branch:
+        description: "Cloudflare Pages branch override"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-installer-cloudflare
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    if: ${{ secrets.CLOUDFLARE_API_TOKEN != '' && secrets.CLOUDFLARE_ACCOUNT_ID != '' }}
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      DEFAULT_PROJECT_NAME: ${{ vars.CF_PAGES_INSTALLER_PROJECT_NAME }}
+      DEFAULT_BRANCH: ${{ vars.CF_PAGES_INSTALLER_BRANCH }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: apps/installer/package-lock.json
+
+      - name: Resolve deploy target
+        id: resolve-target
+        shell: bash
+        run: |
+          PROJECT_NAME="${{ github.event.inputs.project_name }}"
+          BRANCH="${{ github.event.inputs.branch }}"
+
+          if [ -z "$PROJECT_NAME" ]; then
+            PROJECT_NAME="${DEFAULT_PROJECT_NAME:-meshled-installer}"
+          fi
+
+          if [ -z "$BRANCH" ]; then
+            BRANCH="${DEFAULT_BRANCH:-production}"
+          fi
+
+          echo "project_name=$PROJECT_NAME" >> "$GITHUB_OUTPUT"
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy installer
+        run: |
+          chmod +x ./scripts/deploy-installer-cloudflare.sh
+          ./scripts/deploy-installer-cloudflare.sh \
+            --project-name "${{ steps.resolve-target.outputs.project_name }}" \
+            --branch "${{ steps.resolve-target.outputs.branch }}"

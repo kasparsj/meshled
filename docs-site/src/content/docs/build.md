@@ -89,6 +89,7 @@ For this repository, current URLs are:
 
 - JS: `https://kasparsj.github.io/meshled/control-panel-test/assets/app.js`
 - CSS: `https://kasparsj.github.io/meshled/control-panel-test/assets/app.css`
+- Installer app: `https://kasparsj.github.io/meshled/installer/`
 
 ## Installer web app (`apps/installer`)
 
@@ -109,6 +110,18 @@ Local dev server:
 
 ```bash
 npm run dev
+```
+
+GitHub Pages publish path:
+
+- `https://<owner>.github.io/<repo>/installer/`
+
+Cloudflare Pages deploy (installer):
+
+```bash
+CLOUDFLARE_API_TOKEN=<token> \
+CLOUDFLARE_ACCOUNT_ID=<account-id> \
+./scripts/deploy-installer-cloudflare.sh --project-name meshled-installer --branch production
 ```
 
 ## Simulator (`apps/simulator`)
@@ -183,6 +196,7 @@ Note:
 ./scripts/build-control-panel.sh
 ./scripts/deploy-control-panel-cloudflare.sh --project-name meshled-ui --branch production
 ./scripts/build-installer.sh
+./scripts/deploy-installer-cloudflare.sh --project-name meshled-installer --branch production
 ./scripts/validate-installer-manifests.sh
 ./scripts/build-firmware.sh esp32dev compiledb
 ```

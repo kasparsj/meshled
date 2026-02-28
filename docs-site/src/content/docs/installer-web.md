@@ -102,4 +102,7 @@ The workflow:
 4. Update `manifest-stable.json` and/or `manifest-beta.json` when promoting channels:
    - set `version`
    - set `parts[].path` URLs to release assets
-5. Rebuild and deploy the installer site.
+5. Deploy the installer site:
+   - GitHub Pages: push installer/docs changes to `main` via `.github/workflows/docs-pages.yml` (published at `/installer/`)
+   - automatic: push installer changes to `main` via `.github/workflows/deploy-installer-cloudflare.yml`
+   - manual: run `./scripts/deploy-installer-cloudflare.sh --project-name meshled-installer --branch production`

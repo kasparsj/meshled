@@ -5,14 +5,14 @@ const CHANNELS = {
     id: 'stable',
     title: 'Stable',
     description: 'Recommended for production installs and long-running pieces.',
-    manifest: '/firmware/manifest-stable.json',
+    manifest: 'firmware/manifest-stable.json',
     releaseNotesUrl: 'https://github.com/kasparsj/meshled/releases',
   },
   beta: {
     id: 'beta',
     title: 'Beta',
     description: 'Preview builds with newer features and higher regression risk.',
-    manifest: '/firmware/manifest-beta.json',
+    manifest: 'firmware/manifest-beta.json',
     releaseNotesUrl: 'https://github.com/kasparsj/meshled/releases',
   },
 }
@@ -195,7 +195,7 @@ export default function App() {
           <h3>Manual Flashing</h3>
           <p>Need serial logs or custom offsets? Use PlatformIO or esptool.</p>
           <a
-            href="https://github.com/kasparsj/meshled/blob/main/docs/installer-web.md"
+            href="https://github.com/kasparsj/meshled/blob/main/docs-site/src/content/docs/installer-web.md"
             target="_blank"
             rel="noreferrer"
           >
