@@ -1286,6 +1286,8 @@ void handleIcon() {
 }
 
 void handleGetDevices() {
+  sendCORSHeaders("GET");
+
   DynamicJsonDocument doc(1024);
   JsonArray devices = doc.to<JsonArray>();
 

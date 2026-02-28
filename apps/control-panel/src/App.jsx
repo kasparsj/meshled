@@ -69,6 +69,12 @@ const LEDController = () => {
         // If current selected device is removed, select first available or clear
         if (selectedDevice && !newDevices.includes(selectedDevice)) {
             setSelectedDevice(newDevices.length > 0 ? newDevices[0] : '');
+            return;
+        }
+
+        // Auto-select the first device when none is currently selected.
+        if (!selectedDevice && newDevices.length > 0) {
+            setSelectedDevice(newDevices[0]);
         }
     };
 

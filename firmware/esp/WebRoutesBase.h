@@ -8,5 +8,5 @@ inline void registerBaseRoutes(WebServer& web, FirmwareContext& context) {
   web.on("/settings", HTTP_GET, handleSettingsPage);
   web.on("/wifi", HTTP_GET, handleWifiPage);
   web.on("/get_devices", HTTP_GET, handleGetDevices);
+  web.on("/get_devices", HTTP_OPTIONS, allowCORS("GET"));
 }
-
