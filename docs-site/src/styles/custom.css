@@ -1,6 +1,7 @@
 :root {
   --sl-font: "IBM Plex Sans", "Avenir Next", "Segoe UI", sans-serif;
   --sl-font-mono: "JetBrains Mono", "SFMono-Regular", Menlo, monospace;
+  --sl-content-width: 55rem;
   --sl-color-accent-low: #d9f0eb;
   --sl-color-accent: #0f8b78;
   --sl-color-accent-high: #0a5f52;
