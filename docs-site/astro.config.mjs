@@ -18,7 +18,7 @@ export default defineConfig({
 			customCss: ['./src/styles/custom.css'],
 			social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/kasparsj/meshled' }],
 			editLink: {
-				baseUrl: 'https://github.com/kasparsj/meshled/edit/main/docs-site/src/content/docs/',
+				baseUrl: 'https://github.com/kasparsj/meshled/edit/main/docs-site/',
 			},
 			sidebar: [
 				{

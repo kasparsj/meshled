@@ -147,7 +147,7 @@ const LEDController = () => {
                 {/* Header */}
                 <div className="mb-8 grid grid-cols-4 gap-6">
                     <div className="col-span-3 flex flex-col">
-                        <h1 className="text-3xl font-bold mb-2 flex-1">LED Controller</h1>
+                        <h1 className="text-3xl font-bold mb-2 flex-1">MeshLED</h1>
                         <div className="flex flex-wrap gap-2">
                             <TabButton id="layers" icon={Layers} label="Layers" active={activeTab === 'layers'} onClick={(tab) => navigate(`/${tab}`)} />
                             <TabButton id="palettes" icon={Palette} label="Palettes" active={activeTab === 'palettes'} onClick={(tab) => navigate(`/${tab}`)} />
