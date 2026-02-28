@@ -168,7 +168,7 @@ void handleRoot() {
   html += "'>";
   html += "</head><body>";
   html += "<noscript>MeshLED requires JavaScript.</noscript>";
-  html += "<div id='app'>Loading MeshLED control panel...</div>";
+  html += "<div id='root'>Loading MeshLED control panel...</div>";
   html += "<script>";
   html += "window.__MESHLED_API_BASE=location.origin;";
   html += "window.__MESHLED_DEVICE_HOST='";
@@ -178,7 +178,7 @@ void handleRoot() {
   html += "</script>";
   html += "<script defer src='";
   html += MESHLED_WEB_UI_JS_URL;
-  html += "'></script>";
+  html += "' onerror=\"var el=document.getElementById('root');if(el){el.innerHTML='Control panel failed to load. Open <a href=\\'/settings\\'>/settings</a> to recover WiFi, or rebuild firmware with a valid MESHLED_WEB_UI_JS_URL.';}\"></script>";
   html += "</body></html>";
 
   server.send(200, "text/html; charset=utf-8", html);
