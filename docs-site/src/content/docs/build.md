@@ -72,6 +72,24 @@ Local dev server:
 npm run dev
 ```
 
+Cloudflare Pages deploy (control panel):
+
+```bash
+CLOUDFLARE_API_TOKEN=<token> \
+CLOUDFLARE_ACCOUNT_ID=<account-id> \
+./scripts/deploy-control-panel-cloudflare.sh --project-name meshled-ui --branch production
+```
+
+GitHub Pages test bundle (auto-published by `Docs (Pages)` workflow):
+
+- JS: `https://<owner>.github.io/<repo>/control-panel-test/assets/app.js`
+- CSS: `https://<owner>.github.io/<repo>/control-panel-test/assets/app.css`
+
+For this repository, current URLs are:
+
+- JS: `https://kasparsj.github.io/meshled/control-panel-test/assets/app.js`
+- CSS: `https://kasparsj.github.io/meshled/control-panel-test/assets/app.css`
+
 ## Installer web app (`apps/installer`)
 
 Prerequisites:
@@ -163,6 +181,7 @@ Note:
 ```bash
 ./scripts/build-core.sh all
 ./scripts/build-control-panel.sh
+./scripts/deploy-control-panel-cloudflare.sh --project-name meshled-ui --branch production
 ./scripts/build-installer.sh
 ./scripts/validate-installer-manifests.sh
 ./scripts/build-firmware.sh esp32dev compiledb
