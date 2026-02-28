@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Loader2 } from "lucide-react";
 import { useColors } from "../hooks/useColors.js";
 import { useModelData } from "../hooks/useModelData.js";
 import { IntersectionProvider, useIntersectionContext } from "../contexts/IntersectionContext.jsx";
@@ -28,6 +29,7 @@ const ModelTabContent = ({ devices }) => {
     const { 
         modelData, 
         loading: modelLoading, 
+        error: modelError,
         refreshModelData 
     } = useModelData();
 
@@ -104,10 +106,28 @@ const ModelTabContent = ({ devices }) => {
     };
 
     const isLoading = colorsLoading || modelLoading;
+    const waitingForInitialModel = Boolean(selectedDevice) && !modelData && !modelError;
+    const showModelLoadingIndicator = Boolean(selectedDevice) && (
+        waitingForInitialModel || modelLoading || colorsLoading || remoteLoading
+    );
+
+    let modelLoadingMessage = 'Refreshing model data...';
+    if (waitingForInitialModel) {
+        modelLoadingMessage = 'Loading model data...';
+    } else if (remoteLoading && !modelLoading && !colorsLoading) {
+        modelLoadingMessage = 'Loading remote topology...';
+    }
 
     return (
         <div className="space-y-6">
             <h2 className="text-2xl font-bold">Model</h2>
+
+            {showModelLoadingIndicator && (
+                <div className="bg-zinc-700 border border-zinc-500 rounded-lg px-4 py-3 text-sm text-zinc-100 flex items-center gap-2">
+                    <Loader2 size={16} className="animate-spin text-sky-300" />
+                    <span>{modelLoadingMessage}</span>
+                </div>
+            )}
             
             <LEDVisualization 
                 allPixels={allPixels}

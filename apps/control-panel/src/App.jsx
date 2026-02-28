@@ -1,10 +1,9 @@
 import React, { Suspense, lazy, useEffect, useMemo, useState } from 'react';
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
-import { Settings, Layers, Palette, Zap, Eye, KeyRound } from 'lucide-react';
+import { Settings, Layers, Palette, Zap, Eye } from 'lucide-react';
 import TabButton from './components/TabButton.jsx';
 import DeviceSelector from './components/DeviceSelector.jsx';
 import DeviceManagementModal from './components/DeviceManagementModal.jsx';
-import ApiTokenModal from './components/ApiTokenModal.jsx';
 import { DeviceProvider, useDevice } from './contexts/DeviceContext.jsx';
 
 const LayersTab = lazy(() => import('./tabs/Layers.jsx'));
@@ -85,16 +84,17 @@ const ControllerContent = ({
 }) => {
     const {
         authRequired,
-        authError,
         hasApiToken,
-        apiToken,
-        setApiToken,
-        clearApiToken,
     } = useDevice();
 
-    const [showApiTokenModal, setShowApiTokenModal] = useState(false);
-    const forceApiTokenModal = authRequired && !hasApiToken;
+    const forceDeviceModal = authRequired && !hasApiToken;
     const timelineEnabled = TIMELINE_ENABLED;
+
+    useEffect(() => {
+        if (forceDeviceModal) {
+            setShowDeviceModal(true);
+        }
+    }, [forceDeviceModal, setShowDeviceModal]);
 
     return (
         <>
@@ -119,39 +119,23 @@ const ControllerContent = ({
                                 <div className="bg-zinc-800 rounded-lg p-4">
                                     <div className="text-xs uppercase tracking-wide text-zinc-400 mb-2">Connected Device</div>
                                     <div className="font-mono text-sky-400 break-all">{selectedDevice || directDeviceHost}</div>
+                                    <button
+                                        onClick={() => setShowDeviceModal(true)}
+                                        className="mt-3 text-zinc-400 hover:text-sky-400 text-xs flex items-center gap-1"
+                                        title="Manage Devices"
+                                    >
+                                        <Settings size={14} />
+                                        Manage
+                                    </button>
                                 </div>
                             ) : (
-                                <>
-                                    <DeviceSelector
-                                        devices={devices}
-                                        selectedDevice={selectedDevice}
-                                        onDeviceSelect={setSelectedDevice}
-                                        onManageDevices={() => setShowDeviceModal(true)}
-                                    />
-                                    <DeviceManagementModal
-                                        isOpen={showDeviceModal}
-                                        onClose={() => setShowDeviceModal(false)}
-                                        devices={devices}
-                                        setDevices={handleDevicesChange}
-                                    />
-                                </>
+                                <DeviceSelector
+                                    devices={devices}
+                                    selectedDevice={selectedDevice}
+                                    onDeviceSelect={setSelectedDevice}
+                                    onManageDevices={() => setShowDeviceModal(true)}
+                                />
                             )}
-
-                            <div className="bg-zinc-800 rounded-lg p-3 border border-zinc-700">
-                                <button
-                                    onClick={() => setShowApiTokenModal(true)}
-                                    className="w-full bg-zinc-700 hover:bg-zinc-600 text-sm px-3 py-2 rounded flex items-center justify-center gap-2"
-                                >
-                                    <KeyRound size={14} />
-                                    {hasApiToken ? 'Update API Token' : 'Set API Token'}
-                                </button>
-                                <p className="mt-2 text-xs text-zinc-400">
-                                    {hasApiToken ? 'Token is configured for protected routes.' : 'No token configured.'}
-                                </p>
-                                {authError && (
-                                    <p className="mt-2 text-xs text-red-300">{authError}</p>
-                                )}
-                            </div>
                         </div>
                     </div>
 
@@ -171,14 +155,13 @@ const ControllerContent = ({
                 </div>
             </div>
 
-            <ApiTokenModal
-                isOpen={showApiTokenModal || forceApiTokenModal}
-                onClose={() => setShowApiTokenModal(false)}
-                onSave={setApiToken}
-                onClear={clearApiToken}
-                currentToken={apiToken}
-                authError={authError}
-                requireToken={forceApiTokenModal}
+            <DeviceManagementModal
+                isOpen={showDeviceModal}
+                onClose={() => setShowDeviceModal(false)}
+                devices={devices}
+                setDevices={handleDevicesChange}
+                isDirectDeviceMode={isDirectDeviceMode}
+                requireToken={forceDeviceModal}
             />
         </>
     );
